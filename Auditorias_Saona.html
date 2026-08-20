@@ -1,0 +1,3942 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Auditorías Saona · Visita Operativa y VEO Externa</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="theme-color" content="#1F3864">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Auditorías">
+<style>
+  :root{
+    --navy:#1F3864;
+    --navy-dark:#152847;
+    --accent:#C0722D;
+    --bg:#F4F6F9;
+    --card:#FFFFFF;
+    --border:#DDE3EC;
+    --text:#1C2430;
+    --muted:#65728A;
+    --good:#1E8E5A;
+    --warn:#C0722D;
+    --bad:#C0392B;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.5;
+  }
+  header.top{
+    background:linear-gradient(135deg,var(--navy) 0%, var(--navy-dark) 100%);
+    color:#fff;
+    padding:28px 32px 22px;
+  }
+  header.top h1{margin:0 0 4px; font-size:22px; font-weight:700;}
+  header.top p{margin:0; opacity:.85; font-size:14px;}
+  .layout{
+    display:flex;
+    max-width:1180px;
+    margin:0 auto;
+    align-items:flex-start;
+    gap:24px;
+    padding:24px 20px 80px;
+  }
+  nav.side{
+    position:sticky;
+    top:20px;
+    width:210px;
+    flex:0 0 210px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:14px;
+    font-size:13px;
+  }
+  nav.side a{
+    display:block;
+    padding:7px 10px;
+    color:var(--muted);
+    text-decoration:none;
+    border-radius:6px;
+    margin-bottom:2px;
+  }
+  nav.side a:hover{background:var(--bg); color:var(--text);}
+  nav.side .score-mini{
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid var(--border);
+  }
+  nav.side .score-mini .num{font-size:26px; font-weight:800; color:var(--navy);}
+  nav.side .score-mini .lbl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;}
+  main{flex:1; min-width:0;}
+  section.card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:22px 24px;
+    margin-bottom:20px;
+  }
+  section.card h2{
+    margin:0 0 4px;
+    font-size:17px;
+    color:var(--navy);
+    border-bottom:2px solid var(--navy);
+    padding-bottom:8px;
+  }
+  section.card p.desc{margin:8px 0 16px; color:var(--muted); font-size:13px;}
+  .grid4{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+  .field label{display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.03em;}
+  .field input, .field select, .field textarea{
+    width:100%;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:14px;
+    font-family:inherit;
+    background:#fff;
+    color:var(--text);
+  }
+  .field textarea{resize:vertical; min-height:60px;}
+  .field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--navy); outline-offset:1px;}
+  table.datatable{width:100%; border-collapse:collapse; font-size:13px;}
+  table.datatable th{
+    background:var(--navy);
+    color:#fff;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    padding:8px 6px;
+    text-align:center;
+  }
+  table.datatable td{
+    border:1px solid var(--border);
+    padding:5px 6px;
+    vertical-align:middle;
+  }
+  table.datatable tr:nth-child(even) td{background:#F8FAFC;}
+  table.datatable input, table.datatable select, table.datatable textarea{
+    width:100%; border:1px solid transparent; background:transparent;
+    padding:5px 4px; font-size:13px; font-family:inherit; border-radius:4px;
+  }
+  table.datatable input:focus, table.datatable select:focus, table.datatable textarea:focus{
+    border-color:var(--navy); background:#fff; outline:none;
+  }
+  table.datatable textarea{min-height:34px; resize:vertical;}
+  .block-summary{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--bg); border:1px solid var(--border); border-radius:8px;
+    padding:10px 14px; margin-bottom:14px;
+  }
+  .block-summary .name{font-weight:700; color:var(--navy); font-size:14px;}
+  .block-summary .peso{font-size:12px; color:var(--muted);}
+  .block-summary .score{font-size:20px; font-weight:800; color:var(--navy);}
+  .subbloque-row{
+    display:grid; grid-template-columns:2.4fr .8fr 2fr; gap:12px;
+    padding:10px 0; border-bottom:1px solid var(--border); align-items:start;
+  }
+  .subbloque-row:last-child{border-bottom:none;}
+  .subbloque-row .sname{font-size:13px; padding-top:8px;}
+  .subbloque-row .sname .items{display:block; font-size:11px; color:var(--muted);}
+  .score-input-wrap{display:flex; align-items:center; gap:4px;}
+  .score-input-wrap input{text-align:center;}
+
+  details.sub-details{
+    border:1px solid var(--border); border-radius:8px; margin-bottom:10px; overflow:hidden;
+  }
+  details.sub-details summary{
+    list-style:none; cursor:pointer; padding:10px 14px;
+    display:flex; align-items:center; justify-content:space-between;
+    background:#F8FAFC; font-size:13px;
+  }
+  details.sub-details summary::-webkit-details-marker{display:none;}
+  details.sub-details summary .sub-name{font-weight:600; color:var(--text);}
+  details.sub-details summary .sub-name .items{display:block; font-weight:400; font-size:11px; color:var(--muted);}
+  details.sub-details summary .sub-score{font-weight:800; color:var(--navy); font-size:15px;}
+  details.sub-details[open] summary{border-bottom:1px solid var(--border);}
+  .items-list{padding:6px 14px;}
+  .item-row{
+    display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap;
+    padding:8px 0; border-bottom:1px dashed var(--border);
+  }
+  .item-row:last-child{border-bottom:none;}
+  .item-row .item-label{flex:1 1 220px; font-size:13px; padding-top:5px;}
+  .item-toggle{display:flex; gap:6px;}
+  .item-toggle button{
+    border:1px solid var(--border); background:#fff; color:var(--muted);
+    padding:5px 14px; font-size:12px; font-weight:700; border-radius:6px; cursor:pointer;
+  }
+  .item-toggle button.si.active{background:var(--good); border-color:var(--good); color:#fff;}
+  .item-toggle button.no.active{background:var(--bad); border-color:var(--bad); color:#fff;}
+  .item-photos{flex:1 1 100%; margin-top:4px;}
+  .item-photos input[type=file]{font-size:12px;}
+  .thumb-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;}
+  .thumb{position:relative; width:64px; height:64px; border-radius:6px; overflow:hidden; border:1px solid var(--border);}
+  .thumb img{width:100%; height:100%; object-fit:cover; display:block;}
+  .thumb .rm{
+    position:absolute; top:1px; right:1px; background:rgba(0,0,0,.6); color:#fff;
+    border:none; border-radius:50%; width:18px; height:18px; font-size:11px; line-height:18px;
+    text-align:center; cursor:pointer; padding:0;
+  }
+  .total-band{
+    background:var(--navy); color:#fff; border-radius:8px;
+    padding:16px 20px; display:flex; align-items:center; justify-content:space-between;
+    margin-top:6px;
+  }
+  .total-band .num{font-size:30px; font-weight:800;}
+  .total-band .lbl{font-size:12px; opacity:.85; text-transform:uppercase; letter-spacing:.04em;}
+  .total-band .delta{font-size:13px; margin-top:2px;}
+  .btn{
+    background:var(--navy); color:#fff; border:none; border-radius:7px;
+    padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer;
+  }
+  .btn:hover{background:var(--navy-dark);}
+  .btn.secondary{background:#fff; color:var(--navy); border:1px solid var(--navy);}
+  .btn.secondary:hover{background:var(--bg);}
+  .row-actions{margin-bottom:12px;}
+  .generate-bar{
+    position:sticky; bottom:0; background:var(--card); border-top:1px solid var(--border);
+    padding:16px 24px; border-radius:var(--radius); margin-top:8px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    box-shadow:0 -4px 14px rgba(0,0,0,.05);
+  }
+  .generate-bar .info{font-size:13px; color:var(--muted);}
+  #genStatus{font-size:13px; margin-top:6px; color:var(--good);}
+  .add-btn-row{display:flex; justify-content:flex-end; margin-bottom:10px;}
+  .small-btn{
+    background:var(--bg); border:1px solid var(--border); color:var(--navy);
+    border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; font-weight:600;
+  }
+  .small-btn:hover{background:#eaeff6;}
+  footer.note{text-align:center; color:var(--muted); font-size:12px; margin-top:10px;}
+  @media (max-width:900px){
+    .layout{flex-direction:column;}
+    nav.side{position:static; width:100%;}
+    .grid4{grid-template-columns:repeat(2,1fr);}
+    .subbloque-row{grid-template-columns:1fr;}
+  }
+
+  /* --- Login --- */
+  #loginOverlay{
+    position:fixed; inset:0; background:linear-gradient(135deg,var(--navy) 0%, var(--navy-dark) 100%);
+    display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px;
+  }
+  #loginOverlay.hidden{display:none;}
+  .login-card{
+    background:#fff; border-radius:var(--radius); padding:32px 28px; width:100%; max-width:340px;
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+  }
+  .login-card h2{margin:0 0 4px; font-size:19px; color:var(--navy);}
+  .login-card p{margin:0 0 20px; font-size:13px; color:var(--muted);}
+  .login-card .field{margin-bottom:14px;}
+  .login-card label{display:block; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:4px;}
+  .login-card input{width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:7px; font-size:15px;}
+  .login-card .btn{width:100%; margin-top:6px;}
+  #loginError{color:var(--bad); font-size:13px; margin-top:10px; min-height:16px;}
+  .user-bar{display:flex; align-items:center; gap:10px; justify-content:flex-end; padding:8px 32px 0; font-size:13px; opacity:.9;}
+  .user-bar button{background:transparent; border:1px solid rgba(255,255,255,.5); color:#fff; border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer;}
+  .user-bar button:hover{background:rgba(255,255,255,.12);}
+  #appRoot.hidden{display:none;}
+
+  /* Vista de impresión del informe — oculta en pantalla, es lo único visible al imprimir. */
+  #printReport{ display:none; }
+  @media print {
+    body > *:not(#printReport){ display:none !important; }
+    #printReport{ display:block !important; }
+    @page { size: A4; margin: 16mm 14mm; }
+    #printReport{ font-family: Calibri, Arial, sans-serif; color:#1c1c1c; font-size:12px; line-height:1.4; }
+    #printReport h1{ font-size:19px; color:#1F3864; margin:0 0 2px; }
+    #printReport h2{ font-size:14px; color:#1F3864; margin:22px 0 8px; border-bottom:1px solid #DDE3EC; padding-bottom:4px; }
+    #printReport .pdf-sub{ color:#65728A; margin-bottom:14px; }
+    #printReport .pdf-meta{ display:grid; grid-template-columns:1fr 1fr; gap:4px 24px; margin-bottom:14px; font-size:12px; }
+    #printReport .pdf-meta b{ color:#1F3864; }
+    #printReport table.pdf-table{ width:100%; border-collapse:collapse; margin-bottom:10px; font-size:11.5px; }
+    #printReport table.pdf-table th, #printReport table.pdf-table td{ border:1px solid #DDE3EC; padding:5px 7px; text-align:left; vertical-align:top; }
+    #printReport table.pdf-table th{ background:#EEEEEE; }
+    #printReport table.pdf-table td.c, #printReport table.pdf-table th.c{ text-align:center; }
+    #printReport tr.pdf-total td{ background:#F2F2F2; font-weight:bold; }
+    #printReport .pdf-bloque-title{ font-weight:bold; color:#1F3864; font-size:13px; margin:14px 0 4px; }
+    #printReport .pdf-sub-title{ font-weight:bold; margin:8px 0 2px; }
+    #printReport .pdf-sub-obs{ margin:0 0 6px; color:#333; }
+    #printReport .pdf-photogroup{ margin-bottom:12px; page-break-inside:avoid; }
+    #printReport .pdf-photolabel{ font-weight:bold; color:#1F3864; margin-bottom:4px; }
+    #printReport .pdf-photos{ display:flex; flex-wrap:wrap; gap:8px; }
+    #printReport .pdf-photo{ max-width:220px; max-height:170px; border:1px solid #DDE3EC; border-radius:4px; }
+    #printReport .pdf-muted{ color:#65728A; }
+    #printReport .pdf-block{ page-break-inside:avoid; }
+  }
+
+  /* --- Cambiar código --- */
+  #changePwOverlay{position:fixed; inset:0; background:rgba(15,25,45,.55); z-index:1001; display:flex; align-items:center; justify-content:center; padding:20px;}
+  #changePwOverlay.hidden{display:none;}
+  #changePwStatus{font-size:13px; margin-top:10px; min-height:16px;}
+  .btn-secondary-full{width:100%; margin-top:8px; background:var(--muted); color:#fff; border:none; border-radius:8px; padding:11px 18px; font-size:14.5px; font-weight:600; cursor:pointer;}
+  .btn-secondary-full:hover{background:#54617a;}
+</style>
+</head>
+<body>
+
+<div id="loginOverlay">
+  <div class="login-card">
+    <h2>Auditorías Saona</h2>
+    <p>Inicia sesión con tu usuario y código para continuar.</p>
+    <form id="loginForm">
+      <div class="field">
+        <label>Correo corporativo</label>
+        <input type="email" id="loginUsuario" autocomplete="username" placeholder="tunombre@gruposaona.com" autocapitalize="none">
+      </div>
+      <div class="field">
+        <label>Código</label>
+        <input type="password" id="loginCodigo" autocomplete="current-password" inputmode="numeric" placeholder="Tu código">
+      </div>
+      <button type="submit" class="btn">Entrar</button>
+      <div id="loginError"></div>
+    </form>
+  </div>
+</div>
+
+<div id="changePwOverlay" class="hidden">
+  <div class="login-card">
+    <h2>Cambiar código</h2>
+    <p>Elige un código nuevo para tu cuenta (mínimo 6 caracteres).</p>
+    <form id="changePwForm">
+      <div class="field">
+        <label>Código nuevo</label>
+        <input type="password" id="newPw1" autocomplete="new-password" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Repite el código nuevo</label>
+        <input type="password" id="newPw2" autocomplete="new-password" inputmode="numeric">
+      </div>
+      <button type="submit" class="btn">Guardar código</button>
+      <button type="button" id="btnCancelChangePw" class="btn-secondary-full">Cancelar</button>
+      <div id="changePwStatus"></div>
+    </form>
+  </div>
+</div>
+
+<div id="appRoot" class="hidden">
+
+<div class="user-bar">
+  <span id="userBarName"></span>
+  <button type="button" id="btnChangePw">Cambiar código</button>
+  <button type="button" id="btnLogout">Cerrar sesión</button>
+</div>
+
+<header class="top">
+  <h1>Auditorías Saona <span id="tipoHeaderBadge" class="peso" style="font-size:16px;"></span></h1>
+  <p>Visita Operativa (VEO interna) y VEO Externa 2.0, cada una independiente — elige el tipo abajo. Rellena los datos y genera el informe en PDF, o guarda la auditoría en el histórico compartido.</p>
+</header>
+
+<div id="draftBanner" style="display:none; align-items:center; justify-content:space-between; gap:12px; background:#FFF7E6; border-bottom:1px solid #E8C27A; color:#7A5A12; padding:10px 32px; font-size:13px;">
+  <span id="draftBannerText"></span>
+  <span style="display:flex; gap:8px; flex:none;">
+    <button type="button" id="btnRestaurarBorrador" style="background:#7A5A12; color:#fff; border:none; border-radius:6px; padding:5px 12px; font-size:12px; cursor:pointer;">Restaurar</button>
+    <button type="button" id="btnDescartarBorrador" style="background:transparent; color:#7A5A12; border:1px solid #7A5A12; border-radius:6px; padding:5px 12px; font-size:12px; cursor:pointer;">Descartar</button>
+  </span>
+</div>
+
+<div id="editBanner" style="display:none; align-items:center; justify-content:space-between; gap:12px; background:#E8F0FE; border-bottom:1px solid #A9C6F5; color:#1A4B8C; padding:10px 32px; font-size:13px;">
+  <span id="editBannerText"></span>
+  <span style="display:flex; gap:8px; flex:none;">
+    <button type="button" id="btnCancelarEdicion" style="background:transparent; color:#1A4B8C; border:1px solid #1A4B8C; border-radius:6px; padding:5px 12px; font-size:12px; cursor:pointer;">Cancelar y crear uno nuevo</button>
+  </span>
+</div>
+
+<div class="layout">
+  <nav class="side" id="sideNav">
+    <div id="sideNavAudit">
+      <a href="#sec-datos">Datos de la visita</a>
+      <a href="#sec-resumen">Resumen ejecutivo</a>
+      <a href="#sec-global">Puntuación global</a>
+      <a href="#sec-bloques">Resultados por bloque</a>
+      <a href="#sec-incidencias">Incidencias</a>
+      <a href="#sec-nohom">Productos no homologados</a>
+      <a href="#sec-plan">Plan de acción</a>
+      <a href="#sec-conclusion">Conclusión</a>
+    </div>
+    <div id="sideNavSemanal" style="display:none;">
+      <a href="#sec-datos">Datos generales</a>
+      <a href="#sec-sem-ventas">Ventas e IC</a>
+      <a href="#sec-sem-ventasug">Venta sugerida</a>
+      <a href="#sec-sem-compras">Compras y mermas</a>
+      <a href="#sec-sem-facturas">Facturas pendientes</a>
+      <a href="#sec-sem-reservas">Reservas y walk-ins</a>
+      <a href="#sec-sem-ocupacion">Ocupación diaria</a>
+      <a href="#sec-sem-valoraciones">Valoraciones</a>
+      <a href="#sec-sem-notas">Notas</a>
+    </div>
+    <div class="score-mini" id="scoreMiniBox">
+      <div class="num" id="miniScore">—</div>
+      <div class="lbl">Puntuación total</div>
+    </div>
+  </nav>
+
+  <main>
+    <section class="card" id="sec-datos">
+      <h2>Datos de la visita</h2>
+      <div class="grid4">
+        <div class="field"><label>Tipo de auditoría</label>
+          <select id="f_tipo">
+            <option value="visita_operativa">Visita Operativa (VEO interna, VEO-CLO Mixto)</option>
+            <option value="veo_externa">VEO Externa 2.0</option>
+            <option value="informe_semanal">Informe Semanal de Operaciones</option>
+          </select>
+        </div>
+        <div id="auditOnlyFields" style="display:contents;">
+        <div class="field"><label>Local</label><select id="f_local"><option value="">Selecciona un local</option></select></div>
+        <div class="field"><label>Fecha / Hora</label><input id="f_fechaHora" type="datetime-local"></div>
+        <div class="field"><label>Area Manager / Supervisor(es)</label><input id="f_supervisores" type="text" placeholder="Nombre del/los supervisor(es)"></div>
+        <div class="field"><label>Visita anterior (fecha)</label><input id="f_visitaAnterior" type="text" placeholder="Ej. 14/06/2026">
+          <div class="desc" id="visitaAnteriorStatus" style="margin-top:4px;"></div>
+        </div>
+        </div>
+      </div>
+      <p class="hint" id="tipoHint" style="margin-top:10px;"></p>
+    </section>
+
+    <div id="auditWrapper">
+    <section class="card" id="sec-resumen">
+      <h2>Resumen ejecutivo</h2>
+      <p class="desc">Puedes escribirlo tú mismo o generar un borrador automático a partir de las puntuaciones que introduzcas más abajo.</p>
+      <div class="row-actions"><button class="btn secondary" type="button" id="btnAutoResumen">Generar borrador automático</button></div>
+      <div class="field" style="margin-bottom:12px;"><label>Resultado global de la visita</label><textarea id="r_global" placeholder="Puntuación total ponderada obtenida y comparación con la visita anterior"></textarea></div>
+      <div class="field" style="margin-bottom:12px;"><label>Bloque con mejor / peor desempeño</label><textarea id="r_bloques"></textarea></div>
+      <div class="field" style="margin-bottom:12px;"><label>Incidencias más relevantes y su gravedad</label><textarea id="r_incidencias"></textarea></div>
+      <div class="field" style="margin-bottom:12px;"><label>Productos no homologados detectados</label><textarea id="r_nohom"></textarea></div>
+      <div class="field"><label>Recomendación principal / prioridad para el local</label><textarea id="r_recomendacion" placeholder="Prioridad principal de actuación para este local"></textarea></div>
+    </section>
+
+    <section class="card" id="sec-global">
+      <h2>1. Puntuación global</h2>
+      <p class="desc">La puntuación de cada bloque se calcula automáticamente como la media ponderada (por nº de ítems) de sus subbloques, rellenados en la sección "Resultados por bloque". Introduce aquí la puntuación de la visita anterior de cada bloque para comparar.</p>
+      <table class="datatable" id="tblGlobal">
+        <thead><tr><th style="text-align:left;">Bloque</th><th>Peso</th><th>Puntuación visita</th><th>Puntuación anterior</th><th>Variación</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="field" style="margin-top:14px;"><label>Comentario sobre la evolución de la puntuación</label><textarea id="f_comentarioPuntuacion" placeholder="Comentario sobre la evolución de la puntuación total y de cada bloque"></textarea></div>
+      <div class="total-band">
+        <div>
+          <div class="lbl">Puntuación total ponderada</div>
+          <div class="delta" id="totalDeltaLbl">vs. anterior: —</div>
+        </div>
+        <div class="num" id="totalScoreBig">— / 10</div>
+      </div>
+    </section>
+
+    <section class="card" id="sec-bloques">
+      <h2>2. Resultados por bloque</h2>
+      <p class="desc">Marca cada ítem del checklist como Sí (100%) o No (0%). La puntuación de cada subbloque y bloque se calcula automáticamente como el % de ítems conformes. En los ítems marcados como "No" puedes adjuntar fotos como evidencia — se incluirán en el informe PDF.</p>
+      <div id="bloquesContainer"></div>
+    </section>
+
+    <section class="card" id="sec-incidencias">
+      <h2>3. Incidencias detectadas</h2>
+      <p class="desc">Hasta 6 incidencias detectadas durante la visita.</p>
+      <table class="datatable" id="tblIncidencias">
+        <thead><tr><th style="width:5%;">Nº</th><th style="width:16%;">Bloque</th><th>Descripción</th><th style="width:11%;">Gravedad</th><th style="width:14%;">Responsable</th><th style="width:12%;">Fecha límite</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="card" id="sec-nohom">
+      <h2>4. Productos no homologados detectados</h2>
+      <p class="desc">Hasta 4 productos, proveedores o materiales fuera del catálogo homologado.</p>
+      <table class="datatable" id="tblNoHom">
+        <thead><tr><th>Producto detectado</th><th>Proveedor</th><th style="width:12%;">Área</th><th>Acción tomada</th><th style="width:13%;">Estado</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="card" id="sec-plan">
+      <h2>5. Plan de acción / Próximos pasos</h2>
+      <p class="desc">Hasta 5 acciones correctivas derivadas de la visita.</p>
+      <table class="datatable" id="tblPlan">
+        <thead><tr><th>Acción</th><th style="width:16%;">Responsable</th><th style="width:14%;">Fecha</th><th style="width:12%;">Prioridad</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="card" id="sec-conclusion">
+      <h2>6. Conclusión</h2>
+      <div class="field"><label>Valoración final</label><textarea id="f_conclusion" placeholder="Valoración final de la visita/auditoría y seguimiento previsto para la próxima" style="min-height:90px;"></textarea></div>
+    </section>
+    </div>
+
+    <div id="semanalWrapper" style="display:none;">
+      <section class="card" id="sec-sem-datos">
+        <h2>Datos generales</h2>
+        <p class="desc">Un informe semanal cubre un grupo de locales a la vez (p.ej. "Madnum · Salamanca"). Añade los locales de este grupo — las secciones de abajo generan una fila por cada uno automáticamente.</p>
+        <div class="field" style="margin-bottom:14px;">
+          <label>Locales del grupo</label>
+          <label style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--navy); cursor:pointer; margin-bottom:8px;">
+            <input type="checkbox" id="semLocalTodos"> Seleccionar todos
+          </label>
+          <div id="semLocalesCheckGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:7px 14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;"></div>
+        </div>
+        <div class="grid4">
+          <div class="field"><label>Semana — inicio</label><input id="sem_semanaInicio" type="date"></div>
+          <div class="field"><label>Semana — fin</label><input id="sem_semanaFin" type="date"></div>
+          <div class="field"><label>Este informe cuenta para</label><div id="semAcumuladoPreview" style="padding:8px 10px; font-size:14px; color:var(--muted);">—</div></div>
+          <div class="field"><label>Preparado para</label><input id="sem_preparadoPara" type="text" placeholder="Opcional"></div>
+        </div>
+        <p class="hint" id="semSemanaPreview" style="margin-top:10px;">Elige fecha de inicio y fin de la semana.</p>
+      </section>
+
+      <section class="card" id="sec-sem-ventas">
+        <h2>Ventas e ingreso por comensal (IC)</h2>
+        <p class="desc">Comparativa semanal — una fila por local del grupo.</p>
+        <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center;">
+          <button class="small-btn" type="button" id="btnSemAnterior">↻ Traer clientes/ventas de la semana anterior</button>
+          <span id="semAnteriorStatus" style="font-size:12px; color:var(--muted);"></span>
+        </div>
+        <table class="datatable" id="tblSemVentas">
+          <thead><tr><th style="text-align:left;">Local</th><th>Clientes (semana)</th><th>Clientes (sem. anterior)</th><th>Ventas semana (€)</th><th>Ventas sem. anterior (€)</th><th>IC semana (€)</th><th>IC sem. anterior (€)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section class="card" id="sec-sem-ventasug">
+        <h2>Venta sugerida</h2>
+        <p class="desc">Por categoría y local, acumulado del mes (igual que Compras y Mermas). En la fila "Total" escribe la venta total del local este mes para que el % salga bien.</p>
+        <div id="semVsOcrBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+          <strong style="font-size:13px; white-space:nowrap;">📷 Rellenar desde una captura</strong>
+          <input type="file" id="semVsOcrFile" accept="image/*" style="flex:1 1 220px; font-size:12px;">
+          <span id="semVsOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Lee el local directamente de la tabla de la captura — añade antes ese local al grupo, arriba en "Datos generales". Es lectura automática: revisa siempre los números.</span>
+        </div>
+        <div class="table-wrap-scroll" style="overflow-x:auto;">
+        <table class="datatable" id="tblSemVentaSugerida">
+          <thead><tr><th style="text-align:left;">Local</th><th style="text-align:left;">Categoría</th><th>Uds.</th><th>KPI %</th><th>€</th><th style="width:13%;">Venta local (mes) €</th><th>% s/venta</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        </div>
+      </section>
+
+      <section class="card" id="sec-sem-compras">
+        <h2>Compras y mermas</h2>
+        <p class="desc">Los datos de la semana (% sobre las ventas de esa semana) y, aparte, el acumulado del mes.</p>
+        <div class="table-wrap-scroll" style="overflow-x:auto;">
+        <table class="datatable" id="tblSemCompras">
+          <thead>
+            <tr>
+              <th rowspan="2" style="text-align:left; vertical-align:bottom;">Local</th>
+              <th colspan="4" style="text-align:center; border-bottom:1px solid var(--border);">Semana</th>
+              <th colspan="4" style="text-align:center; border-bottom:1px solid var(--border);">Acumulado del mes</th>
+            </tr>
+            <tr>
+              <th>Compras (€)</th><th>% Compras s/ventas</th><th>Mermas (€)</th><th>% Mermas</th>
+              <th>Compras (€)</th><th>% Compras s/ventas</th><th>Mermas (€)</th><th>% Mermas</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        </div>
+      </section>
+
+      <section class="card" id="sec-sem-facturas">
+        <h2>Facturas / pedidos pendientes de recepcionar</h2>
+        <p class="desc">Añade o elimina filas según haga falta. Deja la tabla vacía si no hay pendientes.</p>
+        <div id="semFacOcrBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+          <strong style="font-size:13px; white-space:nowrap;">📷 Rellenar desde una captura</strong>
+          <input type="file" id="semFacOcrFile" accept="image/*" style="flex:1 1 220px; font-size:12px;">
+          <span id="semFacOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Lee una tabla con cabecera (#, Fecha, Local, Proveedor, Empleado, Subtotal, Total). Añade las filas que falten. Es lectura automática: revisa siempre los datos, sobre todo nombres de proveedor.</span>
+        </div>
+        <div class="add-btn-row"><button class="small-btn" type="button" id="btnAddSemFactura">+ Añadir factura</button></div>
+        <table class="datatable" id="tblSemFacturas">
+          <thead><tr><th>Nº Factura</th><th style="width:10%;">Fecha</th><th style="width:12%;">Local</th><th>Proveedor</th><th style="width:14%;">Usuario</th><th style="width:10%;">Base (€)</th><th style="width:10%;">Total (€)</th><th style="width:6%;"></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section class="card" id="sec-sem-reservas">
+        <h2>Reservas, walk-ins y no-shows</h2>
+        <div id="semCsvBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+          <strong style="font-size:13px; white-space:nowrap;">📄 Informe de Cover "Tracking de Reservas" (walk-ins / no-shows)</strong>
+          <button type="button" class="small-btn" id="semCsvListBtn">🔄 Ver informes recibidos por email</button>
+          <label style="font-size:12px; color:var(--muted); display:flex; align-items:center; gap:6px;">o sube uno a mano:
+            <input type="file" id="semCsvFile" accept=".csv" style="font-size:12px;">
+          </label>
+          <span id="semCsvStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Rellena antes la semana (inicio/fin) arriba — así se sabe qué filas del informe corresponden a esta semana. Es lectura automática: revisa siempre los números antes de guardar.</span>
+          <div id="semCsvEmailList" class="table-list" style="width:100%; margin:0;"></div>
+        </div>
+        <table class="datatable" id="tblSemReservas">
+          <thead><tr><th style="text-align:left;">Local</th><th>Clientes</th><th>Walk-ins</th><th>% Walk-ins</th><th>No-shows</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section class="card" id="sec-sem-ocupacion">
+        <h2>Ocupación diaria por local y turno</h2>
+        <p class="desc">Un bloque por local y día. La fecha se calcula sola a partir de la semana elegida arriba, y el % de ocupación se calcula solo (comensales ÷ aforo).</p>
+        <div id="semOcupacionCsvBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:10px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+          <strong style="font-size:13px; white-space:nowrap;">📄 Informe de Cover "Número de Personas por Turno y Día"</strong>
+          <input type="file" id="semOcupacionCsvFile" accept=".csv" style="flex:1 1 260px; font-size:12px;">
+          <span id="semOcupacionCsvStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Sube este informe de Cover — rellena Comensales y Aforo de todos los locales y días a la vez (Mesas/Turnos no vienen en este informe, esos siguen a mano). Rellena antes la semana (inicio/fin) arriba.</span>
+        </div>
+        <div id="semOcupacionGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:12px;"></div>
+
+        <h3 style="margin-top:24px;">Comportamiento de las reservas (por franja de 15 min)</h3>
+        <p class="desc">
+          Cuántas reservas entran (incluidos walk-ins) en cada franja de 15 minutos, por día de la semana —
+          se calcula solo al aplicar el informe de Cover arriba en "Reservas, walk-ins y no-shows"
+          (cuenta las que llegaron a entrar: se excluyen canceladas y no-shows). Compara con la semana
+          anterior guardada y avisa si una franja cae mucho.
+        </p>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+          <label style="font-size:13px;">Local: <select id="semFranjasLocal"></select></label>
+          <span id="semFranjasStatus" style="font-size:12px; color:var(--muted);"></span>
+        </div>
+        <div id="semFranjasAlertas"></div>
+        <div class="table-wrap-scroll" style="overflow-x:auto;" id="semFranjasTablaWrap"></div>
+      </section>
+
+      <section class="card" id="sec-sem-valoraciones">
+        <h2>Valoración de clientes (Google Reviews / TheFork Cover)</h2>
+        <table class="datatable" id="tblSemValoraciones">
+          <thead><tr><th style="text-align:left;">Local</th><th>Reseñas GR</th><th>Puntuación GR</th><th>Tendencia GR</th><th>Reseñas Cover</th><th>Puntuación Cover</th><th>Tendencia Cover</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section class="card" id="sec-sem-notas">
+        <h2>Notas y prioridades</h2>
+        <p class="desc">Opcional. Cualquier incidencia, aviso o prioridad que quieras que se recoja explícitamente en el informe.</p>
+        <div class="field"><textarea id="sem_notas" style="min-height:90px;" placeholder="Una por línea…"></textarea></div>
+      </section>
+    </div>
+
+    <div class="generate-bar">
+      <div class="info">Se abrirá el diálogo de impresión del navegador — elige "Guardar como PDF" para descargarlo. Incluye las fotos de los ítems no conformes.<br><a href="./Historico_Auditorias_Saona.html" target="_blank">Ver histórico de auditorías →</a></div>
+      <div style="text-align:right;">
+        <button class="btn" type="button" id="btnSave" style="background:var(--muted);margin-right:8px;">Guardar auditoría</button>
+        <button class="btn" type="button" id="btnGenerate">Generar informe PDF</button>
+        <div id="genStatus"></div>
+        <div id="saveStatus"></div>
+      </div>
+    </div>
+    <footer class="note" id="supabaseNote">Los datos introducidos solo existen en esta sesión del navegador hasta que pulses "Guardar auditoría" (requiere Supabase configurado en config.js). Genera el PDF cuando termines de rellenar la visita.</footer>
+  </main>
+</div>
+
+<script src="./config.js"></script>
+<script>
+/* ---------------------------------------------------------------
+   0. Autenticación (correo corporativo y código) — Supabase Auth.
+
+   Cada Area Manager tiene su propia cuenta con su correo real de
+   Grupo Saona (@gruposaona.com) + un código. Sin sesión válida, la
+   app no muestra el formulario Y Supabase tampoco deja leer/escribir
+   nada (Row Level Security exige auth.role() = 'authenticated' — ver
+   schema.sql).
+   --------------------------------------------------------------- */
+const AUTH_STORAGE_KEY = 'saona_auth_session';
+
+// Correo -> nombre para mostrar y autorrellenar "Area Manager".
+// Añadir aquí una línea por cada persona nueva con cuenta creada en Supabase.
+const USUARIOS_NOMBRE = {
+  'ngarcia@gruposaona.com': 'Nacho García',
+  'acanelon@gruposaona.com': 'Antonio Canelón',
+  'aleiton@gruposaona.com': 'Antonio Leiton',
+  'srodriguez@gruposaona.com': 'Sergio Rodríguez',
+};
+
+function getSession(){
+  try{ const raw = localStorage.getItem(AUTH_STORAGE_KEY); return raw ? JSON.parse(raw) : null; }
+  catch(e){ return null; }
+}
+function setSession(s){ localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(s)); }
+function clearSession(){ localStorage.removeItem(AUTH_STORAGE_KEY); }
+function currentUserName(){
+  const s = getSession();
+  if(!s) return '';
+  return USUARIOS_NOMBRE[s.email] || s.email;
+}
+function accessToken(){ const s = getSession(); return s ? s.access_token : null; }
+
+async function loginConUsuarioCodigo(email, codigo){
+  email = email.trim().toLowerCase();
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password: codigo }),
+  });
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.error_description || data.msg || 'Correo o código incorrectos.');
+  setSession({
+    email,
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    expires_at: Date.now() + (data.expires_in * 1000),
+  });
+}
+
+async function refreshSessionIfNeeded(){
+  const s = getSession();
+  if(!s) return null;
+  if(s.expires_at - Date.now() > 5*60*1000) return s;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: s.refresh_token }),
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error('refresh failed');
+    const updated = { ...s, access_token: data.access_token, refresh_token: data.refresh_token, expires_at: Date.now() + (data.expires_in*1000) };
+    setSession(updated);
+    return updated;
+  }catch(e){ clearSession(); return null; }
+}
+
+function logout(){ clearSession(); location.reload(); }
+
+function showApp(){
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('appRoot').classList.remove('hidden');
+  document.getElementById('userBarName').textContent = currentUserName();
+  const amField = document.getElementById('f_supervisores');
+  if(amField){
+    amField.value = currentUserName();
+    amField.readOnly = true;
+    amField.style.background = '#F0F2F5';
+  }
+}
+function showLogin(){
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('appRoot').classList.add('hidden');
+}
+
+/* Cambiar el código propio: no hace falta el código actual, basta con estar
+   ya autenticado (el token de sesión demuestra quién eres). */
+async function changePassword(newPw){
+  const session = await refreshSessionIfNeeded();
+  if(!session) throw new Error('Tu sesión ha caducado. Recarga la página e inicia sesión de nuevo.');
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    method: 'PUT',
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: newPw }),
+  });
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.msg || data.error_description || 'No se pudo cambiar el código.');
+}
+
+function openChangePw(){
+  document.getElementById('newPw1').value = '';
+  document.getElementById('newPw2').value = '';
+  document.getElementById('changePwStatus').textContent = '';
+  document.getElementById('changePwOverlay').classList.remove('hidden');
+}
+function closeChangePw(){ document.getElementById('changePwOverlay').classList.add('hidden'); }
+
+async function initAuth(){
+  if(typeof SUPABASE_CONFIGURED !== 'undefined' && SUPABASE_CONFIGURED){
+    const session = await refreshSessionIfNeeded();
+    if(session){ showApp(); } else { showLogin(); }
+  } else {
+    // Sin Supabase configurado no hay forma de comprobar usuario/código —
+    // se deja pasar en modo "solo PDF" (igual que el resto de la app).
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('appRoot').classList.remove('hidden');
+  }
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errEl = document.getElementById('loginError');
+    errEl.textContent = '';
+    const email = document.getElementById('loginUsuario').value;
+    const codigo = document.getElementById('loginCodigo').value;
+    if(!email || !codigo){ errEl.textContent = 'Escribe tu correo y tu código.'; return; }
+    try{ await loginConUsuarioCodigo(email, codigo); showApp(); }
+    catch(err){ errEl.textContent = err.message; }
+  });
+  document.getElementById('btnLogout').addEventListener('click', logout);
+  document.getElementById('btnChangePw').addEventListener('click', openChangePw);
+  document.getElementById('btnCancelChangePw').addEventListener('click', closeChangePw);
+  document.getElementById('changePwForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const statusEl = document.getElementById('changePwStatus');
+    const pw1 = document.getElementById('newPw1').value;
+    const pw2 = document.getElementById('newPw2').value;
+    if(pw1.length < 6){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'El código debe tener al menos 6 caracteres.'; return; }
+    if(pw1 !== pw2){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Los dos códigos no coinciden.'; return; }
+    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = 'Guardando…';
+    try{
+      await changePassword(pw1);
+      statusEl.style.color = 'var(--good)';
+      statusEl.textContent = 'Código actualizado. Úsalo la próxima vez que inicies sesión.';
+      setTimeout(closeChangePw, 1500);
+    }catch(err){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = err.message;
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initAuth);
+</script>
+
+<script>
+/* ---------------------------------------------------------------
+   1. Datos del checklist: DOS auditorías independientes.
+
+   - visita_operativa: Visita Operativa interna (VEO-CLO Mixto), la hace
+     el AM/formador de zona de forma recurrente. 4 bloques reales.
+   - veo_externa: Auditoría de Excelencia Operacional externa (VEO Externa
+     2.0). 7 bloques reales, confirmados con un informe VEO Externa 2.0
+     real de 72 páginas (exportado de Yurest, sistema donde se gestiona
+     oficialmente) y 2 correos de resultados reales. Esta app es una
+     alternativa independiente — no sustituye a Yurest.
+
+   Nunca se mezclan entre sí: al cambiar de tipo en el formulario se
+   limpian las respuestas y se carga el checklist del tipo elegido.
+   --------------------------------------------------------------- */
+
+const TIPOS = {
+  visita_operativa: { label: 'Visita Operativa (VEO interna, VEO-CLO Mixto)' },
+  veo_externa: { label: 'VEO Externa 2.0' },
+  informe_semanal: { label: 'Informe Semanal de Operaciones' },
+};
+
+// 13 locales confirmados en informes semanales/VEO ya enviados (Downloads/OneDrive).
+const LOCALES = [
+  'Badalona', 'Balboa', 'Bilbao', 'Cartagena', 'Donostia', 'Glories', 'Lagasca',
+  'Madnum', 'Murcia', 'Pamplona', 'Salamanca', 'Thader', 'Torrevieja', 'Vitoria', 'Zurbano',
+];
+
+const BLOQUES_VISITA_OPERATIVA = [
+  { key:'B1', prefix:'OP', nombre:'1. Operativa', peso:0.6, subs:[
+    {n:1, nombre:'1.1 Calidad de la comida y bebida – Presentación', items:8, textos:[
+      'La presentación, cantidad y temperatura en los platos es correcta.',
+      'Se siguen los charts de presentación para el emplatado.',
+      'Correcta decoración y acompañamiento de los platos. Se limpian las marcas.',
+      'Mise en place organizada y completa para el inicio del servicio.',
+      'Se siguen las recetas de elaboración y se pesan los productos al inicio del servicio.',
+      'Se realiza prueba de sabor por parte de los responsables del local.',
+      'Se tienen montados los platos marcados por la compañía y se almacenan en frío.',
+      'Se controla la salida de platos: entrante, principal, postre con café.',
+    ]},
+    {n:2, nombre:'1.2 Bebidas / Cafés / Postres', items:9, textos:[
+      'Se sirve la cerveza al estilo marcado por la compañía. No se introduce el grifo en el líquido.',
+      'Se sirve el vino en la copa hasta la cantidad indicada.',
+      'Vinos blancos y rosados acompañados en cubitera con lito negro o enfriadores.',
+      'Stock frío de ambos formatos de bebida (cristal - PET).',
+      'Correcto uso de vajilla y cristalería según el tipo de bebida.',
+      'Correcta preparación de cafetería y tiraje de cerveza.',
+      'Postres: presentación y cantidad correcta.',
+      'Copa de vino en copa indicada; vaso correcto para refrescos y agua.',
+      'Se comprueba que las bebidas estén a correcta temperatura (cerveza, vinos blancos, rosados).',
+    ]},
+    {n:3, nombre:'1.3 Frituras, salsas y cremas', items:7, textos:[
+      'Se realiza la comprobación diaria de la calidad del aceite con TESTO calibrado (registro en Yurest).',
+      'Se trabaja con pinzas para evitar manchar los platos.',
+      'Se respeta el tiempo de fritura indicado en el chart; se fríen según demanda.',
+      'Sin exceso de aceite; se usa recipiente con papel absorbente durante el servicio.',
+      'La temperatura de las salsas está por encima de 65°. Se usan termos con tapón.',
+      'Se respeta el chart de clasificación de freidoras.',
+      'Se tienen todos los charts y recetas actualizadas y accesibles.',
+    ]},
+    {n:4, nombre:'1.4 Servicio al cliente – Atención y protocolo', items:7, textos:[
+      'Se usa el saludo correspondiente al momento del día (Buenos días/tardes/noches). Cara sonriente.',
+      'Se acompaña al cliente a mesa ofreciendo la primera bebida en menos de 3 minutos.',
+      'Se emplea lenguaje no verbal agradable y hay contacto visual con el cliente.',
+      'Se emplean fórmulas de cortesía (gracias, por favor) y se habla de \'usted\'.',
+      'Se le deja pasar siempre al cliente primero cuando circulan por la sala.',
+      'Se despide cordialmente y se asegura que el cliente ha estado cómodo.',
+      'Se le da opciones al cliente cuando viene sin reserva. Los camareros van identificados.',
+    ]},
+    {n:5, nombre:'1.5 Venta sugerida y tiempos de servicio', items:8, textos:[
+      'Se ofrece la 1ª bebida al sentar; la 2ª cuando finaliza entrantes o tiene bebida vacía.',
+      'Se sugieren entrantes para picar y se ofrece pan con entrantes/principales.',
+      'Se ofrece el café con los postres. Siempre sale primero postre y luego café.',
+      'Se ofrecen los platos que cocina comunica para evitar desperdicios.',
+      'Primeros: salen entre 5 y 8 min desde la comanda. Segundos: antes de 25 min.',
+      'Los postres salen en menos de 3 min desde la comanda.',
+      'Se realiza un correcto desbarace y orden en office; se retira la panera para postres.',
+      'El runner aprovecha viaje con bandeja cuando tiene varios pedidos.',
+    ]},
+    {n:6, nombre:'1.6 Uniformidad e imagen del personal', items:7, textos:[
+      'Se usan uniformes homologados por la marca: limpios, planchados y completos.',
+      'Se usan uniformes de verano/invierno según la época; no se mezclan. Mandil no supera la cadera.',
+      'Diferenciación correcta del uniforme de sala, cocina y encargados.',
+      'Pelo recogido en coleta/horquillas/trenza; no supera los hombros. Barbas cuidadas.',
+      'Maquillaje discreto. Sin uñas pintadas/postizas; uñas cortas y aseadas.',
+      'Joyería discreta en sala. Sin joyas en cocina.',
+      'Calzado de seguridad con puntera en cocina. Vasos plásticos para personal.',
+    ]},
+    {n:7, nombre:'1.7 Gestión del turno y rentabilidad', items:12, textos:[
+      'Se asigna bien el modo de trabajo',
+      'Hay responsable en el local de sala y de cocina. Los empleados conocen rangos y organización.',
+      'Uso de pinganillos para una correcta comunicación.',
+      'Las posiciones en sala y cocina están marcadas desde el principio del servicio.',
+      'Se aprovecha correctamente el walk-in. Se liberan mesas.',
+      'Control de mermas: cuadernos en ambas áreas; se anotan diariamente en Yurest.',
+      'Todos fichan correctamente.',
+      'Se llama a los clientes antes de marcarlos como \'no show\'.',
+      'Se realizan los checklists de preparación para el servicio (comida/cena). Yurest.',
+      'Menaje suficiente para el turno: vajilla, cubertería, cristalería.',
+      'Provisión de haberes de cafetería (azúcar, infusiones…). Previsión de hielo.',
+      'Cámaras de bebida recargadas; referencias alcohólicas correctas. Barril revisado.',
+    ]},
+    {n:8, nombre:'1.8 Ambiente y cartelería del local', items:5, textos:[
+      'Música acorde a la imagen de la marca (\'Playlist Saona\'). Volumen agradable.',
+      'Sala y barra ordenada y aseada. QRs, cartas físicas en buen estado.',
+      'Carteles imantados en fachada en buen estado. Tarjetas Grupo Saona con postre.',
+      'QRs de encuesta (tarjeta Saona) comunicados al cliente.',
+      'Charts expuestos: vajilla cafetería/cervecería, códigos limpieza, etiquetado, delivery.',
+    ]},
+  ]},
+  { key:'B2', prefix:'SA', nombre:'2. Seguridad Alimentaria', peso:0.2, subs:[
+    {n:1, nombre:'2.1 Registros APPCC y controles diarios', items:7, textos:[
+      'Se comprueba el cumplimiento de los registros APPCC por el responsable a diario.',
+      'Control de recepción de materia prima en Yurest.',
+      'Control de temperaturas de equipos de frío (sala y cocina) en Yurest.',
+      'Control de calidad del aceite en Yurest.',
+      'Control de temperaturas de elaboraciones en caliente (mañana y noche) en Yurest.',
+      'Control de desinfección de frutas y verduras en Yurest.',
+      'Control de tareas de limpieza interna diarias y semanales en Yurest.',
+    ]},
+    {n:2, nombre:'2.2 Contaminación cruzada y almacenamiento', items:7, textos:[
+      'Se colocan de forma ordenada, sin mezclar producto crudo con elaborados.',
+      'La descongelación de alimentos es correcta (siempre en refrigeración).',
+      'Se evita que las materias primas estén en contacto directo con el suelo.',
+      'Se guardan filmadas o herméticamente cerradas; sin embalajes de cartón en cámaras.',
+      'No se tienen cajas o bolsas abiertas en congelador.',
+      'Se realiza almacenamiento rápido de refrigerados al recibir la mercancía.',
+      'Ausencia de vidrio, cartón y latas en refrigeración.',
+    ]},
+    {n:3, nombre:'2.3 Trazabilidad y caducidades', items:7, textos:[
+      'Ausencia de productos caducados (materia prima, producto elaborado o producto abierto).',
+      'Se respetan las tablas de caducidad secundaria y vida útil del producto.',
+      'Se realiza el FIFO con todos los productos; se evita colocar etiquetas encima de las antiguas.',
+      'Todos los productos están etiquetados correctamente.',
+      'Se descongela en refrigeración y se etiqueta correctamente.',
+      'Se evita en todo momento que se rompa la cadena de frío.',
+      'Ausencia de productos congelados que hayan sido ya descongelados anteriormente.',
+    ]},
+    {n:4, nombre:'2.4 Higiene y buenas prácticas de manipulación', items:11, textos:[
+      'Se realiza un correcto lavado de manos; se lavan en cambios de actividad.',
+      'Lavamanos bien abastecido: dispensador de jabón, papel desechable, cartel de procedimiento.',
+      'Las bayetas no se utilizan para limpiarse las manos ni los platos.',
+      'Se lavan con jabón y se aclaran entre uso; al final del día las de cocina se desechan.',
+      'Correcto uso del código de colores de bayetas, tablas de corte y cuchillos.',
+      'Uso correcto de guantes: estado, homologación, cambio en cada cambio de actividad.',
+      'Ausencia de joyería, maquillaje, uñas pintadas o postizas en cocina.',
+      'Se trabaja con materias primas expuestas a Tª ambiente el mínimo tiempo posible.',
+      'Biberones y tuppers: limpios a diario, filmados al guardar, sin restos de etiquetas.',
+      'Se abre el cubo de basura con el pedal (no con la mano).',
+      'Control de vidrio en cocina: no se meten vasos de cristal; recipientes en táper cerrado.',
+    ]},
+    {n:5, nombre:'2.5 Prevención de plagas y control de instalaciones', items:6, textos:[
+      'Rejillas anti-insectos o insectocutor luminoso en funcionamiento.',
+      'Bajo de puertas a exterior sin aperturas.',
+      'Se limpia correctamente debajo y detrás de maquinaria y muebles.',
+      'Techos, suelo, paredes sin agujeros, correctamente sellados.',
+      'Ausencia de plagas en el local. Contrato activo con empresa de control de plagas.',
+      'En los cierres: suelos barridos, fregados y sin comida sin tapar.',
+    ]},
+  ]},
+  { key:'B3', prefix:'II', nombre:'3. Imagen e Instalaciones', peso:0.1, subs:[
+    {n:1, nombre:'3.1 Exterior (fachada y terraza)', items:4, textos:[
+      'Mesas, pies y sillas de la terraza limpias y en buen estado.',
+      'Suelo de terraza bien barrido. Sombrillas, bases y toldos limpios y en buen estado.',
+      'Cristales: limpios y sin marcas. Rótulo de fachada y vinilos en buen estado.',
+      'Entrada: suelos/alfombra limpios, sin restos de comida o grasa.',
+    ]},
+    {n:2, nombre:'3.2 Interior – sala y barra', items:8, textos:[
+      'Suelo, paredes, zócalos, techos y puertas limpios y en buen estado. Pintura en buen estado.',
+      'Mesas y sillas limpias y en buen estado. Sin restos de comida o bebida.',
+      'Vajilla limpia, brillante y sin marcas de cal. Cubertería y cristalería ídem.',
+      'Cafetera y menaje de cafetería limpios. Sin suciedad incrustada.',
+      'Neveras, congeladores interiores limpios. Sin exceso de hielo.',
+      'Rejillas de ventilación limpias. Luces funcionando con bombillas de luz cálida.',
+      'Zona de sala atrayente: distribución coherente de mesas, sillas y cojines.',
+      'Elementos decorativos, plantas y cuadros limpios.',
+    ]},
+    {n:3, nombre:'3.3 Aseos de clientes', items:5, textos:[
+      'Aseos limpios, espejos sin marcas, buen olor. Sin olores fuertes o desagradables.',
+      'Grifos, pomos, cisternas, inodoros en buen estado. Sin roturas o desperfectos.',
+      'Dispensadores de jabón y papel llenos. Papel higiénico disponible.',
+      'Papeleras sin rebosar; bolsas cambiadas después de cada servicio.',
+      'Avisador de minusválidos en funcionamiento. Dispositivos de secado en buen estado.',
+    ]},
+    {n:4, nombre:'3.4 Cocina / Office / Almacén', items:8, textos:[
+      'Suelo, paredes, techo y puertas de cocina limpios. Sin suciedad incrustada.',
+      'Estanterías y mesas de trabajo limpias; correcto estado y desinfección.',
+      'Freidora, microondas, rational y fuegos limpios. Sin suciedad incrustada.',
+      'Maquinaria en buen estado: neveras, congeladores, lavavajillas, fuegos, básculas.',
+      'Pase despejado e imagen cuidada de cara al cliente.',
+      'Office limpio y en buen estado. Descalcificación periódica del lavavajillas.',
+      'Almacén limpio y organizado (bebida y seco). Vestuario en perfectas condiciones.',
+      'Hay buen olor en sala y barra. Ausencia de olor a frituras al entrar.',
+    ]},
+  ]},
+  { key:'B4', prefix:'PNH', nombre:'4. Productos No Homologados', peso:0.1, subs:[
+    {n:1, nombre:'4.1 Control y detección', items:11, textos:[
+      'Se han detectado productos en uso no incluidos en el catálogo homologado de la marca.',
+      'Los productos no homologados han sido retirados o existe justificación documentada.',
+      'El proveedor de los productos no homologados no está en la lista de proveedores aprobados.',
+      'Se ha notificado a responsable de compras/central la presencia de productos no homologados.',
+      'Las materias primas utilizadas corresponden con las fichas técnicas aprobadas.',
+      'El packaging en uso está dentro del catálogo homologado de la marca.',
+      'Los productos de limpieza utilizados están homologados por la marca.',
+      'No se utilizan utensilios o menaje no homologado en cocina o sala.',
+      'Se dispone de básculas homologadas por la empresa.',
+      'Se utilizan los guantes homologados por la marca.',
+      'Los uniformes son los homologados por la marca en la versión correcta de temporada.',
+    ]},
+  ]},
+];
+
+const BLOQUES_VEO_EXTERNA = [
+  { key:'B1', prefix:'SA', nombre:'1. Seguridad Alimentaria', peso:0.15, subs:[
+    {n:1, nombre:'1.1 Registros APPCC y controles diarios', items:7, textos:[
+      'Se comprueba el cumplimiento de los registros APPCC por el responsable a diario.',
+      'Control de recepción de materia prima en Yurest.',
+      'Control de temperaturas de equipos de frío (sala y cocina) en Yurest.',
+      'Control de calidad del aceite en Yurest.',
+      'Control de temperaturas de elaboraciones en caliente (mañana y noche) en Yurest.',
+      'Control de desinfección de frutas y verduras en Yurest.',
+      'Control de tareas de limpieza interna diarias y semanales en Yurest.',
+    ]},
+    {n:2, nombre:'1.2 Contaminación cruzada y almacenamiento', items:7, textos:[
+      'Se colocan de forma ordenada, sin mezclar producto crudo con elaborados.',
+      'La descongelación de alimentos es correcta (siempre en refrigeración).',
+      'Se evita que las materias primas estén en contacto directo con el suelo.',
+      'Se guardan filmadas o herméticamente cerradas; sin embalajes de cartón en cámaras.',
+      'No se tienen cajas o bolsas abiertas en congelador.',
+      'Se realiza almacenamiento rápido de refrigerados al recibir la mercancía.',
+      'Ausencia de vidrio, cartón y latas en refrigeración.',
+    ]},
+    {n:3, nombre:'1.3 Trazabilidad y caducidades', items:7, textos:[
+      'Ausencia de productos caducados (materia prima, producto elaborado o producto abierto).',
+      'Se respetan las tablas de caducidad secundaria y vida útil del producto.',
+      'Se realiza el FIFO con todos los productos; se evita colocar etiquetas encima de las antiguas.',
+      'Todos los productos están etiquetados correctamente.',
+      'Se descongela en refrigeración y se etiqueta correctamente.',
+      'Se evita en todo momento que se rompa la cadena de frío.',
+      'Ausencia de productos congelados que hayan sido ya descongelados anteriormente.',
+    ]},
+    {n:4, nombre:'1.4 Higiene y buenas prácticas de manipulación', items:11, textos:[
+      'Se realiza un correcto lavado de manos; se lavan en cambios de actividad.',
+      'Lavamanos bien abastecido: dispensador de jabón, papel desechable, cartel de procedimiento.',
+      'Las bayetas no se utilizan para limpiarse las manos ni los platos.',
+      'Se lavan con jabón y se aclaran entre uso; al final del día las de cocina se desechan.',
+      'Correcto uso del código de colores de bayetas, tablas de corte y cuchillos.',
+      'Uso correcto de guantes: estado, homologación, cambio en cada cambio de actividad.',
+      'Ausencia de joyería, maquillaje, uñas pintadas o postizas en cocina.',
+      'Se trabaja con materias primas expuestas a Tª ambiente el mínimo tiempo posible.',
+      'Biberones y tuppers: limpios a diario, filmados al guardar, sin restos de etiquetas.',
+      'Se abre el cubo de basura con el pedal (no con la mano).',
+      'Control de vidrio en cocina: no se meten vasos de cristal; recipientes en táper cerrado.',
+    ]},
+    {n:5, nombre:'1.5 Prevención de plagas y control de instalaciones', items:6, textos:[
+      'Rejillas anti-insectos o insectocutor luminoso en funcionamiento.',
+      'Bajo de puertas a exterior sin aperturas.',
+      'Se limpia correctamente debajo y detrás de maquinaria y muebles.',
+      'Techos, suelo, paredes sin agujeros, correctamente sellados.',
+      'Ausencia de plagas en el local. Contrato activo con empresa de control de plagas.',
+      'En los cierres: suelos barridos, fregados y sin comida sin tapar.',
+    ]},
+  ]},
+  { key:'B2', prefix:'FO', nombre:'2. Formación', peso:0.14, subs:[
+    {n:1, nombre:'2.1 Formación inicial', items:1, textos:[
+      'Han accedido todos los trabajadores a Tu Rincón Saona.',
+    ]},
+    {n:2, nombre:'2.2 Prevención de Riesgos Laborales (PRL)', items:7, textos:[
+      'Se informa a los trabajadores del sistema de PRL.',
+      'Se realiza el Curso de PRL por todo el equipo.',
+      'Se disponen todos los carteles corporativos de PRL.',
+      'Control de vidrio en cocina: no se meten vasos de cristal; recipientes de emplatado en táper cerrado.',
+      'Se usa el guante metálico cuando se manipula carnes o pescados.',
+      'Se lleva calzado de seguridad con puntera.',
+      'Se tienen vasos plásticos para el uso de los empleados.',
+    ]},
+    {n:3, nombre:'2.3 Formaciones de plataforma', items:3, textos:[
+      'Se ha realizado el curso "Manipulador de Alimentos" en Tu Rincón Saona.',
+      'Los carnets de Manipulador de Alimentos están impresos, con fecha inferior a 4 años, y archivados correctamente para todo el equipo.',
+      'Se conoce y se ha realizado el curso de "promoción de la igualdad y prevención del acoso laboral".',
+    ]},
+  ]},
+  { key:'B3', prefix:'CB', nombre:'3. Calidad de la Comida y Bebida', peso:0.14, subs:[
+    {n:1, nombre:'3.1 Presentación', items:8, textos:[
+      'La presentación, cantidad y temperatura en los platos es correcta.',
+      'Se siguen los charts de presentación para el emplatado.',
+      'Correcta decoración y acompañamiento de los platos. Se limpian las marcas.',
+      'Mise en place organizada y completa para el inicio del servicio.',
+      'Se siguen las recetas de elaboración y se pesan los productos al inicio del servicio.',
+      'Se realiza prueba de sabor por parte de los responsables del local.',
+      'Se tienen montados los platos marcados por la compañía y se almacenan en frío.',
+      'Se controla la salida de platos: entrante, principal, postre con café.',
+    ]},
+    {n:2, nombre:'3.2 Bebidas / Cafés / Postres', items:9, textos:[
+      'Se sirve la cerveza al estilo marcado por la compañía. No se introduce el grifo en el líquido.',
+      'Se sirve el vino en la copa hasta la cantidad indicada.',
+      'Vinos blancos y rosados acompañados en cubitera con lito negro o enfriadores.',
+      'Stock frío de ambos formatos de bebida (cristal - PET).',
+      'Correcto uso de vajilla y cristalería según el tipo de bebida.',
+      'Correcta preparación de cafetería y tiraje de cerveza.',
+      'Postres: presentación y cantidad correcta.',
+      'Copa de vino en copa indicada; vaso correcto para refrescos y agua.',
+      'Se comprueba que las bebidas estén a correcta temperatura (cerveza, vinos blancos, rosados).',
+    ]},
+    {n:3, nombre:'3.3 Frituras, salsas y cremas', items:7, textos:[
+      'Se realiza la comprobación diaria de la calidad del aceite con TESTO calibrado (registro en Yurest).',
+      'Se trabaja con pinzas para evitar manchar los platos.',
+      'Se respeta el tiempo de fritura indicado en el chart; se fríen según demanda.',
+      'Sin exceso de aceite; se usa recipiente con papel absorbente durante el servicio.',
+      'La temperatura de las salsas está por encima de 65°. Se usan termos con tapón.',
+      'Se respeta el chart de clasificación de freidoras.',
+      'Se tienen todos los charts y recetas actualizadas y accesibles.',
+    ]},
+    {n:4, nombre:'3.4 Uso de menaje y material operativo', items:6, textos:[
+      'Copa de vino en copa indicada y cristalería correcta para bebida alcohólica.',
+      'Se usa el vaso correcto para servir refrescos y agua.',
+      'Se usan vasos y copas correspondientes a la medida y tipo de cerveza.',
+      'Cafés e infusiones en sus tazas correspondientes y presentación correcta.',
+      'La comida se emplata en la vajilla que marca el chart de presentación.',
+      'Se tienen a mano todos los elementos para el servicio (medidores, cucharas, boles, pinzas...).',
+    ]},
+  ]},
+  { key:'B4', prefix:'SC', nombre:'4. Servicio al Cliente', peso:0.15, subs:[
+    {n:1, nombre:'4.1 Atención y protocolo', items:7, textos:[
+      'Se usa el saludo correspondiente al momento del día (Buenos días/tardes/noches). Cara sonriente.',
+      'Se acompaña al cliente a mesa ofreciendo la primera bebida en menos de 3 minutos.',
+      'Se emplea lenguaje no verbal agradable y hay contacto visual con el cliente.',
+      'Se emplean fórmulas de cortesía (gracias, por favor) y se habla de \'usted\'.',
+      'Se le deja pasar siempre al cliente primero cuando circulan por la sala.',
+      'Se despide cordialmente y se asegura que el cliente ha estado cómodo.',
+      'Se le da opciones al cliente cuando viene sin reserva. Los camareros van identificados.',
+    ]},
+    {n:2, nombre:'4.2 Venta sugerida y tiempos de servicio', items:8, textos:[
+      'Se ofrece la 1ª bebida al sentar; la 2ª cuando finaliza entrantes o tiene bebida vacía.',
+      'Se sugieren entrantes para picar y se ofrece pan con entrantes/principales.',
+      'Se ofrece el café con los postres. Siempre sale primero postre y luego café.',
+      'Se ofrecen los platos que cocina comunica para evitar desperdicios.',
+      'Primeros: salen entre 5 y 8 min desde la comanda. Segundos: antes de 25 min.',
+      'Los postres salen en menos de 3 min desde la comanda.',
+      'Se realiza un correcto desbarace y orden en office; se retira la panera para postres.',
+      'El runner aprovecha viaje con bandeja cuando tiene varios pedidos.',
+    ]},
+    {n:3, nombre:'4.3 Servicio en mesa y retirada', items:6, textos:[
+      'Se acompañan los platos con los añadidos correspondientes (toallitas húmedas, cuchillo sierra, cucharas, palillos si el cliente lo solicita).',
+      'Se manipulan correctamente los cubiertos cuando se llevan a la mesa.',
+      'No se dejan los primeros si no hay bebida en la mesa.',
+      'Se colocan los platos y bebidas sin golpear la mesa.',
+      'Se realiza un correcto desbarace y orden en office; se retira la panera cuando están para postres.',
+      'Se realiza el protocolo de recogida de mesa sin clientes.',
+    ]},
+    {n:4, nombre:'4.4 Uniformidad e imagen del personal', items:7, textos:[
+      'Se usan uniformes homologados por la marca: limpios, planchados y completos.',
+      'Se usan uniformes de verano/invierno según la época; no se mezclan. Mandil no supera la cadera.',
+      'Diferenciación correcta del uniforme de sala, cocina y encargados.',
+      'Pelo recogido en coleta/horquillas/trenza; no supera los hombros. Barbas cuidadas.',
+      'Maquillaje discreto. Sin uñas pintadas/postizas; uñas cortas y aseadas.',
+      'Joyería discreta en sala. Sin joyas en cocina.',
+      'Calzado de seguridad con puntera en cocina. Vasos plásticos para personal.',
+    ]},
+  ]},
+  { key:'B5', prefix:'II', nombre:'5. Imagen e Instalaciones', peso:0.14, subs:[
+    {n:1, nombre:'5.1 Exterior (fachada y terraza)', items:4, textos:[
+      'Mesas, pies y sillas de la terraza limpias y en buen estado.',
+      'Suelo de terraza bien barrido. Sombrillas, bases y toldos limpios y en buen estado.',
+      'Cristales: limpios y sin marcas. Rótulo de fachada y vinilos en buen estado.',
+      'Entrada: suelos/alfombra limpios, sin restos de comida o grasa.',
+    ]},
+    {n:2, nombre:'5.2 Interior – sala y barra', items:8, textos:[
+      'Suelo, paredes, zócalos, techos y puertas limpios y en buen estado. Pintura en buen estado.',
+      'Mesas y sillas limpias y en buen estado. Sin restos de comida o bebida.',
+      'Vajilla limpia, brillante y sin marcas de cal. Cubertería y cristalería ídem.',
+      'Cafetera y menaje de cafetería limpios. Sin suciedad incrustada.',
+      'Neveras, congeladores interiores limpios. Sin exceso de hielo.',
+      'Rejillas de ventilación limpias. Luces funcionando con bombillas de luz cálida.',
+      'Zona de sala atrayente: distribución coherente de mesas, sillas y cojines.',
+      'Elementos decorativos, plantas y cuadros limpios.',
+    ]},
+    {n:3, nombre:'5.3 Aseos de clientes', items:5, textos:[
+      'Aseos limpios, espejos sin marcas, buen olor. Sin olores fuertes o desagradables.',
+      'Grifos, pomos, cisternas, inodoros en buen estado. Sin roturas o desperfectos.',
+      'Dispensadores de jabón y papel llenos. Papel higiénico disponible.',
+      'Papeleras sin rebosar; bolsas cambiadas después de cada servicio.',
+      'Avisador de minusválidos en funcionamiento. Dispositivos de secado en buen estado.',
+    ]},
+    {n:4, nombre:'5.4 Cocina / Office / Almacén', items:8, textos:[
+      'Suelo, paredes, techo y puertas de cocina limpios. Sin suciedad incrustada.',
+      'Estanterías y mesas de trabajo limpias; correcto estado y desinfección.',
+      'Freidora, microondas, rational y fuegos limpios. Sin suciedad incrustada.',
+      'Maquinaria en buen estado: neveras, congeladores, lavavajillas, fuegos, básculas.',
+      'Pase despejado e imagen cuidada de cara al cliente.',
+      'Office limpio y en buen estado. Descalcificación periódica del lavavajillas.',
+      'Almacén limpio y organizado (bebida y seco). Vestuario en perfectas condiciones.',
+      'Hay buen olor en sala y barra. Ausencia de olor a frituras al entrar.',
+    ]},
+  ]},
+  { key:'B6', prefix:'GT', nombre:'6. Gestión del Turno y Rentabilidad', peso:0.14, subs:[
+    {n:1, nombre:'6.1 Posicionamiento y organización del turno', items:5, textos:[
+      'Hay responsable en el local de sala y de cocina.',
+      'Los empleados conocen los rangos y la organización estipulada para el servicio.',
+      'Uso de pinganillos para una correcta comunicación.',
+      'Se asigna correctamente el modo de trabajo.',
+      'Se aprovecha correctamente el walk-in; se liberan mesas con agilidad.',
+    ]},
+    {n:2, nombre:'6.2 Preparación, stock y menaje suficiente para el turno', items:5, textos:[
+      'Provisión de haberes de cafetería (azúcar, infusiones, sacarina...) y buena previsión de hielo.',
+      'Se tienen los vinos fríos (blancos, rosados) y botellas abiertas para servicio en copa.',
+      'Cámaras de bebida recargadas; referencias alcohólicas correctas; barril revisado con previsión de otro a mano.',
+      'Menaje suficiente para el turno: vajilla, cubertería, cristalería.',
+      'Packaging para delivery completo: tappers, cubiertos, bolsas, servilletas, bebidas en PET.',
+    ]},
+    {n:3, nombre:'6.3 Control de mermas, fichaje y checklists', items:5, textos:[
+      'Se dispone de cuaderno de anotación de mermas en sala y cocina; se anota diariamente.',
+      'Se cumple el checklist de preparación para el servicio (comida/cena) y el de limpieza diaria. Yurest.',
+      'Todos fichan correctamente.',
+      'Se respeta el horario de apertura, cierre y servicio de delivery.',
+      'Se llama a los clientes antes de marcarlos como "no show".',
+    ]},
+  ]},
+  { key:'B7', prefix:'NO', nombre:'7. Normativa', peso:0.14, subs:[
+    {n:1, nombre:'7.1 Licencias obligatorias', items:2, textos:[
+      'Licencia de apertura (DR) y/o actividad vigente y disponible.',
+      'Licencia de terraza vigente y disponible.',
+    ]},
+    {n:2, nombre:'7.2 Información obligatoria al cliente', items:6, textos:[
+      'Pegatinas de delivery.',
+      'La prohibición de venta de alcohol a menores.',
+      'Cartel de prohibido fumar en el local.',
+      'Cartel de videovigilancia ("está siendo filmado").',
+      'El horario de apertura y cierre.',
+      'Disponibilidad de la información sobre alérgenos.',
+    ]},
+    {n:3, nombre:'7.3 Partes de visitas y servicios obligatorios', items:5, textos:[
+      'Certificado de limpieza de campanas (anual) y partes de limpieza de filtros archivados.',
+      'Contrato de retirada de aceite y limpieza de filtros.',
+      'Certificado de la empresa de control de plagas.',
+      'Contrato de la empresa de mantenimiento de extintores.',
+      'Copia del seguro del local.',
+    ]},
+    {n:4, nombre:'7.4 Hojas de reclamación y elementos obligatorios', items:5, textos:[
+      'Hojas de reclamación a disposición del cliente, correctamente archivadas.',
+      'Extintores colocados y en vigor (fecha).',
+      'Se dispone de todos los elementos de seguridad y caballete "Peligro Suelo Mojado".',
+      'Cumplimiento de homologaciones de la marca (productos de limpieza, decoración).',
+      'Se tiene impresa la última Visita de Excelencia Operacional (VEO); archivo de visitas.',
+    ]},
+  ]},
+];
+
+const CHECKLISTS = {
+  visita_operativa: { ...TIPOS.visita_operativa, bloques: BLOQUES_VISITA_OPERATIVA },
+  veo_externa: { ...TIPOS.veo_externa, bloques: BLOQUES_VEO_EXTERNA },
+};
+
+let currentTipo = 'visita_operativa';
+let BLOQUES = CHECKLISTS[currentTipo].bloques;
+const GRAVEDADES = ['Alta','Media','Baja'];
+const ESTADOS_PNH = ['Pendiente','En revisión','Retirado','Resuelto'];
+const PRIORIDADES = ['Alta','Media','Baja'];
+const N_INC = 6, N_PNHD = 4, N_PLAN = 5;
+
+/* ---------------------------------------------------------------
+   2. Render dinámico de los formularios
+   --------------------------------------------------------------- */
+function el(tag, attrs, children){
+  const e = document.createElement(tag);
+  if(attrs) for(const k in attrs){
+    if(k === 'text') e.textContent = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if(children) children.forEach(c => c && e.appendChild(c));
+  return e;
+}
+
+/* itemPhotos[key] = array of File objects, key = `${prefix}${subN}_i${itemIndex}` */
+const itemPhotos = {};
+/* obsDirty: ids of observaciones textareas the user has edited by hand -
+   recalc() stops overwriting them once the user has typed something */
+const obsDirty = new Set();
+
+function itemKey(prefix, subN, i){ return `${prefix}${subN}_i${i}`; }
+
+function setItemAnswer(prefix, subN, i, value){
+  const wrap = document.getElementById(`itemrow_${itemKey(prefix,subN,i)}`);
+  wrap.dataset.answer = value;
+  wrap.querySelector('.si').classList.toggle('active', value === 'Si');
+  wrap.querySelector('.no').classList.toggle('active', value === 'No');
+  const photosBox = wrap.querySelector('.item-photos');
+  photosBox.style.display = (value === 'No') ? '' : 'none';
+  recalc();
+}
+
+function renderThumbs(key){
+  const box = document.getElementById(`thumbs_${key}`);
+  if(!box) return;
+  box.innerHTML = '';
+  (itemPhotos[key] || []).forEach((file, idx) => {
+    const thumb = el('div', {class:'thumb'});
+    const img = el('img');
+    img.src = URL.createObjectURL(file);
+    const rm = el('button', {type:'button', class:'rm', text:'×'});
+    rm.addEventListener('click', () => {
+      itemPhotos[key].splice(idx, 1);
+      renderThumbs(key);
+    });
+    thumb.appendChild(img); thumb.appendChild(rm);
+    box.appendChild(thumb);
+  });
+}
+
+function renderBloques(){
+  const container = document.getElementById('bloquesContainer');
+  BLOQUES.forEach(bloque => {
+    const wrap = el('div', {style:'margin-bottom:26px;'});
+    const summary = el('div', {class:'block-summary', id:'summary-'+bloque.key});
+    summary.innerHTML = `<div><div class="name">${bloque.nombre}</div><div class="peso">Peso: ${(bloque.peso*100).toFixed(0)}%</div></div><div class="score" id="score-${bloque.key}">— / 10</div>`;
+    wrap.appendChild(summary);
+
+    bloque.subs.forEach(s => {
+      const details = el('details', {class:'sub-details', id:`details-${bloque.prefix}${s.n}`});
+      if(s.n === 1) details.setAttribute('open', '');
+      const summaryEl = el('summary');
+      summaryEl.innerHTML = `<span class="sub-name">${s.nombre}<span class="items">${s.items} ítems</span></span><span class="sub-score" id="subscore-${bloque.prefix}${s.n}">— / 10</span>`;
+      details.appendChild(summaryEl);
+
+      const itemsList = el('div', {class:'items-list'});
+      for(let i = 1; i <= s.items; i++){
+        const key = itemKey(bloque.prefix, s.n, i);
+        const row = el('div', {class:'item-row', id:`itemrow_${key}`});
+        row.dataset.answer = '';
+        row.appendChild(el('div', {class:'item-label', text:subItemLabel(s, i)}));
+
+        const toggle = el('div', {class:'item-toggle'});
+        const btnSi = el('button', {type:'button', class:'si', text:'Sí'});
+        const btnNo = el('button', {type:'button', class:'no', text:'No'});
+        btnSi.addEventListener('click', () => setItemAnswer(bloque.prefix, s.n, i, 'Si'));
+        btnNo.addEventListener('click', () => setItemAnswer(bloque.prefix, s.n, i, 'No'));
+        toggle.appendChild(btnSi); toggle.appendChild(btnNo);
+        row.appendChild(toggle);
+
+        const photosBox = el('div', {class:'item-photos', style:'display:none;'});
+        const fileInput = el('input', {type:'file', accept:'image/*', multiple:'multiple'});
+        fileInput.addEventListener('change', (ev) => {
+          if(!itemPhotos[key]) itemPhotos[key] = [];
+          Array.from(ev.target.files).forEach(f => itemPhotos[key].push(f));
+          fileInput.value = '';
+          renderThumbs(key);
+        });
+        const thumbRow = el('div', {class:'thumb-row', id:`thumbs_${key}`});
+        photosBox.appendChild(fileInput);
+        photosBox.appendChild(thumbRow);
+        row.appendChild(photosBox);
+
+        itemsList.appendChild(row);
+      }
+      details.appendChild(itemsList);
+
+      const obsWrap = el('div', {style:'padding:8px 14px 12px;'});
+      const obsInput = el('textarea', {id:`sub_${bloque.prefix}${s.n}_obs`, placeholder:'Observaciones (se rellenan automáticamente con los ítems no conformes; puedes editarlas)'});
+      obsInput.addEventListener('input', () => obsDirty.add(obsInput.id));
+      obsWrap.appendChild(obsInput);
+      details.appendChild(obsWrap);
+
+      wrap.appendChild(details);
+    });
+    container.appendChild(wrap);
+  });
+}
+
+function renderGlobalTable(){
+  const tbody = document.querySelector('#tblGlobal tbody');
+  BLOQUES.forEach(bloque => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="text-align:left; font-weight:600;">${bloque.nombre}</td>
+      <td style="text-align:center;">${(bloque.peso*100).toFixed(0)}%</td>
+      <td style="text-align:center; font-weight:700;" id="gvis-${bloque.key}">—</td>
+      <td style="text-align:center;"><input type="number" min="0" max="10" step="0.1" id="gant_${bloque.key}" style="text-align:center;" placeholder="—"></td>
+      <td style="text-align:center;" id="gvar-${bloque.key}">—</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  const trTotal = document.createElement('tr');
+  trTotal.innerHTML = `
+    <td style="text-align:left; font-weight:800;">PUNTUACIÓN TOTAL PONDERADA</td>
+    <td style="text-align:center; font-weight:800;">100%</td>
+    <td style="text-align:center; font-weight:800;" id="gvis-TOTAL">—</td>
+    <td style="text-align:center; font-weight:800;" id="gant-TOTAL">—</td>
+    <td style="text-align:center; font-weight:800;" id="gvar-TOTAL">—</td>
+  `;
+  tbody.appendChild(trTotal);
+  document.querySelectorAll('#tblGlobal input').forEach(inp => inp.addEventListener('input', recalc));
+}
+
+function renderIncidencias(){
+  const tbody = document.querySelector('#tblIncidencias tbody');
+  for(let i=1;i<=N_INC;i++){
+    const tr = document.createElement('tr');
+    const tdN = el('td', {style:'text-align:center;font-weight:700;', text:String(i)});
+    const tdBloque = el('td');
+    const selBloque = el('select', {id:`inc${i}_bloque`});
+    selBloque.appendChild(el('option', {value:'', text:'—'}));
+    BLOQUES.forEach(b => selBloque.appendChild(el('option', {value:b.nombre, text:b.nombre})));
+    tdBloque.appendChild(selBloque);
+    const tdDesc = el('td'); tdDesc.appendChild(el('textarea', {id:`inc${i}_desc`, placeholder:'Descripción de la incidencia'}));
+    const tdGrav = el('td');
+    const selGrav = el('select', {id:`inc${i}_grav`});
+    selGrav.appendChild(el('option', {value:'', text:'—'}));
+    GRAVEDADES.forEach(g => selGrav.appendChild(el('option', {value:g, text:g})));
+    tdGrav.appendChild(selGrav);
+    const tdResp = el('td'); tdResp.appendChild(el('input', {type:'text', id:`inc${i}_resp`}));
+    const tdFecha = el('td'); tdFecha.appendChild(el('input', {type:'text', id:`inc${i}_fecha`, placeholder:'dd/mm/aaaa'}));
+    tr.appendChild(tdN); tr.appendChild(tdBloque); tr.appendChild(tdDesc); tr.appendChild(tdGrav); tr.appendChild(tdResp); tr.appendChild(tdFecha);
+    tbody.appendChild(tr);
+  }
+}
+
+function renderNoHom(){
+  const tbody = document.querySelector('#tblNoHom tbody');
+  for(let i=1;i<=N_PNHD;i++){
+    const tr = document.createElement('tr');
+    const tdProd = el('td'); tdProd.appendChild(el('input', {type:'text', id:`pnhd${i}_producto`}));
+    const tdProv = el('td'); tdProv.appendChild(el('input', {type:'text', id:`pnhd${i}_proveedor`}));
+    const tdArea = el('td'); tdArea.appendChild(el('input', {type:'text', id:`pnhd${i}_area`}));
+    const tdAccion = el('td'); tdAccion.appendChild(el('textarea', {id:`pnhd${i}_accion`}));
+    const tdEstado = el('td');
+    const selEstado = el('select', {id:`pnhd${i}_estado`});
+    selEstado.appendChild(el('option', {value:'', text:'—'}));
+    ESTADOS_PNH.forEach(s => selEstado.appendChild(el('option', {value:s, text:s})));
+    tdEstado.appendChild(selEstado);
+    tr.appendChild(tdProd); tr.appendChild(tdProv); tr.appendChild(tdArea); tr.appendChild(tdAccion); tr.appendChild(tdEstado);
+    tbody.appendChild(tr);
+  }
+}
+
+function renderPlan(){
+  const tbody = document.querySelector('#tblPlan tbody');
+  for(let i=1;i<=N_PLAN;i++){
+    const tr = document.createElement('tr');
+    const tdAccion = el('td'); tdAccion.appendChild(el('textarea', {id:`plan${i}_accion`}));
+    const tdResp = el('td'); tdResp.appendChild(el('input', {type:'text', id:`plan${i}_resp`}));
+    const tdFecha = el('td'); tdFecha.appendChild(el('input', {type:'text', id:`plan${i}_fecha`, placeholder:'dd/mm/aaaa'}));
+    const tdPrio = el('td');
+    const selPrio = el('select', {id:`plan${i}_prioridad`});
+    selPrio.appendChild(el('option', {value:'', text:'—'}));
+    PRIORIDADES.forEach(p => selPrio.appendChild(el('option', {value:p, text:p})));
+    tdPrio.appendChild(selPrio);
+    tr.appendChild(tdAccion); tr.appendChild(tdResp); tr.appendChild(tdFecha); tr.appendChild(tdPrio);
+    tbody.appendChild(tr);
+  }
+}
+
+/* ---------------------------------------------------------------
+   3. Cálculo de puntuaciones
+   --------------------------------------------------------------- */
+function val(id){
+  const e = document.getElementById(id);
+  if(!e) return null;
+  const v = e.value;
+  if(v === '' || v === null || v === undefined) return null;
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+function fmtScore(v){ return (v===null) ? '—' : (v.toFixed(1) + ' / 10'); }
+function fmtDelta(v){ if(v===null) return '—'; const s = v > 0 ? '+' : ''; return s + v.toFixed(1); }
+function colorFor(v){
+  if(v===null) return 'var(--muted)';
+  if(v >= 8) return 'var(--good)';
+  if(v >= 6) return 'var(--warn)';
+  return 'var(--bad)';
+}
+
+/* Texto de un ítem: usa la pregunta real del checklist si está disponible,
+   o "Ítem N" si no se conoce el enunciado. */
+function subItemText(s, i){
+  return (s.textos && s.textos[i-1]) ? s.textos[i-1] : null;
+}
+function subItemLabel(s, i){
+  const t = subItemText(s, i);
+  return t ? `${i}. ${t}` : `Ítem ${i}`;
+}
+function subItemShort(s, i){
+  const t = subItemText(s, i);
+  return t ? `Ítem ${i} — ${t}` : `Ítem ${i}`;
+}
+
+/* Puntuación de un subbloque a partir de las respuestas Sí/No de sus ítems:
+   cada "Sí" cuenta 100%, cada "No" cuenta 0%; los ítems sin responder no cuentan. */
+function subAnswers(prefix, s){
+  let si = 0, no = 0;
+  const noItems = [];
+  for(let i = 1; i <= s.items; i++){
+    const row = document.getElementById(`itemrow_${itemKey(prefix, s.n, i)}`);
+    if(!row) continue;
+    const answer = row.dataset.answer;
+    if(answer === 'Si') si++;
+    else if(answer === 'No'){ no++; noItems.push(i); }
+  }
+  const answered = si + no;
+  const score = answered === 0 ? null : (si / answered) * 10;
+  return { si, no, answered, noItems, score };
+}
+
+function subScore(prefix, s){
+  return subAnswers(prefix, s).score;
+}
+
+function blockScore(bloque){
+  let sum = 0, totalItems = 0;
+  bloque.subs.forEach(s => {
+    const v = subScore(bloque.prefix, s);
+    if(v !== null){ sum += v * s.items; totalItems += s.items; }
+  });
+  return totalItems === 0 ? null : sum / totalItems;
+}
+
+function updateSubDisplaysAndObs(){
+  BLOQUES.forEach(bloque => {
+    bloque.subs.forEach(s => {
+      const a = subAnswers(bloque.prefix, s);
+      const el2 = document.getElementById(`subscore-${bloque.prefix}${s.n}`);
+      if(el2){ el2.textContent = fmtScore(a.score); el2.style.color = colorFor(a.score); }
+      const obsId = `sub_${bloque.prefix}${s.n}_obs`;
+      if(!obsDirty.has(obsId)){
+        const obsEl = document.getElementById(obsId);
+        if(obsEl){
+          let text;
+          if(a.answered === 0) text = '';
+          else if(a.noItems.length === 0) text = 'Todos los ítems conformes.';
+          else text = `Ítems no conformes: ${a.noItems.map(i => subItemShort(s, i)).join(' · ')}.`;
+          obsEl.value = text;
+        }
+      }
+    });
+  });
+}
+
+function recalc(){
+  updateSubDisplaysAndObs();
+  let totalVis = 0, totalAnt = 0, anyVis = false, anyAnt = false;
+  const blockScores = {};
+  BLOQUES.forEach(bloque => {
+    const bs = blockScore(bloque);
+    blockScores[bloque.key] = bs;
+    const scoreEl = document.getElementById(`score-${bloque.key}`);
+    scoreEl.textContent = fmtScore(bs);
+    scoreEl.style.color = colorFor(bs);
+    document.getElementById(`gvis-${bloque.key}`).textContent = fmtScore(bs);
+    const ant = val(`gant_${bloque.key}`);
+    document.getElementById(`gvar-${bloque.key}`).textContent = (bs !== null && ant !== null) ? fmtDelta(bs - ant) : '—';
+    if(bs !== null){ totalVis += bs * bloque.peso; anyVis = true; }
+    if(ant !== null){ totalAnt += ant * bloque.peso; anyAnt = true; }
+  });
+  const totalVisFinal = anyVis ? totalVis : null;
+  const totalAntFinal = anyAnt ? totalAnt : null;
+  document.getElementById('gvis-TOTAL').textContent = fmtScore(totalVisFinal);
+  document.getElementById('gant-TOTAL').textContent = fmtScore(totalAntFinal);
+  document.getElementById('gvar-TOTAL').textContent = (totalVisFinal !== null && totalAntFinal !== null) ? fmtDelta(totalVisFinal - totalAntFinal) : '—';
+  document.getElementById('totalScoreBig').textContent = fmtScore(totalVisFinal);
+  document.getElementById('totalDeltaLbl').textContent = 'vs. anterior: ' + ((totalVisFinal !== null && totalAntFinal !== null) ? fmtDelta(totalVisFinal - totalAntFinal) : '—');
+  document.getElementById('miniScore').textContent = totalVisFinal !== null ? totalVisFinal.toFixed(1) : '—';
+  window._blockScores = blockScores;
+  window._totalVis = totalVisFinal;
+  window._totalAnt = totalAntFinal;
+}
+
+/* ---------------------------------------------------------------
+   4. Borrador automático del resumen ejecutivo
+   --------------------------------------------------------------- */
+function autoResumen(){
+  recalc();
+  const bs = window._blockScores || {};
+  const entries = BLOQUES.map(b => ({nombre:b.nombre, score:bs[b.key]})).filter(e => e.score !== null);
+  let globalTxt = '';
+  if(window._totalVis !== null){
+    globalTxt = `La visita obtuvo una puntuación total ponderada de ${window._totalVis.toFixed(1)} / 10`;
+    if(window._totalAnt !== null){
+      globalTxt += ` frente a ${window._totalAnt.toFixed(1)} / 10 en la visita anterior (variación ${fmtDelta(window._totalVis - window._totalAnt)}).`;
+    } else {
+      globalTxt += '.';
+    }
+  } else {
+    globalTxt = 'Puntuación total ponderada pendiente de completar las puntuaciones por bloque.';
+  }
+  document.getElementById('r_global').value = globalTxt;
+
+  let bloquesTxt = '';
+  if(entries.length){
+    const mejor = entries.reduce((a,b) => b.score > a.score ? b : a);
+    const peor = entries.reduce((a,b) => b.score < a.score ? b : a);
+    bloquesTxt = `El bloque con mejor desempeño fue "${mejor.nombre}" (${mejor.score.toFixed(1)} / 10) y el de peor desempeño fue "${peor.nombre}" (${peor.score.toFixed(1)} / 10).`;
+  }
+  document.getElementById('r_bloques').value = bloquesTxt;
+
+  let incCount = 0, incAlta = 0, incMedia = 0, incBaja = 0;
+  for(let i=1;i<=N_INC;i++){
+    const desc = document.getElementById(`inc${i}_desc`).value.trim();
+    if(desc){
+      incCount++;
+      const grav = document.getElementById(`inc${i}_grav`).value;
+      if(grav === 'Alta') incAlta++; else if(grav === 'Media') incMedia++; else if(grav === 'Baja') incBaja++;
+    }
+  }
+  document.getElementById('r_incidencias').value = incCount
+    ? `Se detectaron ${incCount} incidencia(s) durante la visita (${incAlta} de gravedad alta, ${incMedia} media, ${incBaja} baja).`
+    : 'No se detectaron incidencias relevantes durante la visita.';
+
+  let nohomItems = [];
+  for(let i=1;i<=N_PNHD;i++){
+    const prod = document.getElementById(`pnhd${i}_producto`).value.trim();
+    if(prod) nohomItems.push(prod);
+  }
+  document.getElementById('r_nohom').value = nohomItems.length
+    ? `Se detectaron ${nohomItems.length} producto(s) no homologado(s): ${nohomItems.join(', ')}.`
+    : 'No se detectaron productos no homologados en esta visita.';
+}
+
+function v(id){ const e = document.getElementById(id); return e ? e.value : ''; }
+// El selector de fecha/hora guarda "AAAA-MM-DDTHH:MM" (formato nativo del navegador);
+// se convierte a "DD/MM/AAAA · HH:MM" para no cambiar el formato que ya usan el informe
+// generado y el histórico guardado hasta ahora como texto libre.
+function fechaHoraTexto(){
+  const raw = v('f_fechaHora');
+  if(!raw) return '';
+  const [fecha, hora] = raw.split('T');
+  if(!fecha || !hora) return raw;
+  const [y, m, d] = fecha.split('-');
+  return `${d}/${m}/${y} · ${hora}`;
+}
+
+/* ---------------------------------------------------------------
+   Semana del Informe Semanal (fecha inicio/fin -> texto derivado).
+   Igual que fechaHoraTexto(): se parte el ISO a mano y se construye
+   con new Date(y, m-1, d) — NUNCA new Date(isoString) directo, que
+   interpreta la fecha en UTC y puede mostrar un día menos según el
+   huso horario del navegador.
+   --------------------------------------------------------------- */
+function parseISODateLocal(iso){
+  if(!iso) return null;
+  const [y, m, d] = iso.split('-').map(Number);
+  if(!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+function fmtCorto(d){ return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`; }
+function capitaliza(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function semanaDerivada(){
+  const ini = parseISODateLocal(v('sem_semanaInicio'));
+  const fin = parseISODateLocal(v('sem_semanaFin'));
+  if(!ini || !fin) return null;
+  const mismoMes = ini.getMonth() === fin.getMonth() && ini.getFullYear() === fin.getFullYear();
+  const texto = mismoMes
+    ? `${ini.getDate()} al ${fin.getDate()} de ${MESES_ES[fin.getMonth()]} de ${fin.getFullYear()}`
+    : `${ini.getDate()} de ${MESES_ES[ini.getMonth()]} al ${fin.getDate()} de ${MESES_ES[fin.getMonth()]} de ${fin.getFullYear()}`;
+  const corto = `${fmtCorto(ini)}–${fmtCorto(fin)}`;
+  const mes = fin.getMonth() + 1;
+  const anio = fin.getFullYear();
+  const mesLabel = `${capitaliza(MESES_ES[fin.getMonth()])} ${anio}`;
+  return { texto, corto, mes, anio, mesLabel };
+}
+
+function updateSemanaPreview(){
+  const d = semanaDerivada();
+  const semEl = document.getElementById('semSemanaPreview');
+  const acEl = document.getElementById('semAcumuladoPreview');
+  if(!d){
+    semEl.textContent = 'Elige fecha de inicio y fin de la semana.';
+    acEl.textContent = '—';
+    return;
+  }
+  semEl.textContent = `Se guardará como: ${d.texto} (${d.corto})`;
+  acEl.textContent = `Acumulado de ${d.mesLabel}`;
+}
+function scoreTok(n){ return (n===null || n===undefined || isNaN(n)) ? '—' : n.toFixed(1) + ' / 10'; }
+function deltaTok(n){ if(n===null || n===undefined || isNaN(n)) return '—'; const s = n > 0 ? '+' : ''; return s + n.toFixed(1); }
+
+function buildTokenMap(){
+  recalc();
+  const bs = window._blockScores || {};
+  const map = {};
+  map['LOCAL'] = v('f_local');
+  map['FECHA_HORA'] = fechaHoraTexto();
+  map['SUPERVISORES'] = v('f_supervisores');
+  map['VISITA_ANTERIOR'] = v('f_visitaAnterior');
+
+  map['RESUMEN_GLOBAL'] = v('r_global');
+  map['RESUMEN_BLOQUES'] = v('r_bloques');
+  map['RESUMEN_INCIDENCIAS'] = v('r_incidencias');
+  map['RESUMEN_NOHOM'] = v('r_nohom');
+  map['RESUMEN_RECOMENDACION'] = v('r_recomendacion');
+
+  BLOQUES.forEach(bloque => {
+    const bScore = bs[bloque.key];
+    const ant = val(`gant_${bloque.key}`);
+    map[`${bloque.key}_PVIS`] = scoreTok(bScore);
+    map[`${bloque.key}_PANT`] = scoreTok(ant);
+    map[`${bloque.key}_VAR`] = (bScore !== null && ant !== null) ? deltaTok(bScore - ant) : '—';
+    bloque.subs.forEach(s => {
+      map[`${bloque.prefix}${s.n}_PUNT`] = scoreTok(subScore(bloque.prefix, s));
+      map[`${bloque.prefix}${s.n}_OBS`] = v(`sub_${bloque.prefix}${s.n}_obs`);
+    });
+  });
+  map['TOTAL_PVIS'] = scoreTok(window._totalVis);
+  map['TOTAL_PANT'] = scoreTok(window._totalAnt);
+  map['TOTAL_VAR'] = (window._totalVis !== null && window._totalAnt !== null) ? deltaTok(window._totalVis - window._totalAnt) : '—';
+  map['COMENTARIO_PUNTUACION'] = v('f_comentarioPuntuacion');
+
+  for(let i=1;i<=N_INC;i++){
+    map[`INC${i}_BLOQUE`] = v(`inc${i}_bloque`);
+    map[`INC${i}_DESC`] = v(`inc${i}_desc`);
+    map[`INC${i}_GRAV`] = v(`inc${i}_grav`);
+    map[`INC${i}_RESP`] = v(`inc${i}_resp`);
+    map[`INC${i}_FECHA`] = v(`inc${i}_fecha`);
+  }
+  for(let i=1;i<=N_PNHD;i++){
+    map[`PNHD${i}_PRODUCTO`] = v(`pnhd${i}_producto`);
+    map[`PNHD${i}_PROVEEDOR`] = v(`pnhd${i}_proveedor`);
+    map[`PNHD${i}_AREA`] = v(`pnhd${i}_area`);
+    map[`PNHD${i}_ACCION`] = v(`pnhd${i}_accion`);
+    map[`PNHD${i}_ESTADO`] = v(`pnhd${i}_estado`);
+  }
+  for(let i=1;i<=N_PLAN;i++){
+    map[`PLAN${i}_ACCION`] = v(`plan${i}_accion`);
+    map[`PLAN${i}_RESP`] = v(`plan${i}_resp`);
+    map[`PLAN${i}_FECHA`] = v(`plan${i}_fecha`);
+    map[`PLAN${i}_PRIORIDAD`] = v(`plan${i}_prioridad`);
+  }
+  map['CONCLUSION'] = v('f_conclusion');
+  return map;
+}
+
+/* ---------------------------------------------------------------
+   5. Generación del informe en PDF — usa el diálogo de impresión del
+   navegador ("Guardar como PDF"), sin depender de librerías externas
+   ni de un servidor de conversión. Reutiliza los mismos datos que ya
+   calcula la app (buildTokenMap, puntuaciones por bloque, fotos).
+   --------------------------------------------------------------- */
+function escapeHtmlPdf(s){
+  const div = document.createElement('div');
+  div.textContent = s === null || s === undefined ? '' : String(s);
+  return div.innerHTML;
+}
+
+async function fileToJpegDataUrl(file, maxDim, quality){
+  maxDim = maxDim || 1000; quality = quality || 0.8;
+  const bitmap = await createImageBitmap(file);
+  let w = bitmap.width, h = bitmap.height;
+  const scale = Math.min(1, maxDim / Math.max(w, h));
+  w = Math.max(1, Math.round(w * scale));
+  h = Math.max(1, Math.round(h * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
+async function buildFotosPdfHtml(){
+  const groups = [];
+  BLOQUES.forEach(bloque => {
+    bloque.subs.forEach(s => {
+      for(let i = 1; i <= s.items; i++){
+        const key = itemKey(bloque.prefix, s.n, i);
+        const row = document.getElementById(`itemrow_${key}`);
+        if(!row || row.dataset.answer !== 'No') continue;
+        const files = itemPhotos[key] || [];
+        if(!files.length) continue;
+        groups.push({ label: `${bloque.nombre} · ${s.nombre} · ${subItemShort(s, i)} — No conforme`, files });
+      }
+    });
+  });
+  if(!groups.length) return '<p class="pdf-muted"><em>No se han adjuntado fotografías en esta visita.</em></p>';
+  let html = '';
+  for(const g of groups){
+    html += `<div class="pdf-photogroup"><div class="pdf-photolabel">${escapeHtmlPdf(g.label)}</div><div class="pdf-photos">`;
+    for(const file of g.files){
+      const dataUrl = await fileToJpegDataUrl(file);
+      html += `<img src="${dataUrl}" class="pdf-photo">`;
+    }
+    html += `</div></div>`;
+  }
+  return html;
+}
+
+function pdfTableHtml(rowsHtml, headHtml){
+  return rowsHtml ? `<table class="pdf-table"><thead><tr>${headHtml}</tr></thead><tbody>${rowsHtml}</tbody></table>` : '';
+}
+
+async function generatePdf(){
+  const statusEl = document.getElementById('genStatus');
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Generando informe…';
+  try{
+    const map = buildTokenMap();
+    const bs = window._blockScores || {};
+
+    let bloquesRows = '';
+    BLOQUES.forEach(bloque => {
+      const score = bs[bloque.key];
+      const ant = val(`gant_${bloque.key}`);
+      bloquesRows += `<tr>
+        <td>${escapeHtmlPdf(bloque.nombre)}</td>
+        <td class="c">${(bloque.peso*100).toFixed(0)}%</td>
+        <td class="c">${scoreTok(score)}</td>
+        <td class="c">${ant !== null ? ant.toFixed(1)+' / 10' : '—'}</td>
+        <td class="c">${(score !== null && ant !== null) ? deltaTok(score-ant) : '—'}</td>
+      </tr>`;
+    });
+    bloquesRows += `<tr class="pdf-total">
+      <td>PUNTUACIÓN TOTAL PONDERADA</td>
+      <td class="c">100%</td>
+      <td class="c">${scoreTok(window._totalVis)}</td>
+      <td class="c">${scoreTok(window._totalAnt)}</td>
+      <td class="c">${(window._totalVis !== null && window._totalAnt !== null) ? deltaTok(window._totalVis-window._totalAnt) : '—'}</td>
+    </tr>`;
+
+    let bloquesDetail = '';
+    BLOQUES.forEach(bloque => {
+      bloquesDetail += `<div class="pdf-bloque-title">${escapeHtmlPdf(bloque.nombre)} — Peso: ${(bloque.peso*100).toFixed(0)}% — Puntuación: ${scoreTok(bs[bloque.key])}</div>`;
+      bloque.subs.forEach(s => {
+        const subSc = subScore(bloque.prefix, s);
+        const obsVal = v(`sub_${bloque.prefix}${s.n}_obs`);
+        bloquesDetail += `<div class="pdf-sub-title">${escapeHtmlPdf(s.nombre)} (${s.items} ítems) — ${scoreTok(subSc)}</div>`;
+        if(obsVal) bloquesDetail += `<div class="pdf-sub-obs">${escapeHtmlPdf(obsVal)}</div>`;
+      });
+    });
+
+    let incRows = '';
+    for(let i=1;i<=N_INC;i++){
+      const desc = v(`inc${i}_desc`);
+      if(!desc) continue;
+      incRows += `<tr><td>${i}</td><td>${escapeHtmlPdf(v(`inc${i}_bloque`))}</td><td>${escapeHtmlPdf(desc)}</td><td>${escapeHtmlPdf(v(`inc${i}_grav`))}</td><td>${escapeHtmlPdf(v(`inc${i}_resp`))}</td><td>${escapeHtmlPdf(v(`inc${i}_fecha`))}</td></tr>`;
+    }
+    const incHtml = incRows ? pdfTableHtml(incRows, '<th>Nº</th><th>Bloque</th><th>Descripción</th><th>Gravedad</th><th>Responsable</th><th>Fecha límite</th>') : '<p class="pdf-muted"><em>No se registraron incidencias.</em></p>';
+
+    let pnhdRows = '';
+    for(let i=1;i<=N_PNHD;i++){
+      const prod = v(`pnhd${i}_producto`);
+      if(!prod) continue;
+      pnhdRows += `<tr><td>${escapeHtmlPdf(prod)}</td><td>${escapeHtmlPdf(v(`pnhd${i}_proveedor`))}</td><td>${escapeHtmlPdf(v(`pnhd${i}_area`))}</td><td>${escapeHtmlPdf(v(`pnhd${i}_accion`))}</td><td>${escapeHtmlPdf(v(`pnhd${i}_estado`))}</td></tr>`;
+    }
+    const pnhdHtml = pnhdRows ? pdfTableHtml(pnhdRows, '<th>Producto</th><th>Proveedor</th><th>Área</th><th>Acción tomada</th><th>Estado</th>') : '<p class="pdf-muted"><em>No se detectaron productos no homologados.</em></p>';
+
+    let planRows = '';
+    for(let i=1;i<=N_PLAN;i++){
+      const accion = v(`plan${i}_accion`);
+      if(!accion) continue;
+      planRows += `<tr><td>${escapeHtmlPdf(accion)}</td><td>${escapeHtmlPdf(v(`plan${i}_resp`))}</td><td>${escapeHtmlPdf(v(`plan${i}_fecha`))}</td><td>${escapeHtmlPdf(v(`plan${i}_prioridad`))}</td></tr>`;
+    }
+    const planHtml = planRows ? pdfTableHtml(planRows, '<th>Acción</th><th>Responsable</th><th>Fecha</th><th>Prioridad</th>') : '<p class="pdf-muted"><em>Sin acciones correctivas registradas.</em></p>';
+
+    const fotosHtml = await buildFotosPdfHtml();
+
+    const tipoLabel = CHECKLISTS[currentTipo].label;
+    const fecha = new Date().toISOString().slice(0,10);
+
+    const reportHtml = `
+  <h1>Informe de auditoría — ${escapeHtmlPdf(tipoLabel)}</h1>
+  <div class="pdf-sub">Generado el ${fecha}</div>
+
+  <div class="pdf-meta">
+    <div><b>Local:</b> ${escapeHtmlPdf(map.LOCAL)}</div>
+    <div><b>Fecha / Hora:</b> ${escapeHtmlPdf(map.FECHA_HORA)}</div>
+    <div><b>Area Manager / Supervisor(es):</b> ${escapeHtmlPdf(map.SUPERVISORES)}</div>
+    <div><b>Visita anterior:</b> ${escapeHtmlPdf(map.VISITA_ANTERIOR)}</div>
+  </div>
+
+  <h2>Resumen ejecutivo</h2>
+  <p><b>Resultado global:</b> ${escapeHtmlPdf(map.RESUMEN_GLOBAL) || '—'}</p>
+  <p><b>Bloque mejor/peor:</b> ${escapeHtmlPdf(map.RESUMEN_BLOQUES) || '—'}</p>
+  <p><b>Incidencias relevantes:</b> ${escapeHtmlPdf(map.RESUMEN_INCIDENCIAS) || '—'}</p>
+  <p><b>Productos no homologados:</b> ${escapeHtmlPdf(map.RESUMEN_NOHOM) || '—'}</p>
+  <p><b>Recomendación:</b> ${escapeHtmlPdf(map.RESUMEN_RECOMENDACION) || '—'}</p>
+
+  <h2>1. Puntuación global — ${escapeHtmlPdf(tipoLabel)}</h2>
+  <table class="pdf-table">
+    <thead><tr><th>Bloque</th><th class="c">Peso</th><th class="c">Puntuación</th><th class="c">Anterior</th><th class="c">Variación</th></tr></thead>
+    <tbody>${bloquesRows}</tbody>
+  </table>
+  ${map.COMENTARIO_PUNTUACION ? `<p>${escapeHtmlPdf(map.COMENTARIO_PUNTUACION)}</p>` : ''}
+
+  <h2>2. Resultados por bloque</h2>
+  <div class="pdf-block">${bloquesDetail}</div>
+
+  <h2>3. Incidencias detectadas</h2>
+  ${incHtml}
+
+  <h2>4. Productos no homologados detectados</h2>
+  ${pnhdHtml}
+
+  <h2>5. Plan de acción / Próximos pasos</h2>
+  ${planHtml}
+
+  <h2>6. Conclusión</h2>
+  <p>${escapeHtmlPdf(map.CONCLUSION) || '—'}</p>
+
+  <h2>Fotografías de ítems no conformes</h2>
+  ${fotosHtml}
+`;
+
+    const printEl = document.getElementById('printReport');
+    printEl.innerHTML = reportHtml;
+    // Las fotos son data: URIs (ya decodificadas al construir el HTML), pero se deja
+    // un instante para que el navegador termine de pintarlas antes de abrir el diálogo
+    // de impresión — sin esto, en algunos navegadores el PDF sale con huecos en blanco.
+    await new Promise(r => setTimeout(r, 150));
+    window.print();
+
+    statusEl.style.color = 'var(--good)';
+    statusEl.textContent = 'Informe listo — usa "Guardar como PDF" en el diálogo de impresión que se ha abierto.';
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Error al generar el informe: ' + err.message;
+  }
+}
+
+/* ---------------------------------------------------------------
+   6. Cambio de tipo de auditoría — independiente, sin mezclar datos.
+
+   Cambiar de tipo limpia por completo las respuestas del checklist
+   (fotos incluidas) y reconstruye el formulario con el otro checklist.
+   Los campos de "Datos de la visita" (local, fecha, AM, resumen,
+   incidencias, productos, plan, conclusión) NO se limpian al cambiar
+   de tipo — son datos generales de la visita, no del checklist.
+   --------------------------------------------------------------- */
+/* ---------------------------------------------------------------
+   Autoguardado de borrador (localStorage) — para no perder lo escrito
+   si se cierra la pestaña, se va la conexión o pasa cualquier cosa
+   antes de pulsar "Guardar". Un borrador por tipo (visita_operativa /
+   veo_externa / informe_semanal), en el propio navegador — no toca
+   Supabase para nada de esto.
+
+   Limitación a propósito: en las auditorías NO se guardan las fotos
+   adjuntas a los ítems no conformes (son archivos binarios, no caben
+   de forma razonable en localStorage) — si se restaura un borrador,
+   las respuestas Sí/No y todo el texto vuelven, las fotos hay que
+   volver a adjuntarlas.
+   --------------------------------------------------------------- */
+const DRAFT_DEBOUNCE_MS = 1500;
+let draftSaveTimer = null;
+const borradorGestionadoEnSesion = new Set();
+
+function draftKeyFor(tipo){ return `saona_draft_${tipo}`; }
+function scheduleDraftSave(){ clearTimeout(draftSaveTimer); draftSaveTimer = setTimeout(guardarBorrador, DRAFT_DEBOUNCE_MS); }
+
+function recolectarCampos(selector){
+  const datos = {};
+  document.querySelectorAll(selector).forEach(campo => { if(campo.id) datos[campo.id] = campo.value; });
+  return datos;
+}
+function aplicarCampos(campos){
+  Object.entries(campos || {}).forEach(([id, val]) => { const campo = document.getElementById(id); if(campo) campo.value = val; });
+}
+
+function guardarBorrador(){
+  if(editandoInformeId) return; // editando un informe ya guardado: no mezclar con el borrador de "informe nuevo"
+  if(currentTipo === 'informe_semanal'){
+    localStorage.setItem(draftKeyFor('informe_semanal'), JSON.stringify({
+      guardadoEl: new Date().toISOString(),
+      semLocales, semLocalCounter, semFacturaIds, semFacturaCounter,
+      campos: recolectarCampos('#semanalWrapper input, #semanalWrapper select, #semanalWrapper textarea'),
+    }));
+  }else{
+    const itemAnswers = {};
+    document.querySelectorAll('[id^="itemrow_"]').forEach(row => { if(row.dataset.answer) itemAnswers[row.id] = row.dataset.answer; });
+    localStorage.setItem(draftKeyFor(currentTipo), JSON.stringify({
+      guardadoEl: new Date().toISOString(),
+      itemAnswers,
+      campos: recolectarCampos('#auditOnlyFields input, #auditWrapper input, #auditWrapper select, #auditWrapper textarea'),
+    }));
+  }
+}
+
+function formatoRelativo(iso){
+  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if(min < 1) return 'hace un momento';
+  if(min < 60) return `hace ${min} min`;
+  return `hace ${Math.round(min / 60)} h`;
+}
+
+function mostrarAvisoBorradorSiExiste(){
+  const banner = document.getElementById('draftBanner');
+  if(editandoInformeId){ banner.style.display = 'none'; return; }
+  if(borradorGestionadoEnSesion.has(currentTipo)){ banner.style.display = 'none'; return; }
+  let datos;
+  try{ datos = JSON.parse(localStorage.getItem(draftKeyFor(currentTipo)) || 'null'); }catch(e){ datos = null; }
+  if(!datos){ banner.style.display = 'none'; return; }
+  document.getElementById('draftBannerText').textContent = `Hay un borrador sin guardar de "${TIPOS[currentTipo].label}" (${formatoRelativo(datos.guardadoEl)}). ¿Lo recuperas?`;
+  banner.style.display = 'flex';
+}
+
+function restaurarBorrador(){
+  const datos = JSON.parse(localStorage.getItem(draftKeyFor(currentTipo)) || 'null');
+  if(!datos) return;
+  if(currentTipo === 'informe_semanal'){
+    semLocales = datos.semLocales || [];
+    semLocalCounter = datos.semLocalCounter || 0;
+    semFacturaIds = datos.semFacturaIds || [];
+    semFacturaCounter = datos.semFacturaCounter || 0;
+    poblarSemLocalesCheckGrid();
+    renderAllSemSections();
+    renderSemFacturas();
+    aplicarCampos(datos.campos);
+    updateSemanaPreview();
+    refrescarFechasOcupacion();
+    semLocales.forEach(l => {
+      computeIC(l.id); computePctCompras(l.id); computePctComprasSemana(l.id); computePctWalkins(l.id);
+      for(let di = 0; di < 7; di++){ computeOcupacionPct(`semo_${l.id}_${di}`, 'mediodia'); computeOcupacionPct(`semo_${l.id}_${di}`, 'cena'); }
+    });
+  }else{
+    aplicarCampos(datos.campos);
+    Object.entries(datos.itemAnswers || {}).forEach(([rowId, answer]) => {
+      const wrap = document.getElementById(rowId);
+      if(!wrap) return;
+      wrap.dataset.answer = answer;
+      wrap.querySelector('.si').classList.toggle('active', answer === 'Si');
+      wrap.querySelector('.no').classList.toggle('active', answer === 'No');
+      wrap.querySelector('.item-photos').style.display = (answer === 'No') ? '' : 'none';
+    });
+    recalc();
+  }
+}
+
+function onTipoChange(){
+  currentTipo = document.getElementById('f_tipo').value;
+  document.getElementById('tipoHeaderBadge').textContent = '· ' + TIPOS[currentTipo].label;
+
+  const auditWrapper = document.getElementById('auditWrapper');
+  const semanalWrapper = document.getElementById('semanalWrapper');
+  const auditOnlyFields = document.getElementById('auditOnlyFields');
+  const sideNavAudit = document.getElementById('sideNavAudit');
+  const sideNavSemanal = document.getElementById('sideNavSemanal');
+  const scoreMiniBox = document.getElementById('scoreMiniBox');
+  const btnGenerate = document.getElementById('btnGenerate');
+  const genStatus = document.getElementById('genStatus');
+  const btnSave = document.getElementById('btnSave');
+
+  if(currentTipo === 'informe_semanal'){
+    auditWrapper.style.display = 'none';
+    semanalWrapper.style.display = '';
+    auditOnlyFields.style.display = 'none';
+    sideNavAudit.style.display = 'none';
+    sideNavSemanal.style.display = '';
+    scoreMiniBox.style.display = 'none';
+    btnGenerate.style.display = 'none';
+    genStatus.style.display = 'none';
+    btnSave.textContent = 'Guardar informe semanal';
+    document.getElementById('tipoHint').textContent = 'Cubre un grupo de locales a la vez — añade los locales del grupo en "Datos generales" antes de rellenar el resto.';
+    mostrarAvisoBorradorSiExiste();
+    return;
+  }
+
+  auditWrapper.style.display = '';
+  semanalWrapper.style.display = 'none';
+  auditOnlyFields.style.display = 'contents';
+  sideNavAudit.style.display = '';
+  sideNavSemanal.style.display = 'none';
+  scoreMiniBox.style.display = '';
+  btnGenerate.style.display = '';
+  genStatus.style.display = '';
+  btnSave.textContent = 'Guardar auditoría';
+
+  BLOQUES = CHECKLISTS[currentTipo].bloques;
+
+  Object.keys(itemPhotos).forEach(k => delete itemPhotos[k]);
+  obsDirty.clear();
+
+  document.getElementById('bloquesContainer').innerHTML = '';
+  document.querySelector('#tblGlobal tbody').innerHTML = '';
+  document.querySelector('#tblIncidencias tbody').innerHTML = '';
+
+  renderBloques();
+  renderGlobalTable();
+  renderIncidencias();
+  recalc();
+
+  document.getElementById('tipoHint').textContent = currentTipo === 'veo_externa'
+    ? 'La VEO Externa 2.0 oficial se gestiona en Yurest — esta app es una alternativa independiente, no la sustituye. Pesos por bloque provisionales (repartidos a partes iguales), pendientes de confirmar con Dirección de Operaciones.'
+    : 'Visita Operativa interna (VEO-CLO Mixto) — la hace el AM/formador de zona de forma recurrente.';
+  mostrarAvisoBorradorSiExiste();
+}
+
+function populateLocalesDatalist(){
+  const sel = document.getElementById('f_local');
+  sel.innerHTML = '<option value="">Selecciona un local</option>';
+  LOCALES.forEach(loc => {
+    const opt = document.createElement('option');
+    opt.value = loc;
+    opt.textContent = loc;
+    sel.appendChild(opt);
+  });
+}
+
+/* ---------------------------------------------------------------
+   6b. Informe Semanal de Operaciones — captura de datos por grupo de
+   locales (reemplaza la Plantilla_Datos_Semanales_Saona.xlsx). Solo
+   guarda datos; la redacción del informe la sigue haciendo Claude a
+   partir de lo guardado, esta app no genera el Word/PDF semanal.
+
+   Cada local añadido tiene un id ESTABLE (contador incremental, nunca
+   la posición en la lista) — quitar un local del medio no debe
+   mezclar los datos ya escritos de los demás.
+   --------------------------------------------------------------- */
+const DIAS_SEMANA = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const MESES_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const CATEGORIAS_VENTA_SUGERIDA = ['Sugerencia núcleo','Picoteo','Café','Menú degustación','Menú de grupo','Platos con suplemento','Postres','Pan'];
+let semLocalCounter = 0;
+let semLocales = []; // [{ id, nombre }]
+let semFacturaCounter = 0;
+let semFacturaIds = [];
+let editandoInformeId = null; // id del informe semanal que se está editando (null = informe nuevo)
+let semFranjas = []; // [{ local, dia_semana, franja, reservas }] — comportamiento de reservas por franja de 15 min
+let semFranjasAnteriores = {}; // misma forma, de la semana anterior guardada (para las alertas)
+
+function numOrNull(id){
+  const raw = v(id);
+  if(raw === '' || raw === null || raw === undefined) return null;
+  const n = parseFloat(String(raw).replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
+
+/* Locales del grupo: checkbox por local (marcar = añade, desmarcar = quita) +
+   "Seleccionar todos" — sustituye el picker de uno en uno de antes, para poder
+   marcar varios de golpe o el grupo entero. */
+function addSemLocalPorNombre(nombre){
+  if(semLocales.some(l => l.nombre === nombre)) return;
+  semLocalCounter++;
+  semLocales.push({ id: semLocalCounter, nombre });
+  renderAllSemSections();
+}
+function removeSemLocalPorNombre(nombre){
+  semLocales = semLocales.filter(l => l.nombre !== nombre);
+  renderAllSemSections();
+}
+
+function actualizarSemLocalTodos(){
+  const todos = document.getElementById('semLocalTodos');
+  const marcados = LOCALES.filter(n => semLocales.some(l => l.nombre === n)).length;
+  todos.checked = marcados === LOCALES.length;
+  todos.indeterminate = marcados > 0 && marcados < LOCALES.length;
+}
+
+function poblarSemLocalesCheckGrid(){
+  const grid = document.getElementById('semLocalesCheckGrid');
+  grid.innerHTML = '';
+  LOCALES.forEach(nombre => {
+    const label = document.createElement('label');
+    label.style.cssText = 'display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;';
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.checked = semLocales.some(l => l.nombre === nombre);
+    chk.addEventListener('change', () => {
+      if(chk.checked) addSemLocalPorNombre(nombre); else removeSemLocalPorNombre(nombre);
+      actualizarSemLocalTodos();
+    });
+    label.appendChild(chk);
+    label.appendChild(document.createTextNode(nombre));
+    grid.appendChild(label);
+  });
+  actualizarSemLocalTodos();
+}
+
+function semRow(cells){
+  const tr = el('tr');
+  cells.forEach(c => tr.appendChild(c));
+  return tr;
+}
+function semTextCell(text){ return el('td', { text }); }
+function semInputCell(id, opts){ const td = el('td'); td.appendChild(el('input', { type:'text', id, ...(opts||{}) })); return td; }
+function semSelectCell(id, options){
+  const td = el('td');
+  const sel = el('select', { id });
+  sel.appendChild(el('option', { value:'', text:'—' }));
+  options.forEach(o => sel.appendChild(el('option', { value:o, text:o })));
+  td.appendChild(sel);
+  return td;
+}
+function semLocalRow(l, cells){
+  const tr = semRow(cells);
+  tr.dataset.localId = l.id;
+  return tr;
+}
+
+/* Sincroniza una tabla con la lista actual de locales SIN reconstruirla
+   entera: borra solo las filas de locales quitados y añade solo las de
+   locales nuevos. Si se hiciera tbody.innerHTML='' + reconstruir todo en
+   cada cambio, cualquier dato ya escrito en un local existente se perdía
+   en cuanto se añadía o quitaba OTRO local — es justo el bug que se probó
+   y se vio en el navegador antes de esta versión. */
+function syncSemTable(containerSelector, buildForLocal){
+  const container = document.querySelector(containerSelector);
+  const currentIds = semLocales.map(l => l.id);
+  [...container.querySelectorAll('[data-local-id]')].forEach(elNode => {
+    if(!currentIds.includes(Number(elNode.dataset.localId))) elNode.remove();
+  });
+  semLocales.forEach(l => {
+    if(container.querySelector(`[data-local-id="${l.id}"]`)) return; // ya tiene contenido, no tocar (conserva lo escrito)
+    buildForLocal(l).forEach(node => container.appendChild(node));
+  });
+}
+
+const CALC_STYLE = 'background:#F4F6F9; color:var(--muted);';
+
+/* Recalcula los campos que son pura aritmética de otros campos ya escritos,
+   para que el AM nunca tenga que teclear un porcentaje o una media a mano.
+   Se llama en cada "input" de los campos de los que depende. */
+function computeIC(id){
+  const clientes = numOrNull(`semv_${id}_clientes`);
+  const ventas = numOrNull(`semv_${id}_ventas`);
+  const clientesAnt = numOrNull(`semv_${id}_clientesAnt`);
+  const ventasAnt = numOrNull(`semv_${id}_ventasAnt`);
+  const icEl = document.getElementById(`semv_${id}_ic`);
+  const icAntEl = document.getElementById(`semv_${id}_icAnt`);
+  if(icEl) icEl.value = (clientes && ventas != null) ? (ventas / clientes).toFixed(2) : '';
+  if(icAntEl) icAntEl.value = (clientesAnt && ventasAnt != null) ? (ventasAnt / clientesAnt).toFixed(2) : '';
+}
+
+function computePctCompras(id){
+  const ventas = numOrNull(`semv_${id}_ventas`);
+  const compras = numOrNull(`semc_${id}_compras`);
+  const mermas = numOrNull(`semc_${id}_mermas`);
+  const pctComprasEl = document.getElementById(`semc_${id}_pctCompras`);
+  const pctMermasEl = document.getElementById(`semc_${id}_pctMermas`);
+  if(pctComprasEl) pctComprasEl.value = (ventas && compras != null) ? ((compras / ventas) * 100).toFixed(1) : '';
+  if(pctMermasEl) pctMermasEl.value = (ventas && mermas != null) ? ((mermas / ventas) * 100).toFixed(1) : '';
+}
+
+function computePctComprasSemana(id){
+  const ventas = numOrNull(`semv_${id}_ventas`);
+  const compras = numOrNull(`semc_${id}_comprasSemana`);
+  const mermas = numOrNull(`semc_${id}_mermasSemana`);
+  const pctComprasEl = document.getElementById(`semc_${id}_pctComprasSemana`);
+  const pctMermasEl = document.getElementById(`semc_${id}_pctMermasSemana`);
+  if(pctComprasEl) pctComprasEl.value = (ventas && compras != null) ? ((compras / ventas) * 100).toFixed(1) : '';
+  if(pctMermasEl) pctMermasEl.value = (ventas && mermas != null) ? ((mermas / ventas) * 100).toFixed(1) : '';
+}
+
+function computePctWalkins(id){
+  const clientes = numOrNull(`semr_${id}_clientes`);
+  const walkins = numOrNull(`semr_${id}_walkins`);
+  const pctEl = document.getElementById(`semr_${id}_pctWalkins`);
+  if(pctEl) pctEl.value = (clientes && walkins != null) ? ((walkins / clientes) * 100).toFixed(1) : '';
+}
+
+/* Los "Clientes" de Reservas son el mismo total que "Clientes (semana)" de
+   Ventas (así lo reportan siempre las plantillas anteriores) — se copian
+   solos en vez de pedir que se vuelvan a escribir. */
+function syncReservasClientes(id){
+  const src = document.getElementById(`semv_${id}_clientes`);
+  const dst = document.getElementById(`semr_${id}_clientes`);
+  if(src && dst) dst.value = src.value;
+  computePctWalkins(id);
+}
+
+function renderSemVentas(){
+  syncSemTable('#tblSemVentas tbody', l => {
+    const row = semLocalRow(l, [
+      semTextCell(l.nombre),
+      semInputCell(`semv_${l.id}_clientes`, {inputmode:'numeric'}),
+      semInputCell(`semv_${l.id}_clientesAnt`, {inputmode:'numeric'}),
+      semInputCell(`semv_${l.id}_ventas`, {inputmode:'decimal'}),
+      semInputCell(`semv_${l.id}_ventasAnt`, {inputmode:'decimal'}),
+      semInputCell(`semv_${l.id}_ic`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
+      semInputCell(`semv_${l.id}_icAnt`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
+    ]);
+    ['clientes','clientesAnt','ventas','ventasAnt'].forEach(campo => {
+      row.querySelector(`#semv_${l.id}_${campo}`).addEventListener('input', () => { computeIC(l.id); computePctCompras(l.id); computePctComprasSemana(l.id); });
+    });
+    row.querySelector(`#semv_${l.id}_clientes`).addEventListener('input', () => syncReservasClientes(l.id));
+    return [row];
+  });
+}
+
+function computeTotalVentaSugerida(id){
+  let sumEuros = 0, sumUds = 0;
+  CATEGORIAS_VENTA_SUGERIDA.forEach((_, ci) => {
+    sumEuros += numOrNull(`semvs_${id}_${ci}_euros`) || 0;
+    sumUds += numOrNull(`semvs_${id}_${ci}_uds`) || 0;
+  });
+  const ventaLocalMes = numOrNull(`semvs_${id}_total_ventaLocalMes`);
+  const pct = (ventaLocalMes && sumEuros) ? ((sumEuros / ventaLocalMes) * 100).toFixed(1) : null;
+
+  const udsEl = document.getElementById(`semvs_${id}_total_uds`);
+  const eurEl = document.getElementById(`semvs_${id}_total_euros`);
+  const pctEl = document.getElementById(`semvs_${id}_total_pct`);
+  if(udsEl) udsEl.value = sumUds || '';
+  if(eurEl) eurEl.value = sumEuros ? sumEuros.toFixed(2) : '';
+  if(pctEl) pctEl.value = pct != null ? pct : '';
+}
+
+function renderSemVentaSugerida(){
+  syncSemTable('#tblSemVentaSugerida tbody', l => {
+    const rows = CATEGORIAS_VENTA_SUGERIDA.map((cat, ci) => {
+      const row = semLocalRow(l, [
+        semTextCell(l.nombre),
+        semTextCell(cat),
+        semInputCell(`semvs_${l.id}_${ci}_uds`, {inputmode:'numeric'}),
+        semInputCell(`semvs_${l.id}_${ci}_kpi`, {inputmode:'decimal'}),
+        semInputCell(`semvs_${l.id}_${ci}_euros`, {inputmode:'decimal'}),
+        semTextCell('—'),
+        semTextCell('—'),
+      ]);
+      ['uds','kpi','euros'].forEach(campo => {
+        row.querySelector(`#semvs_${l.id}_${ci}_${campo}`).addEventListener('input', () => computeTotalVentaSugerida(l.id));
+      });
+      return row;
+    });
+
+    const totalRow = semLocalRow(l, [
+      semTextCell(l.nombre),
+      el('td', {id:`semvs_${l.id}_total_label`, text:'Total', style:'font-weight:700; color:var(--navy);'}),
+      semInputCell(`semvs_${l.id}_total_uds`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
+      semTextCell('—'),
+      semInputCell(`semvs_${l.id}_total_euros`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE + 'font-weight:700;'}),
+      semInputCell(`semvs_${l.id}_total_ventaLocalMes`, {inputmode:'decimal'}),
+      semInputCell(`semvs_${l.id}_total_pct`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
+    ]);
+    totalRow.style.background = '#F4F6F9';
+    totalRow.querySelector(`#semvs_${l.id}_total_ventaLocalMes`).addEventListener('input', () => computeTotalVentaSugerida(l.id));
+
+    return [...rows, totalRow];
+  });
+}
+
+function renderSemCompras(){
+  syncSemTable('#tblSemCompras tbody', l => {
+    const row = semLocalRow(l, [
+      semTextCell(l.nombre),
+      semInputCell(`semc_${l.id}_comprasSemana`, {inputmode:'decimal'}),
+      semInputCell(`semc_${l.id}_pctComprasSemana`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
+      semInputCell(`semc_${l.id}_mermasSemana`, {inputmode:'decimal'}),
+      semInputCell(`semc_${l.id}_pctMermasSemana`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
+      semInputCell(`semc_${l.id}_compras`, {inputmode:'decimal'}),
+      semInputCell(`semc_${l.id}_pctCompras`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
+      semInputCell(`semc_${l.id}_mermas`, {inputmode:'decimal'}),
+      semInputCell(`semc_${l.id}_pctMermas`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
+    ]);
+    ['comprasSemana','mermasSemana'].forEach(campo => {
+      row.querySelector(`#semc_${l.id}_${campo}`).addEventListener('input', () => computePctComprasSemana(l.id));
+    });
+    ['compras','mermas'].forEach(campo => {
+      row.querySelector(`#semc_${l.id}_${campo}`).addEventListener('input', () => computePctCompras(l.id));
+    });
+    return [row];
+  });
+}
+
+function renderSemReservas(){
+  syncSemTable('#tblSemReservas tbody', l => {
+    const row = semLocalRow(l, [
+      semTextCell(l.nombre),
+      semInputCell(`semr_${l.id}_clientes`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
+      semInputCell(`semr_${l.id}_walkins`, {inputmode:'numeric'}),
+      semInputCell(`semr_${l.id}_pctWalkins`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
+      semInputCell(`semr_${l.id}_noshows`, {inputmode:'numeric'}),
+    ]);
+    row.querySelector(`#semr_${l.id}_walkins`).addEventListener('input', () => computePctWalkins(l.id));
+    syncReservasClientes(l.id);
+    return [row];
+  });
+}
+
+function renderSemValoraciones(){
+  syncSemTable('#tblSemValoraciones tbody', l => [ semLocalRow(l, [
+    semTextCell(l.nombre),
+    semInputCell(`semva_${l.id}_resenasGr`, {inputmode:'numeric'}),
+    semInputCell(`semva_${l.id}_puntGr`, {inputmode:'decimal'}),
+    semSelectCell(`semva_${l.id}_tendGr`, ['up','down']),
+    semInputCell(`semva_${l.id}_resenasCover`, {inputmode:'numeric'}),
+    semInputCell(`semva_${l.id}_puntCover`, {inputmode:'decimal'}),
+    semSelectCell(`semva_${l.id}_tendCover`, ['up','down']),
+  ]) ]);
+}
+
+/* Fecha y día de cada tarjeta de ocupación = semana_inicio + índice —
+   se calculan solos, no se escriben. El nombre del día es el real de
+   esa fecha (no un Lunes..Domingo fijo): si un informe corto empieza
+   en sábado (p.ej. los días sueltos de un mes que no cuadra semana
+   completa, como el 1-2 de un mes que caen en fin de semana), la
+   primera tarjeta dice "Sábado", no "Lunes". Mismo criterio
+   anti-huso-horario que fechaHoraTexto()/semanaDerivada(): construir
+   con new Date(y,m-1,d).
+
+   Las tarjetas cuya fecha cae después de semana_fin se ocultan (no se
+   borran, por si se alarga el rango otra vez): así un informe de solo
+   2-3 días (para cuadrar con el cierre del mes) no enseña 7 huecos
+   confusos — ver refrescarFechasOcupacion(). */
+const NOMBRES_DIA_JS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+function fechaOcupacionInfo(diaIndex){
+  const ini = parseISODateLocal(v('sem_semanaInicio'));
+  if(!ini) return null;
+  const d = new Date(ini.getFullYear(), ini.getMonth(), ini.getDate() + diaIndex);
+  return { date: d, fecha: `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`, dia: NOMBRES_DIA_JS[d.getDay()] };
+}
+function fechaOcupacion(diaIndex){
+  const info = fechaOcupacionInfo(diaIndex);
+  return info ? info.fecha : '';
+}
+function refrescarFechasOcupacion(){
+  const fin = parseISODateLocal(v('sem_semanaFin'));
+  document.querySelectorAll('#semOcupacionGrid [data-local-id]').forEach(card => {
+    const di = Number(card.dataset.dia);
+    const info = fechaOcupacionInfo(di);
+    const fechaEl = card.querySelector('.occ-fecha');
+    const diaEl = card.querySelector('.occ-dia');
+    if(fechaEl) fechaEl.textContent = info ? info.fecha : '—';
+    if(diaEl) diaEl.textContent = info ? info.dia : DIAS_SEMANA[di];
+    card.style.display = (info && fin && info.date > fin) ? 'none' : '';
+  });
+}
+
+function computeOcupacionPct(prefix, turno){
+  const comensales = numOrNull(`${prefix}_${turno}_comensales`);
+  const aforo = numOrNull(`${prefix}_${turno}_aforo`);
+  const pctEl = document.getElementById(`${prefix}_${turno}_pct`);
+  if(pctEl) pctEl.value = (aforo && comensales != null) ? ((comensales / aforo) * 100).toFixed(0) + '%' : '—';
+}
+
+function occTurnoBlock(prefix, titulo){
+  const box = document.createElement('div');
+  box.style.cssText = 'margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);';
+  const head = document.createElement('div');
+  head.style.cssText = 'display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:700; color:var(--navy); margin-bottom:6px;';
+  head.appendChild(document.createTextNode(titulo));
+  const pct = document.createElement('input');
+  pct.type = 'text'; pct.id = `${prefix}_pct`; pct.readOnly = true; pct.tabIndex = -1; pct.value = '—';
+  pct.style.cssText = 'width:54px; text-align:center; font-weight:800; background:#F4F6F9; color:var(--navy); border:1px solid var(--border); border-radius:6px; padding:3px 4px;';
+  head.appendChild(pct);
+  box.appendChild(head);
+
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid; grid-template-columns:repeat(4,1fr); gap:6px;';
+  [['comensales','Comens.'],['aforo','Aforo'],['mesas','Mesas'],['turnos','Turnos']].forEach(([campo, lbl]) => {
+    const wrap = document.createElement('label');
+    wrap.style.cssText = 'display:flex; flex-direction:column; gap:2px; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em;';
+    wrap.appendChild(document.createTextNode(lbl));
+    const input = document.createElement('input');
+    input.type = 'text'; input.inputMode = 'numeric'; input.id = `${prefix}_${campo}`;
+    input.style.cssText = 'padding:5px 4px; font-size:13px; border:1px solid var(--border); border-radius:5px; text-align:center;';
+    wrap.appendChild(input);
+    grid.appendChild(wrap);
+  });
+  box.appendChild(grid);
+  return box;
+}
+
+function occCard(l, di, dia){
+  const prefix = `semo_${l.id}_${di}`;
+  const card = document.createElement('div');
+  card.dataset.localId = l.id;
+  card.dataset.dia = di;
+  card.style.cssText = 'border:1px solid var(--border); border-radius:8px; padding:12px; background:#fff;';
+
+  const info = fechaOcupacionInfo(di);
+  const fin = parseISODateLocal(v('sem_semanaFin'));
+  if(info && fin && info.date > fin) card.style.display = 'none';
+
+  const head = document.createElement('div');
+  head.style.cssText = 'display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px;';
+  const nombre = document.createElement('div');
+  nombre.innerHTML = `<strong class="occ-dia">${info ? info.dia : dia}</strong><br><span style="font-size:11px; color:var(--muted);">${l.nombre}</span>`;
+  const fecha = document.createElement('span');
+  fecha.className = 'occ-fecha';
+  fecha.style.cssText = 'font-size:12px; color:var(--muted); font-weight:600;';
+  fecha.textContent = info ? info.fecha : '—';
+  head.appendChild(nombre); head.appendChild(fecha);
+  card.appendChild(head);
+
+  card.appendChild(occTurnoBlock(`${prefix}_mediodia`, '☀ Mediodía'));
+  card.appendChild(occTurnoBlock(`${prefix}_cena`, '☾ Cena'));
+
+  ['mediodia','cena'].forEach(turno => {
+    ['comensales','aforo'].forEach(campo => {
+      card.querySelector(`#${prefix}_${turno}_${campo}`).addEventListener('input', () => computeOcupacionPct(prefix, turno));
+    });
+  });
+  return card;
+}
+
+function renderSemOcupacion(){
+  syncSemTable('#semOcupacionGrid', l => DIAS_SEMANA.map((dia, di) => occCard(l, di, dia)));
+}
+
+/* ---------------------------------------------------------------
+   Rellenar Ocupación desde una foto/captura — OCR gratis en el
+   navegador (Tesseract.js, cargado solo la primera vez que se usa,
+   no forma parte del bundle del archivo). Es una lectura automática
+   de una imagen: puede equivocarse, especialmente con números
+   pequeños o fotos torcidas — por eso siempre deja los campos
+   editables y avisa de revisar antes de guardar.
+   --------------------------------------------------------------- */
+async function ensureTesseractLoaded(){
+  if(window.Tesseract) return;
+  await new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    const timeoutId = setTimeout(() => reject(new Error('No se pudo cargar el lector de imagen (tarda demasiado en responder — revisa la conexión a internet).')), 20000);
+    s.onload = () => { clearTimeout(timeoutId); resolve(); };
+    s.onerror = () => { clearTimeout(timeoutId); reject(new Error('No se pudo cargar el lector de imagen (revisa la conexión a internet).')); };
+    document.head.appendChild(s);
+  });
+}
+
+/* La primera vez que se usa, Tesseract.js tiene que descargar además el
+   "modelo de lectura" del idioma (varios MB) desde su CDN — con wifi/datos
+   lentos (habitual en un restaurante) esto puede tardar bastante, y sin
+   avisar de progreso parece que la app se ha quedado colgada. Por eso
+   reportamos el progreso real (m.progress) en el mensaje de estado, y
+   cortamos con un error claro si no termina en un tiempo razonable, en
+   vez de dejar la pantalla en "Leyendo la imagen…" para siempre. */
+async function reconocerImagen(file, statusEl){
+  const TIMEOUT_MS = 90000;
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('La lectura está tardando demasiado — puede que la conexión sea lenta. Prueba con mejor wifi/datos, o rellena los datos a mano.')), TIMEOUT_MS);
+  });
+  const recognize = Tesseract.recognize(file, 'eng', {
+    logger: (m) => {
+      if(!m || !statusEl) return;
+      const pct = m.progress != null ? ` ${Math.round(m.progress * 100)}%` : '';
+      if(m.status === 'loading language traineddata'){
+        statusEl.textContent = `Descargando el modelo de lectura (solo la primera vez, puede tardar)…${pct}`;
+      }else if(m.status === 'recognizing text'){
+        statusEl.textContent = `Leyendo la imagen…${pct}`;
+      }else if(m.status){
+        statusEl.textContent = `Preparando el lector de imagen…${pct}`;
+      }
+    },
+  }).then((r) => { clearTimeout(timeoutId); return r.data; });
+  return Promise.race([recognize, timeout]);
+}
+
+
+// --- Autorelleno de Ocupación (comensales/aforo) desde el informe de Cover (CSV) ---
+// Este informe ("report_persons_turn_days") viene con una cabecera rara: dos
+// columnas vacías (Fecha, Turno) y luego un grupo de 3 columnas por local
+// (Nombre, "Capacidad máxima", "% Ocupación") repetido, terminando en "Total".
+// Como el nombre de columna se repite muchas veces, no se puede usar parseCSV()
+// (mapea a objeto por cabecera y perdería datos) — se usa tokenizarCSV() y se
+// localiza cada local por posición de columna.
+function fechaDDMMaISO(str){
+  const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec((str || '').trim());
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
+}
+
+function mapaColumnasOcupacionCSV(cabecera){
+  const columnas = [];
+  let i = 2;
+  while(i < cabecera.length && (cabecera[i] || '').trim() !== 'Total'){
+    columnas.push({ nombre: (cabecera[i] || '').trim(), colComensales: i, colAforo: i + 1 });
+    i += 3;
+  }
+  return columnas;
+}
+
+async function leerCsvOcupacion(file){
+  const statusEl = document.getElementById('semOcupacionCsvStatus');
+  if(!semLocales.length){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Añade primero al menos un local del grupo arriba.'; return; }
+  if(!v('sem_semanaInicio') || !v('sem_semanaFin')){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Rellena la fecha de inicio y fin de la semana antes de subir el informe.';
+    return;
+  }
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Leyendo el archivo…';
+  try{
+    const texto = (await file.text()).replace(/^﻿/, '');
+    const filas = tokenizarCSV(texto);
+    if(filas.length < 2){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = 'No se ha podido leer ninguna fila del archivo — comprueba que es el informe correcto.';
+      return;
+    }
+    const columnas = mapaColumnasOcupacionCSV(filas[0]);
+    if(!columnas.length){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = 'No se reconoce el formato de la cabecera del archivo.';
+      return;
+    }
+
+    const inicio = v('sem_semanaInicio');
+    const localesAplicados = new Set();
+    let filasAplicadas = 0;
+
+    filas.slice(1).forEach(fila => {
+      const fechaIso = fechaDDMMaISO(fila[0]);
+      const turno = (fila[1] || '').trim();
+      if(!fechaIso || (turno !== 'Comida' && turno !== 'Cena')) return;
+      const diaIndex = diaIndexDesdeFecha(fechaIso, inicio);
+      if(diaIndex == null) return;
+
+      const nombreTurno = turno === 'Comida' ? 'mediodia' : 'cena';
+      columnas.forEach(col => {
+        const nombreCsv = quitarAcentos(col.nombre);
+        const local = semLocales.find(l => {
+          const pista = LOCAL_A_NOMBRE_COVER[l.nombre] || quitarAcentos(l.nombre);
+          return nombreCsv.includes(pista);
+        });
+        if(!local) return;
+        const comensales = Number(fila[col.colComensales]);
+        const aforo = Number(fila[col.colAforo]);
+        if(!Number.isFinite(comensales) || !Number.isFinite(aforo)) return;
+        const prefix = `semo_${local.id}_${diaIndex}`;
+        const setVal = (id, val) => { const campo = document.getElementById(id); if(campo && val != null) campo.value = val; };
+        setVal(`${prefix}_${nombreTurno}_comensales`, comensales);
+        setVal(`${prefix}_${nombreTurno}_aforo`, aforo);
+        computeOcupacionPct(prefix, nombreTurno);
+        localesAplicados.add(local.nombre);
+        filasAplicadas++;
+      });
+    });
+
+    const sinDatos = semLocales.filter(l => !localesAplicados.has(l.nombre)).map(l => l.nombre);
+    statusEl.style.color = filasAplicadas ? 'var(--good)' : 'var(--bad)';
+    statusEl.textContent = filasAplicadas
+      ? `Rellenados comensales y aforo de ${localesAplicados.size} local(es) — mesas/turnos no vienen en este informe, sigue siendo manual. Es lectura automática: revisa los números antes de guardar.`
+        + (sinDatos.length ? ` Sin datos esa semana: ${sinDatos.join(', ')}.` : '')
+      : 'No se ha encontrado ningún local del grupo en el informe para esa semana. Comprueba las fechas de inicio/fin y que el archivo es el correcto.';
+  } catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'No se ha podido leer el archivo: ' + err.message;
+  }
+}
+
+// --- Autorelleno de Walk-ins/No-shows desde el informe de Cover (CSV) ---------
+// Cada local de LOCALES puede tener un nombre distinto en el informe de Cover (p. ej.
+// "Donostia" en la app es "Saona San Sebastián" en Cover) — este mapa dice qué trozo de
+// texto buscar (sin importar mayúsculas/acentos) dentro de la columna "Restaurante".
+const LOCAL_A_NOMBRE_COVER = {
+  'Donostia': 'san sebastian',
+};
+
+function quitarAcentos(str){
+  return str.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+// Trocea un CSV (con campos entre comillas — así vienen "Fecha Añadida", apellidos
+// con comas dentro, etc.) en filas de columnas SIN interpretar cabeceras, para
+// informes cuyas columnas se repiten (mismo nombre varias veces) y no se pueden
+// mapear a un objeto {cabecera: valor} sin perder datos. Separador: punto y coma.
+function tokenizarCSV(texto){
+  const filas = [];
+  let fila = [], campo = '', dentroComillas = false;
+  for(let i = 0; i < texto.length; i++){
+    const c = texto[i];
+    if(dentroComillas){
+      if(c === '"'){
+        if(texto[i + 1] === '"'){ campo += '"'; i++; }
+        else dentroComillas = false;
+      } else campo += c;
+    } else if(c === '"'){
+      dentroComillas = true;
+    } else if(c === ';'){
+      fila.push(campo); campo = '';
+    } else if(c === '\n' || c === '\r'){
+      if(c === '\r' && texto[i + 1] === '\n') i++;
+      fila.push(campo); campo = '';
+      if(fila.length > 1 || fila[0] !== '') filas.push(fila);
+      fila = [];
+    } else campo += c;
+  }
+  if(campo !== '' || fila.length){ fila.push(campo); filas.push(fila); }
+  return filas;
+}
+
+// Igual que arriba, pero devuelve un array de objetos {cabecera: valor} usando la
+// primera fila como cabecera — para informes con nombres de columna únicos (como
+// el de reservas de Cover).
+function parseCSV(texto){
+  const filas = tokenizarCSV(texto);
+  if(!filas.length) return [];
+  const cabeceras = filas[0];
+  return filas.slice(1).map(f => {
+    const obj = {};
+    cabeceras.forEach((h, i) => { obj[h] = f[i] !== undefined ? f[i] : ''; });
+    return obj;
+  });
+}
+
+// Lógica común, la usen tanto "subir el CSV a mano" como "coger el último informe
+// recibido por email" — el resultado es idéntico, solo cambia de dónde sale el texto.
+function aplicarTextoCsvReservas(texto){
+  const statusEl = document.getElementById('semCsvStatus');
+  const setVal = (id, val) => { const campo = document.getElementById(id); if(campo && val != null) campo.value = val; };
+  if(!semLocales.length){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Añade primero al menos un local del grupo arriba.'; return; }
+  if(!v('sem_semanaInicio') || !v('sem_semanaFin')){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Rellena la fecha de inicio y fin de la semana antes de aplicar el informe.';
+    return;
+  }
+  // El export de Cover lleva BOM al principio del archivo — si no se quita, la
+  // primera cabecera queda como "﻿Fecha" y esa columna deja de encontrarse.
+  texto = texto.replace(/^﻿/, '');
+  const filas = parseCSV(texto);
+  if(!filas.length){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'No se ha podido leer ninguna fila del archivo — comprueba que es el CSV exportado de Cover.';
+    return;
+  }
+
+  const inicio = v('sem_semanaInicio'), fin = v('sem_semanaFin');
+  const enSemana = (f) => f >= inicio && f <= fin;
+
+  // Walk-ins = comensales (no filas) de origen "walk in" que sí llegaron a entrar
+  // (se excluyen cancelados/no-show). No-shows = comensales con estado "No show",
+  // sea cual sea el origen. Mismo criterio de "comensales, no reservas" que usa ya
+  // "Clientes" en Ventas (por eso Walk-ins/Clientes tiene sentido como %).
+  // Comportamiento de reservas por franja de 15 min: cuenta las que sí llegaron a
+  // entrar (se excluyen canceladas/no-show, igual que en walk-ins) agrupadas por
+  // local + día de la semana (relativo al inicio de semana elegido) + franja.
+  const franjasAcumuladas = {}; // { 'localId|diaIndex|franja': count }
+
+  const resumenPorLocal = {};
+  filas.forEach(f => {
+    const fecha = (f['Fecha'] || '').trim();
+    if(!fecha || !enSemana(fecha)) return;
+    const restauranteCsv = quitarAcentos((f['Restaurante'] || '').trim());
+    const local = semLocales.find(l => {
+      const pista = LOCAL_A_NOMBRE_COVER[l.nombre] || quitarAcentos(l.nombre);
+      return restauranteCsv.includes(pista);
+    });
+    if(!local) return;
+
+    const personas = Number(f['Personas']) || 0;
+    const origen = quitarAcentos((f['Origen'] || '').trim());
+    const estado = (f['Estado'] || '').trim();
+    const llego = !['Cancelado por el cliente', 'Cancelado por el restaurante', 'No show'].includes(estado);
+    if(!resumenPorLocal[local.id]) resumenPorLocal[local.id] = { walkins: 0, noshows: 0 };
+
+    if(origen === 'walk in' && llego){
+      resumenPorLocal[local.id].walkins += personas;
+    }
+    if(estado === 'No show'){
+      resumenPorLocal[local.id].noshows += personas;
+    }
+
+    if(llego){
+      const diaIndex = diaIndexDesdeFecha(fecha, inicio);
+      const franja = bucketFranja(f['Hora']);
+      if(diaIndex != null && franja){
+        const clave = `${local.id}|${diaIndex}|${franja}`;
+        franjasAcumuladas[clave] = (franjasAcumuladas[clave] || 0) + 1;
+      }
+    }
+  });
+
+  semFranjas = Object.entries(franjasAcumuladas).map(([clave, reservas]) => {
+    const [localId, diaIndex, franja] = clave.split('|');
+    const local = semLocales.find(l => l.id === Number(localId));
+    const info = fechaOcupacionInfo(Number(diaIndex));
+    return { local: local ? local.nombre : localId, dia_semana: info ? info.dia : diaIndex, franja, reservas };
+  });
+
+  let aplicados = 0;
+  semLocales.forEach(l => {
+    const r = resumenPorLocal[l.id];
+    if(!r) return;
+    setVal(`semr_${l.id}_walkins`, r.walkins);
+    setVal(`semr_${l.id}_noshows`, r.noshows);
+    computePctWalkins(l.id);
+    aplicados++;
+  });
+
+  const sinDatos = semLocales.filter(l => !resumenPorLocal[l.id]).map(l => l.nombre);
+  statusEl.style.color = aplicados ? 'var(--good)' : 'var(--bad)';
+  statusEl.textContent = aplicados
+    ? `Rellenados ${aplicados} local(es) — walk-ins y no-shows en comensales. Es lectura automática: revisa los números antes de guardar.`
+      + (sinDatos.length ? ` Sin datos en el informe esa semana: ${sinDatos.join(', ')}.` : '')
+    : 'No se ha encontrado ningún local del grupo en el informe para esa semana. Comprueba las fechas de inicio/fin y que el archivo es el correcto.';
+
+  poblarSemFranjasLocalSelect();
+  cargarFranjasSemanaAnterior().then(renderFranjas);
+}
+
+// --- Comportamiento de reservas por franja de 15 min ---------------------------
+// diaIndex: 0 = fecha de inicio de semana, 6 = fecha de inicio + 6 días (igual
+// convención que fechaOcupacionInfo, para que "día 2" signifique lo mismo en
+// Ocupación y aquí). Devuelve null si la fecha cae fuera de esos 7 días.
+function diaIndexDesdeFecha(fechaStr, inicioStr){
+  const fecha = parseISODateLocal(fechaStr);
+  const inicio = parseISODateLocal(inicioStr);
+  if(!fecha || !inicio) return null;
+  const diff = Math.round((fecha - inicio) / 86400000);
+  return (diff >= 0 && diff <= 6) ? diff : null;
+}
+
+// Redondea una hora "HH:MM" o "HH:MM:SS" a la franja de 15 min en la que cae.
+function bucketFranja(horaStr){
+  const m = /^(\d{1,2}):(\d{2})/.exec((horaStr || '').trim());
+  if(!m) return null;
+  const h = Number(m[1]), min = Math.floor(Number(m[2]) / 15) * 15;
+  return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+}
+
+function poblarSemFranjasLocalSelect(){
+  const sel = document.getElementById('semFranjasLocal');
+  const actual = sel.value;
+  sel.innerHTML = semLocales.map(l => `<option value="${l.nombre}">${l.nombre}</option>`).join('');
+  if(semLocales.some(l => l.nombre === actual)) sel.value = actual;
+}
+
+// Trae, para cada local, las franjas del último informe semanal GUARDADO anterior
+// a la fecha de inicio actual — para poder comparar y avisar de bajadas. Solo
+// lectura (no toca nada guardado); si algo falla, sigue sin alertas en vez de
+// bloquear el resto del formulario.
+async function cargarFranjasSemanaAnterior(){
+  semFranjasAnteriores = {};
+  const statusEl = document.getElementById('semFranjasStatus');
+  const inicioActual = v('sem_semanaInicio');
+  if(!inicioActual || !semLocales.length) return;
+  const session = await refreshSessionIfNeeded();
+  if(!session) return;
+  try{
+    for(const l of semLocales){
+      const informes = await fetch(
+        `${SUPABASE_URL}/rest/v1/informes_semanales?locales=ilike.*${encodeURIComponent(l.nombre)}*&semana_fin=lt.${inicioActual}&order=semana_fin.desc&limit=1&select=id`,
+        { headers: restHeaders() }
+      ).then(r => r.json());
+      if(!informes.length) continue;
+      const filas = await fetch(
+        `${SUPABASE_URL}/rest/v1/informe_semanal_franjas?informe_id=eq.${informes[0].id}&local=eq.${encodeURIComponent(l.nombre)}&select=dia_semana,franja,reservas`,
+        { headers: restHeaders() }
+      ).then(r => r.json());
+      filas.forEach(f => { semFranjasAnteriores[`${l.nombre}|${f.dia_semana}|${f.franja}`] = f.reservas; });
+    }
+    statusEl.textContent = '';
+  }catch(err){
+    console.error(err);
+    statusEl.textContent = 'No se pudo comparar con la semana anterior (se muestran los datos de esta semana igualmente).';
+  }
+}
+
+// Umbral de alerta: cae un 25% o más respecto a la misma franja/día de la semana
+// guardada anteriormente. Fácil de ajustar si hace falta otro porcentaje.
+const UMBRAL_ALERTA_FRANJA = 0.25;
+
+function renderFranjas(){
+  const localSel = document.getElementById('semFranjasLocal').value;
+  const wrap = document.getElementById('semFranjasTablaWrap');
+  const alertasBox = document.getElementById('semFranjasAlertas');
+  if(!localSel){ wrap.innerHTML = ''; alertasBox.innerHTML = ''; return; }
+
+  const datosLocal = semFranjas.filter(f => f.local === localSel);
+  if(!datosLocal.length){
+    wrap.innerHTML = '<p class="status-message">Sin datos de este local en el informe de Cover aplicado.</p>';
+    alertasBox.innerHTML = '';
+    return;
+  }
+
+  const franjasUnicas = [...new Set(datosLocal.map(f => f.franja))].sort();
+  const porDiaFranja = {};
+  datosLocal.forEach(f => { porDiaFranja[`${f.dia_semana}|${f.franja}`] = f.reservas; });
+
+  const alertas = [];
+  let filasHtml = franjasUnicas.map(franja => {
+    const celdas = DIAS_SEMANA.map(dia => {
+      const actual = porDiaFranja[`${dia}|${franja}`];
+      if(actual == null) return '<td style="text-align:center; color:var(--muted);">—</td>';
+      const anterior = semFranjasAnteriores[`${localSel}|${dia}|${franja}`];
+      let celda = `${actual}`;
+      if(anterior != null && anterior > 0){
+        const caida = (anterior - actual) / anterior;
+        if(caida >= UMBRAL_ALERTA_FRANJA){
+          const pct = Math.round(caida * 100);
+          celda = `<span style="background:#fbe6e4; color:var(--bad); padding:2px 6px; border-radius:6px; font-weight:600;" title="Antes: ${anterior}">⚠ ${actual}</span>`;
+          alertas.push({ dia, franja, actual, anterior, pct });
+        }
+      }
+      return `<td style="text-align:center;">${celda}</td>`;
+    }).join('');
+    return `<tr><td style="font-weight:600;">${franja}</td>${celdas}</tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <table class="datatable">
+      <thead><tr><th>Franja</th>${DIAS_SEMANA.map(d => `<th>${d.slice(0,3)}</th>`).join('')}</tr></thead>
+      <tbody>${filasHtml}</tbody>
+    </table>`;
+
+  alertasBox.innerHTML = alertas.length
+    ? `<p class="status-message" data-kind="error" style="margin-bottom:8px;">⚠ ${alertas.length} franja(s) de "${localSel}" con caída de ${Math.round(UMBRAL_ALERTA_FRANJA*100)}% o más respecto a la semana anterior:</p>
+       <ul style="margin:0 0 10px; padding-left:20px; font-size:13px;">
+         ${alertas.map(a => `<li>${a.dia} ${a.franja} — ${a.actual} reservas (antes ${a.anterior}, -${a.pct}%)</li>`).join('')}
+       </ul>`
+    : '';
+}
+
+async function leerCsvReservas(file){
+  const statusEl = document.getElementById('semCsvStatus');
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Leyendo el archivo…';
+  try{
+    const texto = await file.text();
+    aplicarTextoCsvReservas(texto);
+  } catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'No se ha podido leer el archivo: ' + err.message;
+  }
+}
+
+// --- Informes recibidos por email de Cover (Power Automate los deja en Supabase) ---
+async function listarInformesCorreo(){
+  const statusEl = document.getElementById('semCsvStatus');
+  const listEl = document.getElementById('semCsvEmailList');
+  const session = await refreshSessionIfNeeded();
+  if(!session){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Tu sesión ha caducado. Recarga la página e inicia sesión de nuevo.';
+    showLogin();
+    return;
+  }
+  listEl.innerHTML = '<p class="status-message">Buscando informes…</p>';
+  try{
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/informes-cover`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken()}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ limit: 20, prefix: '', sortBy: { column: 'name', order: 'desc' } }),
+    });
+    if(!res.ok) throw new Error('No se pudo consultar el almacén (¿está creado el bucket "informes-cover"?)');
+    const archivos = (await res.json()).filter(a => a.name && a.name.endsWith('.csv'));
+    if(!archivos.length){
+      listEl.innerHTML = '<p class="status-message">Todavía no ha llegado ningún informe por email a este almacén.</p>';
+      return;
+    }
+    listEl.innerHTML = archivos.map(a => `
+      <div class="table-row" style="justify-content:space-between;">
+        <span>${a.name}</span>
+        <span>
+          <button type="button" class="small-btn" data-accion="aplicar" data-nombre="${a.name}">✅ Usar para esta semana</button>
+          <button type="button" class="small-btn" data-accion="descargar" data-nombre="${a.name}">⬇ Descargar</button>
+        </span>
+      </div>
+    `).join('');
+    listEl.querySelectorAll('button[data-accion="aplicar"]').forEach(b => b.addEventListener('click', () => usarInformeCorreo(b.dataset.nombre)));
+    listEl.querySelectorAll('button[data-accion="descargar"]').forEach(b => b.addEventListener('click', () => descargarInformeCorreo(b.dataset.nombre)));
+  } catch(err){
+    console.error(err);
+    listEl.innerHTML = `<p class="status-message" data-kind="error">${err.message}</p>`;
+  }
+}
+
+async function obtenerBlobInformeCorreo(nombre){
+  const session = await refreshSessionIfNeeded();
+  if(!session) throw new Error('Tu sesión ha caducado. Recarga la página e inicia sesión de nuevo.');
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/informes-cover/${encodeURIComponent(nombre)}`, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken()}` },
+  });
+  if(!res.ok) throw new Error('No se pudo descargar el archivo.');
+  return res.blob();
+}
+
+async function usarInformeCorreo(nombre){
+  const statusEl = document.getElementById('semCsvStatus');
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = `Descargando "${nombre}"…`;
+  try{
+    const blob = await obtenerBlobInformeCorreo(nombre);
+    const texto = await blob.text();
+    aplicarTextoCsvReservas(texto);
+  } catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = err.message;
+  }
+}
+
+async function descargarInformeCorreo(nombre){
+  const statusEl = document.getElementById('semCsvStatus');
+  try{
+    const blob = await obtenerBlobInformeCorreo(nombre);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = nombre;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  } catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = err.message;
+  }
+}
+
+/* ---------------------------------------------------------------
+   Rellenar Venta Sugerida desde una captura — tabla ancha con una fila
+   por local (más una fila "Total" que se descarta) y grupos de 3
+   columnas (Uds/KPI%/€) por categoría, en el mismo orden que
+   CATEGORIAS_VENTA_SUGERIDA. A diferencia de Ocupación no hace falta
+   elegir el local a mano: se lee de la propia tabla.
+   --------------------------------------------------------------- */
+function parseNumeroEs(text){
+  if(!text) return null;
+  let t = text.replace(/[€%\s]/g, '');
+  if(t.includes(',')){
+    t = t.replace(/\./g, '').replace(',', '.');
+  }else{
+    const partes = t.split('.');
+    if(partes.length > 1 && partes[partes.length - 1].length === 3) t = partes.join('');
+  }
+  const n = parseFloat(t);
+  return isNaN(n) ? null : n;
+}
+
+function parseVentaSugeridaOCR(data){
+  const words = (data.words || [])
+    .map(w => ({ text: (w.text || '').trim(), x: (w.bbox.x0 + w.bbox.x1) / 2, y: (w.bbox.y0 + w.bbox.y1) / 2 }))
+    .filter(w => w.text);
+
+  const localesRe = new RegExp('^(' + LOCALES.join('|') + ')$', 'i');
+  const anclas = [];
+  words.forEach(w => {
+    if(localesRe.test(w.text)){
+      const nombre = LOCALES.find(l => l.toLowerCase() === w.text.toLowerCase());
+      anclas.push({ y: w.y, esTotal: false, nombre, valores: [] });
+    }else if(/^total$/i.test(w.text)){
+      anclas.push({ y: w.y, esTotal: true, nombre: null, valores: [] });
+    }
+  });
+  if(!anclas.length) return [];
+
+  const numericos = words.filter(w => /^\d[\d.,]*%?€?$/.test(w.text));
+  numericos.forEach(w => {
+    let mejor = null, mejorDist = Infinity;
+    anclas.forEach(a => {
+      const dist = Math.abs(a.y - w.y);
+      if(dist < mejorDist){ mejorDist = dist; mejor = a; }
+    });
+    if(mejor) mejor.valores.push(w);
+  });
+
+  return anclas
+    .filter(a => !a.esTotal && a.nombre)
+    .map(a => {
+      const vals = a.valores.sort((x, y) => x.x - y.x).map(w => parseNumeroEs(w.text));
+      const ventaLocalMes = vals[2] ?? null; // vals[0]=€ total, vals[1]=% — se recalculan solos, se ignoran
+      const categorias = [];
+      for(let i = 3, ci = 0; ci < CATEGORIAS_VENTA_SUGERIDA.length && i + 2 < vals.length + 1; i += 3, ci++){
+        categorias.push({ categoria: CATEGORIAS_VENTA_SUGERIDA[ci], uds: vals[i] ?? null, kpi: vals[i + 1] ?? null, euros: vals[i + 2] ?? null });
+      }
+      return { local: a.nombre, ventaLocalMes, categorias };
+    });
+}
+
+function aplicarVentaSugeridaOCR(resultados){
+  let aplicados = 0;
+  resultados.forEach(r => {
+    const l = semLocales.find(x => x.nombre.toLowerCase() === r.local.toLowerCase());
+    if(!l) return; // local leído en la imagen pero no añadido al grupo — se ignora
+    const setVal = (id, val) => { const campo = document.getElementById(id); if(campo && val != null) campo.value = val; };
+    if(r.ventaLocalMes != null) setVal(`semvs_${l.id}_total_ventaLocalMes`, r.ventaLocalMes);
+    r.categorias.forEach(c => {
+      const ci = CATEGORIAS_VENTA_SUGERIDA.indexOf(c.categoria);
+      if(ci === -1) return;
+      setVal(`semvs_${l.id}_${ci}_uds`, c.uds);
+      setVal(`semvs_${l.id}_${ci}_kpi`, c.kpi);
+      setVal(`semvs_${l.id}_${ci}_euros`, c.euros);
+    });
+    computeTotalVentaSugerida(l.id);
+    aplicados++;
+  });
+  return aplicados;
+}
+
+async function leerCapturaVentaSugerida(file){
+  const statusEl = document.getElementById('semVsOcrStatus');
+  if(!semLocales.length){ statusEl.textContent = 'Añade primero los locales del grupo arriba.'; return; }
+  try{
+    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = 'Cargando el lector de imagen…';
+    await ensureTesseractLoaded();
+    const data = await reconocerImagen(file, statusEl);
+    const resultados = parseVentaSugeridaOCR(data);
+    if(!resultados.length){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = 'No se ha reconocido ningún local en la imagen. Prueba con una foto más nítida, o rellena a mano.';
+      return;
+    }
+    const aplicados = aplicarVentaSugeridaOCR(resultados);
+    statusEl.style.color = aplicados ? 'var(--good)' : 'var(--bad)';
+    statusEl.textContent = aplicados
+      ? `Se han rellenado ${aplicados} local(es). Es lectura automática — revisa los números antes de guardar.`
+      : 'Se leyeron locales en la imagen pero ninguno coincide con los ya añadidos al grupo — añádelos primero arriba.';
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'No se pudo leer la imagen: ' + err.message;
+  }
+}
+
+/* ---------------------------------------------------------------
+   Rellenar Facturas pendientes desde una captura — tabla con cabecera
+   (#, Fecha, Hora, Local, Proveedor, Empleado, Nº productos,
+   Imp. Alternativos, Subtotal, Total) y una fila por factura. A
+   diferencia de Ocupación/Venta Sugerida hay columnas de texto libre
+   (Proveedor, Empleado) además de números — más fácil que se
+   equivoque, revisar siempre antes de guardar.
+
+   Estrategia: se localizan las cabeceras conocidas por su texto para
+   fijar la posición X de cada columna que nos interesa (se ignoran
+   Hora, Nº productos e Imp. Alternativos); todo lo que caiga a la
+   izquierda de "Fecha" es el nº de factura. Cada palabra por debajo
+   de la cabecera se agrupa en filas por su Y, y dentro de cada fila
+   se asigna a la columna más cercana por X — las palabras de una
+   misma columna se concatenan en orden (para nombres de varias
+   palabras, ej. "EUROPASTRY, S.A.").
+   --------------------------------------------------------------- */
+function parseFacturasOCR(data){
+  const words = (data.words || [])
+    .map(w => ({ text: (w.text || '').trim(), x: (w.bbox.x0 + w.bbox.x1) / 2, y: (w.bbox.y0 + w.bbox.y1) / 2 }))
+    .filter(w => w.text);
+
+  const buscarCabecera = (texto) => words.find(w => w.text.toLowerCase().replace(/[.:]/g, '') === texto);
+  const hFecha = buscarCabecera('fecha');
+  const hProveedor = buscarCabecera('proveedor');
+  const hEmpleado = buscarCabecera('empleado');
+  const hSubtotal = buscarCabecera('subtotal');
+  const hTotal = buscarCabecera('total');
+  if(!hFecha || !hProveedor || !hEmpleado || !hSubtotal || !hTotal) return [];
+
+  const hLocal = buscarCabecera('local');
+  const hHora = buscarCabecera('hora');
+  const hProductos = words.find(w => w.text.toLowerCase().includes('producto'));
+  const hAlternativos = words.find(w => w.text.toLowerCase().includes('alternativ'));
+
+  const columnas = [
+    { campo: 'fecha', x: hFecha.x },
+    hHora ? { campo: '_hora', x: hHora.x } : null,
+    hLocal ? { campo: 'local', x: hLocal.x } : null,
+    { campo: 'proveedor', x: hProveedor.x },
+    { campo: 'usuario', x: hEmpleado.x },
+    hProductos ? { campo: '_productos', x: hProductos.x } : null,
+    hAlternativos ? { campo: '_alternativos', x: hAlternativos.x } : null,
+    { campo: 'base', x: hSubtotal.x },
+    { campo: 'total', x: hTotal.x },
+  ].filter(Boolean).sort((a, b) => a.x - b.x);
+
+  const gapEstimado = columnas.length > 1 ? (columnas[1].x - columnas[0].x) : 120;
+  const limiteNumeroFactura = columnas[0].x - gapEstimado / 2;
+
+  function asignarColumna(x){
+    if(x < limiteNumeroFactura) return 'numero_factura';
+    for(let i = 0; i < columnas.length; i++){
+      const izq = i === 0 ? limiteNumeroFactura : (columnas[i - 1].x + columnas[i].x) / 2;
+      const der = i === columnas.length - 1 ? Infinity : (columnas[i].x + columnas[i + 1].x) / 2;
+      if(x >= izq && x < der) return columnas[i].campo;
+    }
+    return columnas[columnas.length - 1].campo;
+  }
+
+  const yCabecera = hFecha.y;
+  const abajo = words.filter(w => w.y > yCabecera + 5).sort((a, b) => a.y - b.y);
+
+  const filas = [];
+  abajo.forEach(w => {
+    let fila = filas.find(f => Math.abs(f.y - w.y) < 14);
+    if(!fila){ fila = { y: w.y, palabras: [] }; filas.push(fila); }
+    fila.palabras.push(w);
+  });
+
+  return filas.map(fila => {
+    const porCampo = {};
+    fila.palabras.sort((a, b) => a.x - b.x).forEach(w => {
+      const campo = asignarColumna(w.x);
+      if(campo.startsWith('_')) return;
+      porCampo[campo] = porCampo[campo] ? `${porCampo[campo]} ${w.text}` : w.text;
+    });
+    return {
+      numero_factura: porCampo.numero_factura || null,
+      fecha: porCampo.fecha || null,
+      local: porCampo.local || null,
+      proveedor: porCampo.proveedor || null,
+      usuario: porCampo.usuario || null,
+      base: porCampo.base != null ? parseNumeroEs(porCampo.base) : null,
+      total: porCampo.total != null ? parseNumeroEs(porCampo.total) : null,
+    };
+  }).filter(f => f.numero_factura || f.total);
+}
+
+function aplicarFacturasOCR(resultados){
+  const nuevosIds = resultados.map(() => { semFacturaCounter++; semFacturaIds.push(semFacturaCounter); return semFacturaCounter; });
+  renderSemFacturas();
+  resultados.forEach((r, i) => {
+    const id = nuevosIds[i];
+    const setVal = (campo, val) => { const el = document.getElementById(`semf_${id}_${campo}`); if(el && val != null) el.value = val; };
+    setVal('numero', r.numero_factura);
+    setVal('fecha', r.fecha);
+    setVal('local', r.local);
+    setVal('proveedor', r.proveedor);
+    setVal('usuario', r.usuario);
+    setVal('base', r.base);
+    setVal('total', r.total);
+  });
+  return resultados.length;
+}
+
+async function leerCapturaFacturas(file){
+  const statusEl = document.getElementById('semFacOcrStatus');
+  try{
+    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = 'Cargando el lector de imagen…';
+    await ensureTesseractLoaded();
+    const data = await reconocerImagen(file, statusEl);
+    const resultados = parseFacturasOCR(data);
+    if(!resultados.length){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = 'No se ha reconocido la tabla (o le faltan columnas: Fecha, Proveedor, Empleado, Subtotal, Total). Prueba con una foto más nítida, o rellena a mano.';
+      return;
+    }
+    const aplicadas = aplicarFacturasOCR(resultados);
+    statusEl.style.color = 'var(--good)';
+    statusEl.textContent = `Se han añadido ${aplicadas} factura(s). Es lectura automática — revisa sobre todo el proveedor y los importes antes de guardar.`;
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'No se pudo leer la imagen: ' + err.message;
+  }
+}
+
+function renderAllSemSections(){
+  renderSemVentas();
+  renderSemVentaSugerida();
+  renderSemCompras();
+  renderSemReservas();
+  renderSemValoraciones();
+  renderSemOcupacion();
+}
+
+function addSemFactura(){
+  semFacturaCounter++;
+  semFacturaIds.push(semFacturaCounter);
+  renderSemFacturas();
+}
+function removeSemFactura(id){
+  semFacturaIds = semFacturaIds.filter(x => x !== id);
+  renderSemFacturas();
+}
+function renderSemFacturas(){
+  const tbody = document.querySelector('#tblSemFacturas tbody');
+  tbody.innerHTML = '';
+  semFacturaIds.forEach(id => {
+    const tdRm = el('td');
+    const rm = el('button', { type:'button', class:'small-btn' });
+    rm.textContent = '✕';
+    rm.addEventListener('click', () => removeSemFactura(id));
+    tdRm.appendChild(rm);
+    tbody.appendChild(semRow([
+      semInputCell(`semf_${id}_numero`),
+      semInputCell(`semf_${id}_fecha`, {placeholder:'dd/mm/aaaa'}),
+      semInputCell(`semf_${id}_local`),
+      semInputCell(`semf_${id}_proveedor`),
+      semInputCell(`semf_${id}_usuario`),
+      semInputCell(`semf_${id}_base`, {inputmode:'decimal'}),
+      semInputCell(`semf_${id}_total`, {inputmode:'decimal'}),
+      tdRm,
+    ]));
+  });
+}
+
+/* ---------------------------------------------------------------
+   Recordar la última visita del mismo local (y mismo tipo de auditoría):
+   rellena sola la fecha de la visita anterior y las puntuaciones por
+   bloque de esa visita, en vez de que el AM tenga que ir a buscarlas al
+   histórico a mano. Se dispara al salir del campo "Local" y al cambiar
+   de tipo de auditoría (si ya hay un local escrito).
+   --------------------------------------------------------------- */
+async function autocompletarVisitaAnterior(){
+  const statusEl = document.getElementById('visitaAnteriorStatus');
+  const local = v('f_local').trim();
+  if(!local){ statusEl.textContent = ''; return; }
+  if(typeof SUPABASE_CONFIGURED === 'undefined' || !SUPABASE_CONFIGURED){
+    statusEl.textContent = '';
+    return;
+  }
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Buscando la última visita de este local…';
+  try{
+    // Como las demás llamadas a Supabase (Guardar auditoría, Cambiar contraseña):
+    // si la sesión ha caducado hay que refrescarla antes de usarla, si no la consulta
+    // falla en silencio con el token viejo.
+    const session = await refreshSessionIfNeeded();
+    if(!session){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = 'Tu sesión ha caducado — recarga la página e inicia sesión de nuevo.';
+      return;
+    }
+    // Coincidencia por "contiene" (no exacta): las auditorías guardadas antes de que
+    // existiera este desplegable se escribieron como texto libre (p. ej. "Saona
+    // Zurbano" en vez de "Zurbano"), así que una igualdad exacta no las encontraría.
+    const url = `${SUPABASE_URL}/rest/v1/audits?local=ilike.*${encodeURIComponent(local)}*&tipo=eq.${currentTipo}&order=created_at.desc&limit=1&select=fecha_visita,bloques,puntuacion_total`;
+    const res = await fetch(url, { headers: restHeaders() });
+    if(!res.ok) throw new Error(`No se pudo consultar el histórico (código ${res.status})`);
+    const rows = await res.json();
+    if(!rows.length){
+      statusEl.textContent = 'No hay ninguna visita anterior guardada de este local (' + CHECKLISTS[currentTipo].label + ').';
+      return;
+    }
+    const prev = rows[0];
+    document.getElementById('f_visitaAnterior').value = prev.fecha_visita || '';
+    (prev.bloques || []).forEach(b => {
+      const input = document.getElementById(`gant_${b.key}`);
+      if(input && b.puntuacion !== null && b.puntuacion !== undefined) input.value = Number(b.puntuacion).toFixed(1);
+    });
+    recalc();
+    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = `Rellenado con la visita del ${prev.fecha_visita || '—'} (puedes corregirlo a mano si hace falta).`;
+  }catch(err){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'No se pudo recuperar la visita anterior: ' + err.message;
+  }
+}
+
+/* ---------------------------------------------------------------
+   7. Guardar auditoría en Supabase (histórico compartido de ambos tipos)
+   --------------------------------------------------------------- */
+function restHeaders(){
+  // Usa el token de la sesión del usuario si hay uno (necesario: Row Level
+  // Security exige auth.role() = 'authenticated', la anon key sola ya no
+  // basta para leer ni escribir en audits/incidencias/productos/plan).
+  const token = accessToken() || SUPABASE_ANON_KEY;
+  return {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+}
+
+/* ---------------------------------------------------------------
+   Traer Clientes/Ventas de la semana anterior — busca, para cada local
+   ya añadido al grupo, el último informe semanal guardado con una
+   fecha de fin anterior a la semana que se está rellenando, y copia
+   sus Clientes/Ventas de esa semana en los campos "(sem. anterior)" de
+   esta. Es una opción explícita (botón), no rellena solo — no se
+   quiere pisar sin avisar lo que el AM ya haya escrito a mano.
+   --------------------------------------------------------------- */
+async function traerSemanaAnterior(){
+  const statusEl = document.getElementById('semAnteriorStatus');
+  if(!semLocales.length){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Añade primero los locales del grupo.'; return; }
+  const inicioActual = v('sem_semanaInicio');
+  if(!inicioActual){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Pon la fecha de inicio de esta semana antes de traer los datos de la anterior.'; return; }
+  const session = await refreshSessionIfNeeded();
+  if(!session){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Tu sesión ha caducado. Recarga la página e inicia sesión de nuevo.';
+    showLogin();
+    return;
+  }
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Buscando…';
+  let encontrados = 0;
+  try{
+    for(const l of semLocales){
+      const informes = await fetch(
+        `${SUPABASE_URL}/rest/v1/informes_semanales?locales=ilike.*${encodeURIComponent(l.nombre)}*&semana_fin=lt.${inicioActual}&order=semana_fin.desc&limit=1&select=id`,
+        { headers: restHeaders() }
+      ).then(r => r.json());
+      if(!informes.length) continue;
+      const filas = await fetch(
+        `${SUPABASE_URL}/rest/v1/informe_semanal_ventas?informe_id=eq.${informes[0].id}&local=eq.${encodeURIComponent(l.nombre)}&select=clientes_semana,ventas_semana`,
+        { headers: restHeaders() }
+      ).then(r => r.json());
+      if(!filas.length) continue;
+      const setVal = (id, val) => {
+        const campo = document.getElementById(id);
+        if(campo && val != null){ campo.value = val; campo.dispatchEvent(new Event('input', { bubbles: true })); }
+      };
+      setVal(`semv_${l.id}_clientesAnt`, filas[0].clientes_semana);
+      setVal(`semv_${l.id}_ventasAnt`, filas[0].ventas_semana);
+      encontrados++;
+    }
+    statusEl.style.color = encontrados ? 'var(--good)' : 'var(--bad)';
+    statusEl.textContent = encontrados
+      ? `Traído de la semana anterior para ${encontrados} de ${semLocales.length} local(es).`
+      : 'No se encontró ningún informe anterior guardado para estos locales.';
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Error al buscar: ' + err.message;
+  }
+}
+
+async function saveAuditoria(){
+  const statusEl = document.getElementById('saveStatus');
+  if(typeof SUPABASE_CONFIGURED === 'undefined' || !SUPABASE_CONFIGURED){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Supabase no está configurado (ver config.js). Puedes seguir generando el PDF, pero no se guardará histórico.';
+    return;
+  }
+  const session = await refreshSessionIfNeeded();
+  if(!session){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Tu sesión ha caducado. Recarga la página e inicia sesión de nuevo.';
+    showLogin();
+    return;
+  }
+  recalc();
+  const bs = window._blockScores || {};
+
+  const bloques = BLOQUES.map(bloque => ({
+    key: bloque.key,
+    nombre: bloque.nombre,
+    peso: bloque.peso,
+    puntuacion: bs[bloque.key],
+    subs: bloque.subs.map(s => ({
+      nombre: s.nombre,
+      items: s.items,
+      puntuacion: subScore(bloque.prefix, s),
+      observaciones: v(`sub_${bloque.prefix}${s.n}_obs`),
+    })),
+  }));
+
+  const incidencias = [];
+  for(let i=1;i<=N_INC;i++){
+    const desc = v(`inc${i}_desc`);
+    if(!desc) continue;
+    incidencias.push({ numero:i, bloque:v(`inc${i}_bloque`), descripcion:desc, gravedad:v(`inc${i}_grav`), responsable:v(`inc${i}_resp`), fecha_limite:v(`inc${i}_fecha`) });
+  }
+  const productos = [];
+  for(let i=1;i<=N_PNHD;i++){
+    const prod = v(`pnhd${i}_producto`);
+    if(!prod) continue;
+    productos.push({ producto:prod, proveedor:v(`pnhd${i}_proveedor`), area:v(`pnhd${i}_area`), accion_tomada:v(`pnhd${i}_accion`), estado:v(`pnhd${i}_estado`) });
+  }
+  const plan = [];
+  for(let i=1;i<=N_PLAN;i++){
+    const accion = v(`plan${i}_accion`);
+    if(!accion) continue;
+    plan.push({ accion, responsable:v(`plan${i}_resp`), fecha:v(`plan${i}_fecha`), prioridad:v(`plan${i}_prioridad`) });
+  }
+
+  const payload = {
+    tipo: currentTipo,
+    local: v('f_local'),
+    fecha_visita: fechaHoraTexto(),
+    supervisores: v('f_supervisores'),
+    fecha_visita_anterior: v('f_visitaAnterior'),
+    resumen_resultado_global: v('r_global'),
+    resumen_mejor_peor_bloque: v('r_bloques'),
+    resumen_incidencias_relevantes: v('r_incidencias'),
+    resumen_productos_no_homologados: v('r_nohom'),
+    resumen_recomendacion: v('r_recomendacion'),
+    comentario_evolucion: v('f_comentarioPuntuacion'),
+    bloques,
+    puntuacion_total: window._totalVis,
+    puntuacion_anterior_total: window._totalAnt,
+    valoracion_final: v('f_conclusion'),
+    creado_por: currentUserName(),
+  };
+
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Guardando…';
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/audits`, {
+      method: 'POST', headers: restHeaders(), body: JSON.stringify(payload),
+    });
+    if(!res.ok) throw new Error(await res.text() || res.statusText);
+    const rows = JSON.parse(await res.text() || '[]');
+    // PostgREST solo devuelve representation si se pide con Prefer: return=representation
+    const auditId = rows[0] ? rows[0].id : null;
+    if(auditId){
+      const withAudit = (arr) => arr.map(x => ({ ...x, audit_id: auditId }));
+      const calls = [];
+      if(incidencias.length) calls.push(fetch(`${SUPABASE_URL}/rest/v1/incidencias`, {method:'POST', headers:restHeaders(), body:JSON.stringify(withAudit(incidencias))}));
+      if(productos.length) calls.push(fetch(`${SUPABASE_URL}/rest/v1/productos_no_homologados`, {method:'POST', headers:restHeaders(), body:JSON.stringify(withAudit(productos))}));
+      if(plan.length) calls.push(fetch(`${SUPABASE_URL}/rest/v1/plan_accion`, {method:'POST', headers:restHeaders(), body:JSON.stringify(withAudit(plan))}));
+      await Promise.all(calls);
+    }
+    statusEl.style.color = 'var(--good)';
+    statusEl.textContent = 'Auditoría guardada en el histórico.';
+    localStorage.removeItem(draftKeyFor(currentTipo));
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Error al guardar: ' + err.message;
+  }
+}
+
+/* ---------------------------------------------------------------
+   7b. Guardar Informe Semanal en Supabase (informes_semanales + 6
+   tablas hijas por local/factura). A diferencia de saveAuditoria():
+   - pide explícitamente Prefer: return=representation, y si aun así
+     no vuelve id, lanza error en vez de tragárselo en silencio
+     (una cabecera sin ninguna fila hija es inútil).
+   - usa Promise.allSettled para los 6 inserts hijos: si uno falla,
+     los demás que sí se guardaron no se pierden de vista, y el
+     mensaje dice qué tabla(s) fallaron en vez de un error genérico
+     (relanzar el guardado completo duplicaría la cabecera).
+   - usa numOrNull() para todos los campos numéricos, no v(): v()
+     devuelve "" en un campo vacío, y "" en una columna numeric/int
+     de Postgres da un 400 — pasará constantemente (no todos los
+     locales tienen reseñas Cover cada semana, etc.).
+   --------------------------------------------------------------- */
+async function guardarInformeSemanal(){
+  const statusEl = document.getElementById('saveStatus');
+  if(typeof SUPABASE_CONFIGURED === 'undefined' || !SUPABASE_CONFIGURED){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Supabase no está configurado (ver config.js). No se puede guardar.';
+    return;
+  }
+  const session = await refreshSessionIfNeeded();
+  if(!session){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Tu sesión ha caducado. Recarga la página e inicia sesión de nuevo.';
+    showLogin();
+    return;
+  }
+  if(!semLocales.length){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Añade al menos un local del grupo antes de guardar.';
+    return;
+  }
+  const derivada = semanaDerivada();
+  if(!derivada){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Elige la fecha de inicio y de fin de la semana antes de guardar.';
+    return;
+  }
+
+  const payload = {
+    locales: semLocales.map(l => l.nombre).join(' · '),
+    semana_inicio: v('sem_semanaInicio'),
+    semana_fin: v('sem_semanaFin'),
+    semana_texto: derivada.texto,
+    semana_corto: derivada.corto,
+    acumulado_mes: derivada.mesLabel,
+    preparado_para: v('sem_preparadoPara'),
+    notas_prioridades: v('sem_notas'),
+    creado_por: currentUserName(),
+  };
+
+  const ventas = semLocales.map(l => ({
+    local: l.nombre,
+    clientes_semana: numOrNull(`semv_${l.id}_clientes`),
+    clientes_semana_anterior: numOrNull(`semv_${l.id}_clientesAnt`),
+    ventas_semana: numOrNull(`semv_${l.id}_ventas`),
+    ventas_semana_anterior: numOrNull(`semv_${l.id}_ventasAnt`),
+    ic_semana: numOrNull(`semv_${l.id}_ic`),
+    ic_semana_anterior: numOrNull(`semv_${l.id}_icAnt`),
+  }));
+
+  const ventaSugerida = [];
+  semLocales.forEach(l => {
+    const ventaLocalMes = numOrNull(`semvs_${l.id}_total_ventaLocalMes`);
+    CATEGORIAS_VENTA_SUGERIDA.forEach((cat, ci) => {
+      const uds = numOrNull(`semvs_${l.id}_${ci}_uds`);
+      const kpi = numOrNull(`semvs_${l.id}_${ci}_kpi`);
+      const euros = numOrNull(`semvs_${l.id}_${ci}_euros`);
+      if(uds === null && kpi === null && euros === null) return; // categoría vacía, no se manda
+      ventaSugerida.push({ local: l.nombre, categoria: cat, uds, kpi_pct: kpi, euros, venta_local_mes: ventaLocalMes });
+    });
+  });
+
+  const compras = semLocales.map(l => ({
+    local: l.nombre,
+    compras_semana: numOrNull(`semc_${l.id}_comprasSemana`),
+    pct_compras_semana: numOrNull(`semc_${l.id}_pctComprasSemana`),
+    mermas_semana: numOrNull(`semc_${l.id}_mermasSemana`),
+    pct_mermas_semana: numOrNull(`semc_${l.id}_pctMermasSemana`),
+    compras: numOrNull(`semc_${l.id}_compras`),
+    pct_compras: numOrNull(`semc_${l.id}_pctCompras`),
+    mermas: numOrNull(`semc_${l.id}_mermas`),
+    pct_mermas: numOrNull(`semc_${l.id}_pctMermas`),
+  }));
+
+  const reservas = semLocales.map(l => ({
+    local: l.nombre,
+    clientes: numOrNull(`semr_${l.id}_clientes`),
+    walkins: numOrNull(`semr_${l.id}_walkins`),
+    pct_walkins: numOrNull(`semr_${l.id}_pctWalkins`),
+    noshows: numOrNull(`semr_${l.id}_noshows`),
+  }));
+
+  const franjas = semFranjas.map(f => ({
+    local: f.local, dia_semana: f.dia_semana, franja: f.franja, reservas: f.reservas,
+  }));
+
+  const valoraciones = semLocales.map(l => ({
+    local: l.nombre,
+    resenas_gr: numOrNull(`semva_${l.id}_resenasGr`),
+    puntuacion_gr: numOrNull(`semva_${l.id}_puntGr`),
+    tendencia_gr: v(`semva_${l.id}_tendGr`) || null,
+    resenas_cover: numOrNull(`semva_${l.id}_resenasCover`),
+    puntuacion_cover: numOrNull(`semva_${l.id}_puntCover`),
+    tendencia_cover: v(`semva_${l.id}_tendCover`) || null,
+  }));
+
+  const ocupacion = [];
+  semLocales.forEach(l => {
+    DIAS_SEMANA.forEach((_, di) => {
+      const prefix = `semo_${l.id}_${di}`;
+      const cm = numOrNull(`${prefix}_mediodia_comensales`);
+      const am = numOrNull(`${prefix}_mediodia_aforo`);
+      const mm = numOrNull(`${prefix}_mediodia_mesas`);
+      const tm = numOrNull(`${prefix}_mediodia_turnos`);
+      const cc = numOrNull(`${prefix}_cena_comensales`);
+      const ac = numOrNull(`${prefix}_cena_aforo`);
+      const mc = numOrNull(`${prefix}_cena_mesas`);
+      const tc = numOrNull(`${prefix}_cena_turnos`);
+      if([cm, am, mm, tm, cc, ac, mc, tc].every(x => x === null)) return; // fila vacía, no se manda
+      const info = fechaOcupacionInfo(di);
+      ocupacion.push({
+        local: l.nombre, dia: info ? info.dia : null, fecha: fechaOcupacion(di),
+        comensales_mediodia: cm, aforo_mediodia: am, mesas_mediodia: mm, turnos_mediodia: tm,
+        pct_mediodia: (am && cm != null) ? Number(((cm / am) * 100).toFixed(1)) : null,
+        comensales_cena: cc, aforo_cena: ac, mesas_cena: mc, turnos_cena: tc,
+        pct_cena: (ac && cc != null) ? Number(((cc / ac) * 100).toFixed(1)) : null,
+      });
+    });
+  });
+
+  const facturas = [];
+  semFacturaIds.forEach(id => {
+    const numero = v(`semf_${id}_numero`);
+    if(!numero) return;
+    facturas.push({
+      numero_factura: numero,
+      fecha: v(`semf_${id}_fecha`),
+      local: v(`semf_${id}_local`),
+      proveedor: v(`semf_${id}_proveedor`),
+      usuario: v(`semf_${id}_usuario`),
+      base: numOrNull(`semf_${id}_base`),
+      total: numOrNull(`semf_${id}_total`),
+    });
+  });
+
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = editandoInformeId ? 'Guardando cambios…' : 'Guardando…';
+  try{
+    let informeId = editandoInformeId;
+    if(informeId){
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/informes_semanales?id=eq.${informeId}`, {
+        method: 'PATCH',
+        headers: restHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if(!res.ok) throw new Error(await res.text() || res.statusText);
+    }else{
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/informes_semanales`, {
+        method: 'POST',
+        headers: { ...restHeaders(), 'Prefer': 'return=representation' },
+        body: JSON.stringify(payload),
+      });
+      if(!res.ok) throw new Error(await res.text() || res.statusText);
+      const rows = JSON.parse(await res.text() || '[]');
+      informeId = rows[0] ? rows[0].id : null;
+      if(!informeId) throw new Error('Supabase no devolvió el id del informe guardado — no se pudieron guardar los datos por local.');
+    }
+
+    const withInforme = (arr) => arr.map(x => ({ ...x, informe_id: informeId }));
+    const tablasTodas = [
+      { nombre: 'informe_semanal_ventas', datos: ventas },
+      { nombre: 'informe_semanal_venta_sugerida', datos: ventaSugerida },
+      { nombre: 'informe_semanal_compras', datos: compras },
+      { nombre: 'informe_semanal_facturas', datos: facturas },
+      { nombre: 'informe_semanal_reservas', datos: reservas },
+      { nombre: 'informe_semanal_ocupacion', datos: ocupacion },
+      { nombre: 'informe_semanal_valoraciones', datos: valoraciones },
+      { nombre: 'informe_semanal_franjas', datos: franjas },
+    ];
+
+    if(editandoInformeId){
+      // Al editar, se sustituyen todas las filas hijas por las del formulario
+      // actual (borrar + volver a insertar) en vez de casar fila a fila — más
+      // simple, y evita dejar huérfanas las filas de un local o factura que
+      // se haya quitado durante la edición.
+      await Promise.all(tablasTodas.map(t =>
+        fetch(`${SUPABASE_URL}/rest/v1/${t.nombre}?informe_id=eq.${informeId}`, { method: 'DELETE', headers: restHeaders() })
+          .then(r => { if(!r.ok) throw new Error('borrar ' + t.nombre); })
+      ));
+    }
+
+    const tablas = tablasTodas.filter(t => t.datos.length);
+    const resultados = await Promise.allSettled(tablas.map(t =>
+      fetch(`${SUPABASE_URL}/rest/v1/${t.nombre}`, { method: 'POST', headers: restHeaders(), body: JSON.stringify(withInforme(t.datos)) })
+        .then(r => { if(!r.ok) throw new Error(t.nombre); return r; })
+    ));
+    const fallidas = resultados
+      .map((r, i) => ({ r, nombre: tablas[i].nombre }))
+      .filter(x => x.r.status === 'rejected')
+      .map(x => x.nombre);
+
+    if(fallidas.length){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `Informe guardado, pero fallaron estas secciones: ${fallidas.join(', ')}. No repitas el guardado completo (duplicaría la cabecera) — avisa para revisarlo.`;
+    }else{
+      statusEl.style.color = 'var(--good)';
+      statusEl.textContent = editandoInformeId ? 'Cambios guardados.' : 'Informe semanal guardado en el histórico.';
+      localStorage.removeItem(draftKeyFor('informe_semanal'));
+    }
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Error al guardar: ' + err.message;
+  }
+}
+
+/* ---------------------------------------------------------------
+   7c. Cargar un Informe Semanal ya guardado para editarlo — se dispara
+   al entrar con ?editarSemanal=<id> en la URL (enlace "Editar" desde el
+   histórico). Reconstruye semLocales/semFacturaIds a partir de los
+   locales que aparecen en las tablas hijas, rellena todos los campos
+   por id, y deja editandoInformeId fijado para que guardarInformeSemanal()
+   actualice en vez de crear una fila nueva.
+   --------------------------------------------------------------- */
+async function cargarInformeSemanalParaEditar(id){
+  const statusEl = document.getElementById('saveStatus');
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Cargando informe guardado…';
+  try{
+    const session = await refreshSessionIfNeeded();
+    if(!session){ showLogin(); return; }
+    const headers = restHeaders();
+    const tablasHijas = ['informe_semanal_ventas','informe_semanal_venta_sugerida','informe_semanal_compras','informe_semanal_facturas','informe_semanal_reservas','informe_semanal_ocupacion','informe_semanal_valoraciones','informe_semanal_franjas'];
+    const [informeRes, ...hijasRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/informes_semanales?id=eq.${id}&select=*`, { headers }),
+      ...tablasHijas.map(t => fetch(`${SUPABASE_URL}/rest/v1/${t}?informe_id=eq.${id}`, { headers })),
+    ]);
+    for(const r of [informeRes, ...hijasRes]){
+      if(!r.ok) throw new Error('No se pudo cargar el informe (' + r.status + ')');
+    }
+    const informeRows = await informeRes.json();
+    const [ventas, ventaSugerida, compras, facturas, reservas, ocupacion, valoraciones, franjas] = await Promise.all(hijasRes.map(r => r.json()));
+    const informe = informeRows[0];
+    if(!informe){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = 'No se ha encontrado ese informe (puede que ya no exista).';
+      return;
+    }
+
+    editandoInformeId = id;
+    document.getElementById('f_tipo').value = 'informe_semanal';
+    onTipoChange();
+
+    const nombresLocales = [];
+    const addNombre = (n) => { if(n && !nombresLocales.includes(n)) nombresLocales.push(n); };
+    (informe.locales || '').split('·').map(s => s.trim()).forEach(addNombre);
+    [ventas, ventaSugerida, compras, reservas, ocupacion, valoraciones].forEach(arr => arr.forEach(r => addNombre(r.local)));
+    semLocales = [];
+    semLocalCounter = 0;
+    nombresLocales.forEach(addSemLocalPorNombre);
+    poblarSemLocalesCheckGrid();
+
+    document.getElementById('sem_semanaInicio').value = informe.semana_inicio || '';
+    document.getElementById('sem_semanaFin').value = informe.semana_fin || '';
+    document.getElementById('sem_preparadoPara').value = informe.preparado_para || '';
+    document.getElementById('sem_notas').value = informe.notas_prioridades || '';
+    updateSemanaPreview();
+    refrescarFechasOcupacion();
+
+    const setVal = (elId, val) => { const el = document.getElementById(elId); if(el && val != null) el.value = val; };
+    const localId = (nombre) => { const l = semLocales.find(x => x.nombre === nombre); return l ? l.id : null; };
+
+    ventas.forEach(r => {
+      const lid = localId(r.local); if(!lid) return;
+      setVal(`semv_${lid}_clientes`, r.clientes_semana);
+      setVal(`semv_${lid}_clientesAnt`, r.clientes_semana_anterior);
+      setVal(`semv_${lid}_ventas`, r.ventas_semana);
+      setVal(`semv_${lid}_ventasAnt`, r.ventas_semana_anterior);
+    });
+
+    compras.forEach(r => {
+      const lid = localId(r.local); if(!lid) return;
+      setVal(`semc_${lid}_comprasSemana`, r.compras_semana);
+      setVal(`semc_${lid}_mermasSemana`, r.mermas_semana);
+      setVal(`semc_${lid}_compras`, r.compras);
+      setVal(`semc_${lid}_mermas`, r.mermas);
+    });
+
+    reservas.forEach(r => {
+      const lid = localId(r.local); if(!lid) return;
+      setVal(`semr_${lid}_walkins`, r.walkins);
+      setVal(`semr_${lid}_noshows`, r.noshows);
+    });
+
+    valoraciones.forEach(r => {
+      const lid = localId(r.local); if(!lid) return;
+      setVal(`semva_${lid}_resenasGr`, r.resenas_gr);
+      setVal(`semva_${lid}_puntGr`, r.puntuacion_gr);
+      setVal(`semva_${lid}_tendGr`, r.tendencia_gr);
+      setVal(`semva_${lid}_resenasCover`, r.resenas_cover);
+      setVal(`semva_${lid}_puntCover`, r.puntuacion_cover);
+      setVal(`semva_${lid}_tendCover`, r.tendencia_cover);
+    });
+
+    const vsPorLocal = {};
+    ventaSugerida.forEach(r => { (vsPorLocal[r.local] ||= []).push(r); });
+    Object.entries(vsPorLocal).forEach(([nombre, filas]) => {
+      const lid = localId(nombre); if(!lid) return;
+      const conVentaMes = filas.find(f => f.venta_local_mes != null);
+      if(conVentaMes) setVal(`semvs_${lid}_total_ventaLocalMes`, conVentaMes.venta_local_mes);
+      filas.forEach(f => {
+        const ci = CATEGORIAS_VENTA_SUGERIDA.indexOf(f.categoria);
+        if(ci === -1) return;
+        setVal(`semvs_${lid}_${ci}_uds`, f.uds);
+        setVal(`semvs_${lid}_${ci}_kpi`, f.kpi_pct);
+        setVal(`semvs_${lid}_${ci}_euros`, f.euros);
+      });
+    });
+
+    ocupacion.forEach(r => {
+      const lid = localId(r.local); if(!lid) return;
+      for(let di = 0; di < 7; di++){
+        if(fechaOcupacion(di) !== r.fecha) continue;
+        const prefix = `semo_${lid}_${di}`;
+        setVal(`${prefix}_mediodia_comensales`, r.comensales_mediodia);
+        setVal(`${prefix}_mediodia_aforo`, r.aforo_mediodia);
+        setVal(`${prefix}_mediodia_mesas`, r.mesas_mediodia);
+        setVal(`${prefix}_mediodia_turnos`, r.turnos_mediodia);
+        setVal(`${prefix}_cena_comensales`, r.comensales_cena);
+        setVal(`${prefix}_cena_aforo`, r.aforo_cena);
+        setVal(`${prefix}_cena_mesas`, r.mesas_cena);
+        setVal(`${prefix}_cena_turnos`, r.turnos_cena);
+        break;
+      }
+    });
+
+    semFacturaIds = [];
+    semFacturaCounter = 0;
+    facturas.forEach(() => { semFacturaCounter++; semFacturaIds.push(semFacturaCounter); });
+    renderSemFacturas();
+    facturas.forEach((f, i) => {
+      const fid = semFacturaIds[i];
+      setVal(`semf_${fid}_numero`, f.numero_factura);
+      setVal(`semf_${fid}_fecha`, f.fecha);
+      setVal(`semf_${fid}_local`, f.local);
+      setVal(`semf_${fid}_proveedor`, f.proveedor);
+      setVal(`semf_${fid}_usuario`, f.usuario);
+      setVal(`semf_${fid}_base`, f.base);
+      setVal(`semf_${fid}_total`, f.total);
+    });
+
+    semLocales.forEach(l => {
+      computeIC(l.id); computePctCompras(l.id); computePctComprasSemana(l.id);
+      syncReservasClientes(l.id); computeTotalVentaSugerida(l.id);
+      for(let di = 0; di < 7; di++){ computeOcupacionPct(`semo_${l.id}_${di}`, 'mediodia'); computeOcupacionPct(`semo_${l.id}_${di}`, 'cena'); }
+    });
+
+    semFranjas = franjas.map(f => ({ local: f.local, dia_semana: f.dia_semana, franja: f.franja, reservas: f.reservas }));
+    poblarSemFranjasLocalSelect();
+    cargarFranjasSemanaAnterior().then(renderFranjas);
+
+    document.getElementById('btnSave').textContent = 'Guardar cambios';
+    const banner = document.getElementById('editBanner');
+    document.getElementById('editBannerText').textContent = `Editando el informe semanal de "${informe.locales}" (${informe.semana_texto || informe.semana_corto || ''}). Al guardar se actualizará este mismo informe — no se creará uno nuevo.`;
+    banner.style.display = 'flex';
+    document.getElementById('draftBanner').style.display = 'none';
+
+    statusEl.textContent = '';
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'No se pudo cargar el informe: ' + err.message;
+  }
+}
+
+/* ---------------------------------------------------------------
+   8. Inicialización
+   --------------------------------------------------------------- */
+document.addEventListener('DOMContentLoaded', () => {
+  populateLocalesDatalist();
+  document.getElementById('f_tipo').value = currentTipo;
+  document.getElementById('tipoHeaderBadge').textContent = '· ' + CHECKLISTS[currentTipo].label;
+  document.getElementById('tipoHint').textContent = 'Visita Operativa interna (VEO-CLO Mixto) — la hace el AM/formador de zona de forma recurrente.';
+  document.getElementById('f_tipo').addEventListener('change', () => {
+    onTipoChange();
+    if(currentTipo !== 'informe_semanal') autocompletarVisitaAnterior();
+  });
+  document.getElementById('f_local').addEventListener('change', autocompletarVisitaAnterior);
+
+  renderBloques();
+  renderGlobalTable();
+  renderIncidencias();
+  renderNoHom();
+  renderPlan();
+  recalc();
+  document.getElementById('btnAutoResumen').addEventListener('click', autoResumen);
+  document.getElementById('btnGenerate').addEventListener('click', generatePdf);
+  document.getElementById('btnSave').addEventListener('click', () => {
+    if(currentTipo === 'informe_semanal') guardarInformeSemanal(); else saveAuditoria();
+  });
+
+  poblarSemLocalesCheckGrid();
+  document.getElementById('semLocalTodos').addEventListener('change', (e) => {
+    if(e.target.checked) LOCALES.forEach(addSemLocalPorNombre);
+    else{ semLocales = []; renderAllSemSections(); }
+    poblarSemLocalesCheckGrid();
+  });
+  document.getElementById('btnAddSemFactura').addEventListener('click', addSemFactura);
+  document.getElementById('btnSemAnterior').addEventListener('click', traerSemanaAnterior);
+  document.getElementById('sem_semanaInicio').addEventListener('change', () => { updateSemanaPreview(); refrescarFechasOcupacion(); });
+  document.getElementById('sem_semanaFin').addEventListener('change', () => { updateSemanaPreview(); refrescarFechasOcupacion(); });
+  document.getElementById('semOcupacionCsvFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(file) leerCsvOcupacion(file);
+    e.target.value = '';
+  });
+  document.getElementById('semCsvFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(file) leerCsvReservas(file);
+    e.target.value = '';
+  });
+  document.getElementById('semCsvListBtn').addEventListener('click', listarInformesCorreo);
+  document.getElementById('semFranjasLocal').addEventListener('change', renderFranjas);
+  document.getElementById('semVsOcrFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(file) leerCapturaVentaSugerida(file);
+    e.target.value = '';
+  });
+  document.getElementById('semFacOcrFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(file) leerCapturaFacturas(file);
+    e.target.value = '';
+  });
+  renderAllSemSections();
+  renderSemFacturas();
+
+  if(typeof SUPABASE_CONFIGURED === 'undefined' || !SUPABASE_CONFIGURED){
+    document.getElementById('supabaseNote').textContent = 'Supabase no está configurado en esta app (ver config.js). Puedes generar el PDF, pero no se guardará histórico ni se leerá desde Historico_Auditorias_Saona.html.';
+  }
+
+  // Autoguardado de borrador: cualquier cambio en el formulario (del tipo
+  // que esté activo) programa un guardado a los 1,5s; al cerrar/recargar
+  // se fuerza uno inmediato para no perder los últimos segundos escritos.
+  document.getElementById('appRoot').addEventListener('input', scheduleDraftSave);
+  document.getElementById('appRoot').addEventListener('change', scheduleDraftSave);
+  window.addEventListener('beforeunload', () => { clearTimeout(draftSaveTimer); guardarBorrador(); });
+  document.getElementById('btnRestaurarBorrador').addEventListener('click', () => {
+    restaurarBorrador();
+    borradorGestionadoEnSesion.add(currentTipo);
+    document.getElementById('draftBanner').style.display = 'none';
+  });
+  document.getElementById('btnDescartarBorrador').addEventListener('click', () => {
+    localStorage.removeItem(draftKeyFor(currentTipo));
+    borradorGestionadoEnSesion.add(currentTipo);
+    document.getElementById('draftBanner').style.display = 'none';
+  });
+  document.getElementById('btnCancelarEdicion').addEventListener('click', () => {
+    window.location.href = window.location.pathname;
+  });
+  const idAEditar = new URLSearchParams(window.location.search).get('editarSemanal');
+  if(idAEditar){
+    cargarInformeSemanalParaEditar(idAEditar);
+  }else{
+    mostrarAvisoBorradorSiExiste();
+  }
+});
+</script>
+
+</div><!-- /#appRoot -->
+
+<!-- Vista de impresión del informe: oculta en pantalla, es lo único que se ve al
+     imprimir/guardar como PDF (evita depender de ventanas emergentes, que algunos
+     navegadores y este propio entorno de pruebas bloquean incluso con un clic real). -->
+<div id="printReport"></div>
+
+</body>
+</html>

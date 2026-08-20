@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Resumen Mensual · Saona</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="theme-color" content="#1F3864">
+<style>
+  :root{
+    --navy:#1F3864; --navy-dark:#152847; --accent:#C0722D;
+    --bg:#F4F6F9; --card:#FFFFFF; --border:#DDE3EC; --text:#1C2430;
+    --muted:#65728A; --good:#1E8E5A; --warn:#C0722D; --bad:#C0392B; --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); line-height:1.5;}
+  header.top{background:linear-gradient(135deg,var(--navy) 0%, var(--navy-dark) 100%); color:#fff; padding:28px 32px 22px;}
+  header.top h1{margin:0 0 4px; font-size:22px; font-weight:700;}
+  header.top p{margin:0; opacity:.85; font-size:14px;}
+  header.top a{color:#DCE6F5;}
+  main{max-width:960px; margin:0 auto; padding:24px 20px 80px;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px; margin-bottom:20px;}
+  .filters{display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end; margin-bottom:6px;}
+  .field{display:flex; flex-direction:column; gap:4px; min-width:180px;}
+  .field label{font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.03em;}
+  select, input{font:inherit; padding:8px 10px; border:1px solid var(--border); border-radius:7px; background:#fff; color:var(--text);}
+  table{width:100%; border-collapse:collapse; font-size:13.5px; margin-top:10px;}
+  th, td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--border);}
+  th{color:var(--muted); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; text-align:right;}
+  th:first-child, td:first-child{text-align:left;}
+  td{text-align:right; font-variant-numeric:tabular-nums;}
+  td:first-child{text-align:left; font-variant-numeric:normal;}
+  tr.total td{font-weight:700; background:var(--bg);}
+  .status-message{font-size:13.5px; margin-top:8px;}
+  .status-message[data-kind="error"]{color:var(--bad);}
+  .status-message[data-kind="ok"], .status-message[data-kind="info"]{color:var(--muted);}
+  .table-wrap{overflow-x:auto;}
+  .btn{background:var(--navy); color:#fff; border:none; border-radius:8px; padding:11px 18px; font-size:14.5px; font-weight:600; cursor:pointer;}
+  .btn:hover{background:var(--navy-dark);}
+  .btn.secondary{background:#fff; color:var(--navy); border:1px solid var(--navy);}
+  .btn.secondary:hover{background:var(--bg);}
+
+  #resumen{display:none;}
+  .resumen-head{display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:4px;}
+  .resumen-head h2{margin:0; font-size:20px; color:var(--navy);}
+  .resumen-head .meta{font-size:12.5px; color:var(--muted);}
+  .seccion-titulo{font-size:13px; font-weight:700; color:var(--navy); text-transform:uppercase; letter-spacing:.03em; margin:22px 0 4px;}
+  .seccion-titulo:first-of-type{margin-top:6px;}
+  .stat-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:12px; margin-top:8px;}
+  .stat{background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px;}
+  .stat .lbl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em;}
+  .stat .val{font-size:18px; font-weight:700; color:var(--navy); font-variant-numeric:tabular-nums;}
+  .aviso-vacio{background:#FBEFE6; border:1px solid #E8C27A; color:#7A5A12; border-radius:8px; padding:10px 14px; font-size:13px; margin-top:10px;}
+
+  /* --- Login (mismo esquema que Auditorias_Saona.html) --- */
+  #loginOverlay{position:fixed; inset:0; background:linear-gradient(135deg,var(--navy) 0%, var(--navy-dark) 100%); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px;}
+  #loginOverlay.hidden{display:none;}
+  .login-card{background:#fff; border-radius:var(--radius); padding:32px 28px; width:100%; max-width:340px; box-shadow:0 20px 60px rgba(0,0,0,.25);}
+  .login-card h2{margin:0 0 4px; font-size:19px; color:var(--navy);}
+  .login-card p{margin:0 0 20px; font-size:13px; color:var(--muted);}
+  .login-card .field{margin-bottom:14px;}
+  .login-card input{width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:7px; font-size:15px;}
+  .login-card .btn{width:100%; margin-top:6px;}
+  #loginError{color:var(--bad); font-size:13px; margin-top:10px; min-height:16px;}
+  .user-bar{display:flex; align-items:center; gap:10px; justify-content:flex-end; padding:8px 32px 0; font-size:13px; opacity:.9;}
+  .user-bar button{background:transparent; border:1px solid rgba(255,255,255,.5); color:#fff; border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer;}
+  .user-bar button:hover{background:rgba(255,255,255,.12);}
+  #appRoot.hidden{display:none;}
+
+  /* --- Cambiar código --- */
+  #changePwOverlay{position:fixed; inset:0; background:rgba(15,25,45,.55); z-index:1001; display:flex; align-items:center; justify-content:center; padding:20px;}
+  #changePwOverlay.hidden{display:none;}
+  #changePwStatus{font-size:13px; margin-top:10px; min-height:16px;}
+  .btn-secondary-full{width:100%; margin-top:8px; background:var(--muted); color:#fff; border:none; border-radius:8px; padding:11px 18px; font-size:14.5px; font-weight:600; cursor:pointer;}
+  .btn-secondary-full:hover{background:#54617a;}
+
+  @media print{
+    header.top, .user-bar, .filters, footer.note{ display:none !important; }
+    body{ background:#fff; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loginOverlay">
+  <div class="login-card">
+    <h2>Auditorías Saona</h2>
+    <p>Inicia sesión con tu usuario y código para ver el resumen mensual.</p>
+    <form id="loginForm">
+      <div class="field">
+        <label>Correo corporativo</label>
+        <input type="email" id="loginUsuario" autocomplete="username" placeholder="tunombre@gruposaona.com" autocapitalize="none">
+      </div>
+      <div class="field">
+        <label>Código</label>
+        <input type="password" id="loginCodigo" autocomplete="current-password" inputmode="numeric" placeholder="Tu código">
+      </div>
+      <button type="submit" class="btn">Entrar</button>
+      <div id="loginError"></div>
+    </form>
+  </div>
+</div>
+
+<div id="changePwOverlay" class="hidden">
+  <div class="login-card">
+    <h2>Cambiar código</h2>
+    <p>Elige un código nuevo para tu cuenta (mínimo 6 caracteres).</p>
+    <form id="changePwForm">
+      <div class="field">
+        <label>Código nuevo</label>
+        <input type="password" id="newPw1" autocomplete="new-password" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Repite el código nuevo</label>
+        <input type="password" id="newPw2" autocomplete="new-password" inputmode="numeric">
+      </div>
+      <button type="submit" class="btn">Guardar código</button>
+      <button type="button" id="btnCancelChangePw" class="btn-secondary-full">Cancelar</button>
+      <div id="changePwStatus"></div>
+    </form>
+  </div>
+</div>
+
+<div id="appRoot" class="hidden">
+
+<div class="user-bar" style="background:var(--navy-dark);">
+  <span id="userBarName"></span>
+  <button type="button" id="btnChangePw">Cambiar código</button>
+  <button type="button" id="btnLogout">Cerrar sesión</button>
+</div>
+
+<header class="top">
+  <h1>Resumen Mensual · Saona</h1>
+  <p>Todo lo del mes en un mismo sitio, listo para hacer captura y mandarlo — <a href="./Historico_Auditorias_Saona.html">← Volver al histórico</a></p>
+</header>
+
+<main>
+  <section class="card">
+    <div class="filters">
+      <div class="field"><label>Local</label>
+        <select id="fLocal"><option value="">Selecciona un local</option></select>
+      </div>
+      <div class="field"><label>Mes</label>
+        <select id="fMes"></select>
+      </div>
+      <div class="field"><label>Año</label>
+        <input id="fAnio" type="number" style="width:100px;">
+      </div>
+      <button type="button" class="btn" id="btnVerResumen">Ver resumen</button>
+    </div>
+    <p id="status" class="status-message"></p>
+  </section>
+
+  <section class="card" id="resumen">
+    <div class="resumen-head">
+      <h2 id="resTitulo">—</h2>
+      <span class="meta" id="resMeta"></span>
+    </div>
+
+    <div class="seccion-titulo">Ventas e ingreso por comensal</div>
+    <div class="stat-grid" id="statsVentas"></div>
+
+    <div class="seccion-titulo">Compras y mermas</div>
+    <div class="stat-grid" id="statsCompras"></div>
+
+    <div class="seccion-titulo">Reservas y walk-ins</div>
+    <div class="stat-grid" id="statsReservas"></div>
+
+    <div class="seccion-titulo">Opinión de clientes</div>
+    <div class="stat-grid" id="statsValoraciones"></div>
+
+    <div class="seccion-titulo">Venta sugerida</div>
+    <div id="ventaSugeridaBox"></div>
+  </section>
+</main>
+
+</div><!-- /#appRoot -->
+
+<script src="./config.js"></script>
+<script>
+/* ---------------------------------------------------------------
+   0. Autenticación — mismo esquema que Auditorias_Saona.html e
+   Historico_Auditorias_Saona.html (misma sesión en localStorage).
+   --------------------------------------------------------------- */
+const AUTH_STORAGE_KEY = 'saona_auth_session';
+const USUARIOS_NOMBRE = {
+  'ngarcia@gruposaona.com': 'Nacho García',
+  'acanelon@gruposaona.com': 'Antonio Canelón',
+  'aleiton@gruposaona.com': 'Antonio Leiton',
+  'srodriguez@gruposaona.com': 'Sergio Rodríguez',
+};
+
+function getSession(){ try{ const raw = localStorage.getItem(AUTH_STORAGE_KEY); return raw ? JSON.parse(raw) : null; }catch(e){ return null; } }
+function setSession(s){ localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(s)); }
+function clearSession(){ localStorage.removeItem(AUTH_STORAGE_KEY); }
+function currentUserName(){ const s = getSession(); if(!s) return ''; return USUARIOS_NOMBRE[s.email] || s.email; }
+function accessToken(){ const s = getSession(); return s ? s.access_token : null; }
+
+async function loginConUsuarioCodigo(email, codigo){
+  email = email.trim().toLowerCase();
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST', headers: { apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password: codigo }),
+  });
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.error_description || data.msg || 'Correo o código incorrectos.');
+  setSession({ email, access_token: data.access_token, refresh_token: data.refresh_token, expires_at: Date.now() + (data.expires_in*1000) });
+}
+
+async function refreshSessionIfNeeded(){
+  const s = getSession();
+  if(!s) return null;
+  if(s.expires_at - Date.now() > 5*60*1000) return s;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST', headers: { apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: s.refresh_token }),
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error('refresh failed');
+    const updated = { ...s, access_token: data.access_token, refresh_token: data.refresh_token, expires_at: Date.now() + (data.expires_in*1000) };
+    setSession(updated);
+    return updated;
+  }catch(e){ clearSession(); return null; }
+}
+
+function logout(){ clearSession(); location.reload(); }
+function showApp(){
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('appRoot').classList.remove('hidden');
+  document.getElementById('userBarName').textContent = currentUserName();
+}
+function showLogin(){
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('appRoot').classList.add('hidden');
+}
+
+async function changePassword(newPw){
+  const session = await refreshSessionIfNeeded();
+  if(!session) throw new Error('Tu sesión ha caducado. Recarga la página e inicia sesión de nuevo.');
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    method: 'PUT',
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: newPw }),
+  });
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.msg || data.error_description || 'No se pudo cambiar el código.');
+}
+function openChangePw(){
+  document.getElementById('newPw1').value = '';
+  document.getElementById('newPw2').value = '';
+  document.getElementById('changePwStatus').textContent = '';
+  document.getElementById('changePwOverlay').classList.remove('hidden');
+}
+function closeChangePw(){ document.getElementById('changePwOverlay').classList.add('hidden'); }
+
+/* ---------------------------------------------------------------
+   1. Resumen mensual — combina lo ya guardado en
+   informe_mensual_acumulado (ventas, compras, reservas, valoraciones)
+   con la Venta Sugerida, que se lee en vivo de la última semana del
+   mes elegido (ya es "acumulado del mes" en el propio informe
+   semanal, no hace falta guardarla aparte).
+   --------------------------------------------------------------- */
+const LOCALES = [
+  'Badalona', 'Balboa', 'Bilbao', 'Cartagena', 'Donostia', 'Glories', 'Lagasca',
+  'Madnum', 'Murcia', 'Pamplona', 'Salamanca', 'Thader', 'Torrevieja', 'Vitoria', 'Zurbano',
+];
+const MESES_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const CATEGORIAS_VENTA_SUGERIDA = ['Sugerencia núcleo','Picoteo','Café','Menú degustación','Menú de grupo','Platos con suplemento','Postres','Pan'];
+
+function capitaliza(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+function fmtEur(n){ return n != null ? Number(n).toLocaleString('es-ES', {maximumFractionDigits:2}) + ' €' : '—'; }
+function fmtPct(n){ return n != null ? Number(n).toLocaleString('es-ES', {maximumFractionDigits:1}) + '%' : '—'; }
+function fmtNum(n){ return n != null ? Number(n).toLocaleString('es-ES') : '—'; }
+
+function poblarFiltros(){
+  const selLocal = document.getElementById('fLocal');
+  LOCALES.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; selLocal.appendChild(o); });
+
+  const selMes = document.getElementById('fMes');
+  MESES_ES.forEach((m, i) => { const o = document.createElement('option'); o.value = i + 1; o.textContent = capitaliza(m); selMes.appendChild(o); });
+
+  const hoy = new Date();
+  selMes.value = hoy.getMonth() + 1;
+  document.getElementById('fAnio').value = hoy.getFullYear();
+}
+
+function stat(lbl, val){
+  const box = document.createElement('div');
+  box.className = 'stat';
+  box.innerHTML = `<div class="lbl">${lbl}</div><div class="val">${val}</div>`;
+  return box;
+}
+
+async function fetchJson(url){
+  const res = await fetch(url, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken()}` } });
+  if(!res.ok) throw new Error(await res.text() || res.statusText);
+  return res.json();
+}
+
+async function buscarInformeDelMes(local, mes, anio){
+  const desde = `${anio}-${String(mes).padStart(2,'0')}-01`;
+  const ultimoDia = new Date(anio, mes, 0).getDate();
+  const hasta = `${anio}-${String(mes).padStart(2,'0')}-${String(ultimoDia).padStart(2,'0')}`;
+  const rows = await fetchJson(`${SUPABASE_URL}/rest/v1/informes_semanales?locales=ilike.*${encodeURIComponent(local)}*&semana_fin=gte.${desde}&semana_fin=lte.${hasta}&order=semana_fin.desc&limit=1&select=id,semana_fin,locales`);
+  return rows[0] || null;
+}
+
+function renderVentaSugerida(filas){
+  const box = document.getElementById('ventaSugeridaBox');
+  if(!filas || !filas.length){
+    box.innerHTML = '<div class="aviso-vacio">Sin datos de venta sugerida guardados para este mes — súbelos en el Informe Semanal (sección "Venta sugerida") y vuelve a consultar.</div>';
+    return;
+  }
+  let totalEuros = 0, totalUds = 0;
+  const filasHtml = filas.map(f => {
+    totalEuros += Number(f.euros) || 0;
+    totalUds += Number(f.uds) || 0;
+    return `<tr><td>${f.categoria}</td><td>${fmtNum(f.uds)}</td><td>${fmtPct(f.kpi_pct)}</td><td>${fmtEur(f.euros)}</td></tr>`;
+  }).join('');
+  const ventaLocalMes = filas.find(f => f.venta_local_mes != null)?.venta_local_mes ?? null;
+  const pct = ventaLocalMes ? (totalEuros / ventaLocalMes) * 100 : null;
+
+  box.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Categoría</th><th>Uds.</th><th>KPI %</th><th>€</th></tr></thead>
+        <tbody>${filasHtml}</tbody>
+        <tfoot><tr class="total"><td>Total</td><td>${fmtNum(totalUds)}</td><td>${pct != null ? fmtPct(pct) + ' s/venta' : '—'}</td><td>${fmtEur(totalEuros)}</td></tr></tfoot>
+      </table>
+    </div>
+    ${ventaLocalMes ? `<p class="status-message" data-kind="info">Venta local del mes (referencia): ${fmtEur(ventaLocalMes)}</p>` : ''}
+  `;
+}
+
+async function verResumen(){
+  const statusEl = document.getElementById('status');
+  const local = document.getElementById('fLocal').value;
+  const mes = Number(document.getElementById('fMes').value);
+  const anio = Number(document.getElementById('fAnio').value);
+  const resumen = document.getElementById('resumen');
+
+  if(!local){ statusEl.dataset.kind = 'error'; statusEl.textContent = 'Elige un local.'; return; }
+
+  statusEl.dataset.kind = 'info';
+  statusEl.textContent = 'Cargando…';
+  resumen.style.display = 'none';
+
+  try{
+    const acumulados = await fetchJson(`${SUPABASE_URL}/rest/v1/informe_mensual_acumulado?local=eq.${encodeURIComponent(local)}&mes=eq.${mes}&anio=eq.${anio}&select=*`);
+    const acumulado = acumulados[0] || null;
+
+    document.getElementById('resTitulo').textContent = `${local} — ${capitaliza(MESES_ES[mes - 1])} ${anio}`;
+
+    if(!acumulado){
+      document.getElementById('resMeta').textContent = '';
+      document.getElementById('statsVentas').innerHTML = '';
+      document.getElementById('statsCompras').innerHTML = '';
+      document.getElementById('statsReservas').innerHTML = '';
+      document.getElementById('statsValoraciones').innerHTML = '<div class="aviso-vacio" style="grid-column:1/-1;">No hay acumulado mensual guardado para este local y mes. Ve al histórico → "Informes Semanales", selecciona las semanas de este mes y pulsa "Guardar como acumulado mensual" primero.</div>';
+      document.getElementById('ventaSugeridaBox').innerHTML = '';
+      resumen.style.display = 'block';
+      statusEl.textContent = '';
+      return;
+    }
+
+    document.getElementById('resMeta').textContent = acumulado.semanas_incluidas
+      ? `Semanas incluidas: ${acumulado.semanas_incluidas} · Guardado por ${acumulado.creado_por || '—'}`
+      : `Guardado por ${acumulado.creado_por || '—'}`;
+
+    const sVentas = document.getElementById('statsVentas'); sVentas.innerHTML = '';
+    sVentas.appendChild(stat('Clientes', fmtNum(acumulado.clientes)));
+    sVentas.appendChild(stat('Ventas', fmtEur(acumulado.ventas)));
+    sVentas.appendChild(stat('Ingreso por comensal', fmtEur(acumulado.ic)));
+
+    const sCompras = document.getElementById('statsCompras'); sCompras.innerHTML = '';
+    sCompras.appendChild(stat('Compras', fmtEur(acumulado.compras)));
+    sCompras.appendChild(stat('% Compras/ventas', fmtPct(acumulado.pct_compras)));
+    sCompras.appendChild(stat('Mermas', fmtEur(acumulado.mermas)));
+    sCompras.appendChild(stat('% Mermas/compras', fmtPct(acumulado.pct_mermas)));
+
+    const sReservas = document.getElementById('statsReservas'); sReservas.innerHTML = '';
+    sReservas.appendChild(stat('Walk-ins', fmtNum(acumulado.walkins)));
+    sReservas.appendChild(stat('% Walk-ins', fmtPct(acumulado.pct_walkins)));
+    sReservas.appendChild(stat('No-shows', fmtNum(acumulado.noshows)));
+
+    const sVal = document.getElementById('statsValoraciones'); sVal.innerHTML = '';
+    sVal.appendChild(stat('Google Reviews', acumulado.puntuacion_gr != null ? Number(acumulado.puntuacion_gr).toFixed(1) : '—'));
+    sVal.appendChild(stat('TheFork Cover', acumulado.puntuacion_cover != null ? Number(acumulado.puntuacion_cover).toFixed(1) : '—'));
+
+    resumen.style.display = 'block';
+
+    const informe = await buscarInformeDelMes(local, mes, anio);
+    if(informe){
+      const vs = await fetchJson(`${SUPABASE_URL}/rest/v1/informe_semanal_venta_sugerida?informe_id=eq.${informe.id}&local=eq.${encodeURIComponent(local)}&select=categoria,uds,kpi_pct,euros,venta_local_mes`);
+      vs.sort((a, b) => CATEGORIAS_VENTA_SUGERIDA.indexOf(a.categoria) - CATEGORIAS_VENTA_SUGERIDA.indexOf(b.categoria));
+      renderVentaSugerida(vs);
+    }else{
+      renderVentaSugerida([]);
+    }
+
+    statusEl.textContent = '';
+  }catch(err){
+    console.error(err);
+    statusEl.dataset.kind = 'error';
+    statusEl.textContent = 'Error cargando el resumen: ' + err.message;
+  }
+}
+
+async function init(){
+  poblarFiltros();
+
+  if(typeof SUPABASE_CONFIGURED === 'undefined' || !SUPABASE_CONFIGURED){
+    document.getElementById('status').dataset.kind = 'error';
+    document.getElementById('status').textContent = 'Supabase no está configurado (ver config.js).';
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('appRoot').classList.remove('hidden');
+    return;
+  }
+
+  const session = await refreshSessionIfNeeded();
+  if(session){ showApp(); } else { showLogin(); }
+
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errEl = document.getElementById('loginError');
+    errEl.textContent = '';
+    const email = document.getElementById('loginUsuario').value;
+    const codigo = document.getElementById('loginCodigo').value;
+    if(!email || !codigo){ errEl.textContent = 'Escribe tu correo y tu código.'; return; }
+    try{ await loginConUsuarioCodigo(email, codigo); showApp(); }
+    catch(err){ errEl.textContent = err.message; }
+  });
+  document.getElementById('btnLogout').addEventListener('click', logout);
+  document.getElementById('btnChangePw').addEventListener('click', openChangePw);
+  document.getElementById('btnCancelChangePw').addEventListener('click', closeChangePw);
+  document.getElementById('changePwForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const statusEl = document.getElementById('changePwStatus');
+    const pw1 = document.getElementById('newPw1').value;
+    const pw2 = document.getElementById('newPw2').value;
+    if(pw1.length < 6){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'El código debe tener al menos 6 caracteres.'; return; }
+    if(pw1 !== pw2){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Los dos códigos no coinciden.'; return; }
+    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = 'Guardando…';
+    try{
+      await changePassword(pw1);
+      statusEl.style.color = 'var(--good)';
+      statusEl.textContent = 'Código actualizado. Úsalo la próxima vez que inicies sesión.';
+      setTimeout(closeChangePw, 1500);
+    }catch(err){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = err.message;
+    }
+  });
+
+  document.getElementById('btnVerResumen').addEventListener('click', verResumen);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

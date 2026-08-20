@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Histórico de Auditorías · Saona</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="theme-color" content="#1F3864">
+<style>
+  :root{
+    --navy:#1F3864; --navy-dark:#152847; --accent:#C0722D;
+    --bg:#F4F6F9; --card:#FFFFFF; --border:#DDE3EC; --text:#1C2430;
+    --muted:#65728A; --good:#1E8E5A; --warn:#C0722D; --bad:#C0392B; --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); line-height:1.5;}
+  header.top{background:linear-gradient(135deg,var(--navy) 0%, var(--navy-dark) 100%); color:#fff; padding:28px 32px 22px;}
+  header.top h1{margin:0 0 4px; font-size:22px; font-weight:700;}
+  header.top p{margin:0; opacity:.85; font-size:14px;}
+  header.top a{color:#DCE6F5;}
+  main{max-width:1180px; margin:0 auto; padding:24px 20px 80px;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px; margin-bottom:20px;}
+  .filters{display:flex; gap:16px; flex-wrap:wrap; margin-bottom:6px;}
+  .field{display:flex; flex-direction:column; gap:4px; min-width:220px;}
+  .field label{font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.03em;}
+  select, input{font:inherit; padding:8px 10px; border:1px solid var(--border); border-radius:7px; background:#fff; color:var(--text);}
+  table{width:100%; border-collapse:collapse; font-size:13.5px; margin-top:14px;}
+  th, td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--border);}
+  th{color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.03em;}
+  tr:hover td{background:var(--bg);}
+  .tag{display:inline-block; padding:2px 9px; border-radius:20px; font-size:11.5px; font-weight:600;}
+  .tag.visita_operativa{background:#E7F3EC; color:var(--good);}
+  .tag.veo_externa{background:#FBEFE6; color:var(--accent);}
+  .status-message{font-size:13.5px; margin-top:8px;}
+  .status-message[data-kind="error"]{color:var(--bad);}
+  .status-message[data-kind="ok"], .status-message[data-kind="info"]{color:var(--muted);}
+  .table-wrap{overflow-x:auto;}
+
+  /* --- Login (mismo esquema que Auditorias_Saona.html) --- */
+  #loginOverlay{position:fixed; inset:0; background:linear-gradient(135deg,var(--navy) 0%, var(--navy-dark) 100%); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px;}
+  #loginOverlay.hidden{display:none;}
+  .login-card{background:#fff; border-radius:var(--radius); padding:32px 28px; width:100%; max-width:340px; box-shadow:0 20px 60px rgba(0,0,0,.25);}
+  .login-card h2{margin:0 0 4px; font-size:19px; color:var(--navy);}
+  .login-card p{margin:0 0 20px; font-size:13px; color:var(--muted);}
+  .login-card .field{margin-bottom:14px;}
+  .login-card input{width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:7px; font-size:15px;}
+  .btn{background:var(--navy); color:#fff; border:none; border-radius:8px; padding:11px 18px; font-size:14.5px; font-weight:600; cursor:pointer;}
+  .btn:hover{background:var(--navy-dark);}
+  .btn.secondary{background:#fff; color:var(--navy); border:1px solid var(--navy);}
+  .btn.secondary:hover{background:var(--bg);}
+  .login-card .btn{width:100%; margin-top:6px;}
+  #loginError{color:var(--bad); font-size:13px; margin-top:10px; min-height:16px;}
+  .user-bar{display:flex; align-items:center; gap:10px; justify-content:flex-end; padding:8px 32px 0; font-size:13px; opacity:.9;}
+  .user-bar button{background:transparent; border:1px solid rgba(255,255,255,.5); color:#fff; border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer;}
+  .user-bar button:hover{background:rgba(255,255,255,.12);}
+  #appRoot.hidden{display:none;}
+
+  /* --- Cambiar código --- */
+  #changePwOverlay{position:fixed; inset:0; background:rgba(15,25,45,.55); z-index:1001; display:flex; align-items:center; justify-content:center; padding:20px;}
+  #changePwOverlay.hidden{display:none;}
+  #changePwStatus{font-size:13px; margin-top:10px; min-height:16px;}
+  .btn-secondary-full{width:100%; margin-top:8px; background:var(--muted); color:#fff; border:none; border-radius:8px; padding:11px 18px; font-size:14.5px; font-weight:600; cursor:pointer;}
+  .btn-secondary-full:hover{background:#54617a;}
+</style>
+</head>
+<body>
+
+<div id="loginOverlay">
+  <div class="login-card">
+    <h2>Auditorías Saona</h2>
+    <p>Inicia sesión con tu usuario y código para ver el histórico.</p>
+    <form id="loginForm">
+      <div class="field">
+        <label>Correo corporativo</label>
+        <input type="email" id="loginUsuario" autocomplete="username" placeholder="tunombre@gruposaona.com" autocapitalize="none">
+      </div>
+      <div class="field">
+        <label>Código</label>
+        <input type="password" id="loginCodigo" autocomplete="current-password" inputmode="numeric" placeholder="Tu código">
+      </div>
+      <button type="submit" class="btn">Entrar</button>
+      <div id="loginError"></div>
+    </form>
+  </div>
+</div>
+
+<div id="changePwOverlay" class="hidden">
+  <div class="login-card">
+    <h2>Cambiar código</h2>
+    <p>Elige un código nuevo para tu cuenta (mínimo 6 caracteres).</p>
+    <form id="changePwForm">
+      <div class="field">
+        <label>Código nuevo</label>
+        <input type="password" id="newPw1" autocomplete="new-password" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Repite el código nuevo</label>
+        <input type="password" id="newPw2" autocomplete="new-password" inputmode="numeric">
+      </div>
+      <button type="submit" class="btn">Guardar código</button>
+      <button type="button" id="btnCancelChangePw" class="btn-secondary-full">Cancelar</button>
+      <div id="changePwStatus"></div>
+    </form>
+  </div>
+</div>
+
+<div id="appRoot" class="hidden">
+
+<div class="user-bar" style="background:var(--navy-dark);">
+  <span id="userBarName"></span>
+  <button type="button" id="btnChangePw">Cambiar código</button>
+  <button type="button" id="btnLogout">Cerrar sesión</button>
+</div>
+
+<header class="top">
+  <h1>Histórico de Auditorías · Saona</h1>
+  <p>Visita Operativa y VEO Externa 2.0, en el mismo histórico — <a href="./Auditorias_Saona.html">← Volver al formulario</a> · <a href="./Resumen_Mensual_Saona.html">Resumen Mensual →</a></p>
+</header>
+
+<main>
+  <section class="card">
+    <div class="mode-toggle" style="display:flex; gap:8px; margin-bottom:16px;">
+      <button type="button" class="btn" id="btnModoAuditorias">Auditorías</button>
+      <button type="button" class="btn secondary" id="btnModoSemanal">Informes Semanales</button>
+      <button type="button" class="btn secondary" id="btnModoMensual">Acumulados Mensuales</button>
+    </div>
+    <div class="filters">
+      <div class="field" id="filtroTipoWrap"><label>Tipo</label>
+        <select id="filtroTipo">
+          <option value="">Todos</option>
+          <option value="visita_operativa">Visita Operativa</option>
+          <option value="veo_externa">VEO Externa 2.0</option>
+        </select>
+      </div>
+      <div class="field"><label>Local (varios con Ctrl/Cmd, o los botones)</label>
+        <select id="filtroLocal" multiple size="4" style="min-width:180px;"></select>
+        <div style="display:flex; gap:6px; margin-top:4px;">
+          <button type="button" class="btn secondary" id="btnFiltroLocalTodos" style="padding:4px 10px; font-size:12px;">Todos</button>
+          <button type="button" class="btn secondary" id="btnFiltroLocalNinguno" style="padding:4px 10px; font-size:12px;">Ninguno</button>
+        </div>
+      </div>
+      <div class="field" id="filtroAMWrap"><label>Area Manager</label>
+        <select id="filtroAM"><option value="">Todos</option></select>
+      </div>
+    </div>
+    <div id="semSeleccionBar" style="display:none; align-items:center; gap:12px; margin:4px 0 10px;">
+      <span id="semSeleccionCount" style="font-size:13px; color:var(--muted);">0 semanas seleccionadas</span>
+      <button type="button" class="btn secondary" id="btnVerTotalSeleccion" disabled>Ver detalle / total de la selección</button>
+    </div>
+    <div class="table-wrap">
+      <table id="tablaHistorico">
+        <thead id="tablaHistoricoHead">
+          <tr><th>Tipo</th><th>Local</th><th>Fecha visita</th><th>Area Manager</th><th>Puntuación</th><th>Variación</th><th>Guardada el</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p id="status" class="status-message">Cargando…</p>
+    <div id="semResultado" class="card" style="display:none; margin-top:20px;"></div>
+  </section>
+</main>
+
+</div><!-- /#appRoot -->
+
+<script src="./config.js"></script>
+<script>
+/* ---------------------------------------------------------------
+   0. Autenticación — mismo esquema que Auditorias_Saona.html (misma
+   sesión guardada en localStorage, así que si ya iniciaste sesión en
+   el formulario, aquí entras directo sin volver a escribir nada).
+   --------------------------------------------------------------- */
+const AUTH_STORAGE_KEY = 'saona_auth_session';
+const USUARIOS_NOMBRE = {
+  'ngarcia@gruposaona.com': 'Nacho García',
+  'acanelon@gruposaona.com': 'Antonio Canelón',
+  'aleiton@gruposaona.com': 'Antonio Leiton',
+  'srodriguez@gruposaona.com': 'Sergio Rodríguez',
+};
+
+function getSession(){ try{ const raw = localStorage.getItem(AUTH_STORAGE_KEY); return raw ? JSON.parse(raw) : null; }catch(e){ return null; } }
+function setSession(s){ localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(s)); }
+function clearSession(){ localStorage.removeItem(AUTH_STORAGE_KEY); }
+function currentUserName(){ const s = getSession(); if(!s) return ''; return USUARIOS_NOMBRE[s.email] || s.email; }
+function accessToken(){ const s = getSession(); return s ? s.access_token : null; }
+
+async function loginConUsuarioCodigo(email, codigo){
+  email = email.trim().toLowerCase();
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST', headers: { apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password: codigo }),
+  });
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.error_description || data.msg || 'Correo o código incorrectos.');
+  setSession({ email, access_token: data.access_token, refresh_token: data.refresh_token, expires_at: Date.now() + (data.expires_in*1000) });
+}
+
+async function refreshSessionIfNeeded(){
+  const s = getSession();
+  if(!s) return null;
+  if(s.expires_at - Date.now() > 5*60*1000) return s;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST', headers: { apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: s.refresh_token }),
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error('refresh failed');
+    const updated = { ...s, access_token: data.access_token, refresh_token: data.refresh_token, expires_at: Date.now() + (data.expires_in*1000) };
+    setSession(updated);
+    return updated;
+  }catch(e){ clearSession(); return null; }
+}
+
+function logout(){ clearSession(); location.reload(); }
+function showApp(){
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('appRoot').classList.remove('hidden');
+  document.getElementById('userBarName').textContent = currentUserName();
+}
+function showLogin(){
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('appRoot').classList.add('hidden');
+}
+
+async function changePassword(newPw){
+  const session = await refreshSessionIfNeeded();
+  if(!session) throw new Error('Tu sesión ha caducado. Recarga la página e inicia sesión de nuevo.');
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    method: 'PUT',
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: newPw }),
+  });
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.msg || data.error_description || 'No se pudo cambiar el código.');
+}
+function openChangePw(){
+  document.getElementById('newPw1').value = '';
+  document.getElementById('newPw2').value = '';
+  document.getElementById('changePwStatus').textContent = '';
+  document.getElementById('changePwOverlay').classList.remove('hidden');
+}
+function closeChangePw(){ document.getElementById('changePwOverlay').classList.add('hidden'); }
+
+/* ---------------------------------------------------------------
+   1. Histórico — dos modos: Auditorías (tabla audits) e Informes
+   Semanales (tabla informes_semanales). Un mismo fetch/render/filtro
+   parametrizado por `modo`, en vez de duplicar la página.
+   --------------------------------------------------------------- */
+const TIPO_LABEL = { visita_operativa: 'Visita Operativa', veo_externa: 'VEO Externa 2.0' };
+const MESES_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const CATEGORIAS_VENTA_SUGERIDA = ['Sugerencia núcleo','Picoteo','Café','Menú degustación','Menú de grupo','Platos con suplemento','Postres','Pan'];
+let modo = 'auditorias'; // 'auditorias' | 'semanal' | 'mensual'
+let allRows = [];
+let semSeleccion = new Set(); // ids de informes_semanales marcados con checkbox (modo 'semanal')
+
+function v(id){ const e = document.getElementById(id); return e ? e.value : ''; }
+function capitaliza(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function uniqueSorted(values){
+  return [...new Set(values.filter(v => v && String(v).trim()))].sort((a,b) => String(a).localeCompare(String(b), 'es'));
+}
+function poblarFiltro(selectEl, values, placeholder, sinPlaceholder){
+  const seleccionActual = selectEl.multiple ? [...selectEl.selectedOptions].map(o => o.value) : [selectEl.value];
+  selectEl.innerHTML = sinPlaceholder ? '' : `<option value="">${placeholder}</option>`;
+  values.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    if(seleccionActual.includes(v)) opt.selected = true;
+    selectEl.appendChild(opt);
+  });
+}
+function fmtVariacion(actual, anterior){
+  if(actual === null || actual === undefined || anterior === null || anterior === undefined) return '—';
+  const diff = Math.round((actual - anterior) * 10) / 10;
+  if(diff === 0) return '0.0';
+  return (diff > 0 ? '+' : '') + diff.toFixed(1);
+}
+
+function renderTablaAuditorias(rows){
+  document.getElementById('tablaHistoricoHead').innerHTML =
+    '<tr><th>Tipo</th><th>Local</th><th>Fecha visita</th><th>Area Manager</th><th>Puntuación</th><th>Variación</th><th>Guardada el</th></tr>';
+  const tbody = document.querySelector('#tablaHistorico tbody');
+  tbody.innerHTML = '';
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="tag ${row.tipo}">${TIPO_LABEL[row.tipo] || row.tipo}</span></td>
+      <td>${row.local ?? '—'}</td>
+      <td>${row.fecha_visita ?? '—'}</td>
+      <td>${row.supervisores ?? '—'}</td>
+      <td>${row.puntuacion_total != null ? Number(row.puntuacion_total).toFixed(1) + ' / 10' : '—'}</td>
+      <td>${fmtVariacion(row.puntuacion_total, row.puntuacion_anterior_total)}</td>
+      <td>${row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderTablaSemanal(rows){
+  document.getElementById('tablaHistoricoHead').innerHTML =
+    '<tr><th></th><th>Locales</th><th>Semana</th><th>Acumulado del mes</th><th>Guardado por</th><th>Guardado el</th><th></th></tr>';
+  const tbody = document.querySelector('#tablaHistorico tbody');
+  tbody.innerHTML = '';
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="checkbox" ${semSeleccion.has(row.id) ? 'checked' : ''}></td>
+      <td>${row.locales ?? '—'}</td>
+      <td>${row.semana_texto || row.semana_corto || '—'}</td>
+      <td>${row.acumulado_mes ?? '—'}</td>
+      <td>${row.creado_por ?? '—'}</td>
+      <td>${row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : '—'}</td>
+      <td><a href="./Auditorias_Saona.html?editarSemanal=${row.id}" class="btn secondary" style="padding:4px 10px; font-size:12px; text-decoration:none; display:inline-block;">✎ Editar</a></td>
+    `;
+    tr.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
+      if(e.target.checked) semSeleccion.add(row.id); else semSeleccion.delete(row.id);
+      actualizarBarraSeleccion();
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function renderTablaMensual(rows){
+  document.getElementById('tablaHistoricoHead').innerHTML =
+    '<tr><th>Local</th><th>Mes</th><th>Clientes</th><th>Ventas</th><th>IC</th><th>Compras</th><th>% Compras</th><th>Mermas</th><th>% Mermas</th><th>Walk-ins</th><th>% Walk-ins</th><th>No-shows</th><th>Punt. GR</th><th>Punt. Cover</th><th>Guardado el</th></tr>';
+  const tbody = document.querySelector('#tablaHistorico tbody');
+  tbody.innerHTML = '';
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+    const mesNombre = MESES_ES[row.mes - 1] ? capitaliza(MESES_ES[row.mes - 1]) : row.mes;
+    tr.innerHTML = `
+      <td>${row.local ?? '—'}</td>
+      <td>${mesNombre} ${row.anio}</td>
+      <td>${row.clientes ?? '—'}</td>
+      <td>${row.ventas != null ? Number(row.ventas).toFixed(2) + ' €' : '—'}</td>
+      <td>${row.ic != null ? Number(row.ic).toFixed(2) + ' €' : '—'}</td>
+      <td>${row.compras != null ? Number(row.compras).toFixed(2) + ' €' : '—'}</td>
+      <td>${row.pct_compras != null ? Number(row.pct_compras).toFixed(1) + '%' : '—'}</td>
+      <td>${row.mermas != null ? Number(row.mermas).toFixed(2) + ' €' : '—'}</td>
+      <td>${row.pct_mermas != null ? Number(row.pct_mermas).toFixed(1) + '%' : '—'}</td>
+      <td>${row.walkins ?? '—'}</td>
+      <td>${row.pct_walkins != null ? Number(row.pct_walkins).toFixed(1) + '%' : '—'}</td>
+      <td>${row.noshows ?? '—'}</td>
+      <td>${row.puntuacion_gr ?? '—'}</td>
+      <td>${row.puntuacion_cover ?? '—'}</td>
+      <td>${row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function actualizarBarraSeleccion(){
+  const bar = document.getElementById('semSeleccionBar');
+  if(modo !== 'semanal'){ bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  document.getElementById('semSeleccionCount').textContent = `${semSeleccion.size} semana(s) seleccionada(s)`;
+  document.getElementById('btnVerTotalSeleccion').disabled = semSeleccion.size === 0;
+}
+
+function renderTabla(rows){
+  if(modo === 'semanal') renderTablaSemanal(rows);
+  else if(modo === 'mensual') renderTablaMensual(rows);
+  else renderTablaAuditorias(rows);
+  actualizarBarraSeleccion();
+}
+
+function localesSeleccionados(){
+  return [...document.getElementById('filtroLocal').selectedOptions].map(o => o.value).filter(Boolean);
+}
+
+function aplicarFiltros(){
+  const locales = localesSeleccionados();
+  let filtradas;
+  if(modo === 'semanal'){
+    filtradas = allRows.filter(r => !locales.length || (r.locales || '').split('·').map(s => s.trim()).some(l => locales.includes(l)));
+  }else if(modo === 'mensual'){
+    filtradas = allRows.filter(r => !locales.length || locales.includes(r.local));
+  }else{
+    const tipo = document.getElementById('filtroTipo').value;
+    const am = document.getElementById('filtroAM').value;
+    filtradas = allRows.filter(r => {
+      if(tipo && r.tipo !== tipo) return false;
+      if(locales.length && !locales.includes(r.local)) return false;
+      if(am && !(r.supervisores || '').toLowerCase().includes(am.toLowerCase())) return false;
+      return true;
+    });
+  }
+  renderTabla(filtradas);
+  const statusEl = document.getElementById('status');
+  const hayFiltro = modo === 'auditorias'
+    ? (document.getElementById('filtroTipo').value || locales.length || document.getElementById('filtroAM').value)
+    : locales.length > 0;
+  const etiqueta = modo === 'semanal' ? 'informe(s) semanal(es)' : modo === 'mensual' ? 'acumulado(s) mensual(es)' : 'auditoría(s)';
+  statusEl.textContent = `${filtradas.length} de ${allRows.length} ${etiqueta}${hayFiltro ? ' (filtrado)' : ''}.`;
+  statusEl.dataset.kind = 'ok';
+}
+
+async function cargarHistorico(){
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = 'Cargando…';
+  statusEl.dataset.kind = 'info';
+  document.getElementById('semResultado').style.display = 'none';
+  try{
+    const url = modo === 'semanal'
+      ? `${SUPABASE_URL}/rest/v1/informes_semanales?select=id,locales,semana_texto,semana_corto,acumulado_mes,creado_por,created_at&order=created_at.desc`
+      : modo === 'mensual'
+      ? `${SUPABASE_URL}/rest/v1/informe_mensual_acumulado?select=id,local,mes,anio,clientes,ventas,ic,compras,pct_compras,mermas,pct_mermas,walkins,pct_walkins,noshows,puntuacion_gr,puntuacion_cover,creado_por,created_at&order=anio.desc,mes.desc,local.asc`
+      : `${SUPABASE_URL}/rest/v1/audits?select=id,tipo,local,supervisores,fecha_visita,puntuacion_total,puntuacion_anterior_total,created_at&order=created_at.desc`;
+    const res = await fetch(url, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken()}` } });
+    if(!res.ok) throw new Error(await res.text() || res.statusText);
+    const rows = await res.json();
+    allRows = rows;
+
+    if(!rows.length){
+      statusEl.textContent = modo === 'semanal' ? 'Todavía no se ha guardado ningún informe semanal.'
+        : modo === 'mensual' ? 'Todavía no se ha guardado ningún acumulado mensual.'
+        : 'Todavía no se ha guardado ninguna auditoría.';
+      statusEl.dataset.kind = 'info';
+      renderTabla([]);
+      poblarFiltro(document.getElementById('filtroLocal'), [], 'Todos los locales', true);
+      return;
+    }
+
+    if(modo === 'semanal'){
+      const locales = uniqueSorted(rows.flatMap(r => (r.locales || '').split('·').map(s => s.trim())));
+      poblarFiltro(document.getElementById('filtroLocal'), locales, 'Todos los locales', true);
+    }else if(modo === 'mensual'){
+      poblarFiltro(document.getElementById('filtroLocal'), uniqueSorted(rows.map(r => r.local)), 'Todos los locales', true);
+    }else{
+      poblarFiltro(document.getElementById('filtroLocal'), uniqueSorted(rows.map(r => r.local)), 'Todos los locales', true);
+      poblarFiltro(document.getElementById('filtroAM'), uniqueSorted(rows.map(r => r.supervisores)), 'Todos');
+    }
+
+    aplicarFiltros();
+  }catch(err){
+    console.error(err);
+    statusEl.textContent = 'Error cargando el histórico: ' + err.message;
+    statusEl.dataset.kind = 'error';
+  }
+}
+
+function setModo(nuevo){
+  if(modo === nuevo) return;
+  modo = nuevo;
+  document.getElementById('btnModoAuditorias').className = modo === 'auditorias' ? 'btn' : 'btn secondary';
+  document.getElementById('btnModoSemanal').className = modo === 'semanal' ? 'btn' : 'btn secondary';
+  document.getElementById('btnModoMensual').className = modo === 'mensual' ? 'btn' : 'btn secondary';
+  document.getElementById('filtroTipoWrap').style.display = modo === 'auditorias' ? '' : 'none';
+  document.getElementById('filtroAMWrap').style.display = modo === 'auditorias' ? '' : 'none';
+  document.getElementById('semResultado').style.display = 'none';
+  cargarHistorico();
+}
+
+/* ---------------------------------------------------------------
+   2. Total de la selección (modo 'semanal') -> acumulado mensual
+   --------------------------------------------------------------- */
+function sugerirMesAnio(informes){
+  const fechas = informes.map(i => i.semana_fin).filter(Boolean).sort();
+  if(!fechas.length){ const hoy = new Date(); return { mes: hoy.getMonth() + 1, anio: hoy.getFullYear() }; }
+  const [y, m] = fechas[fechas.length - 1].split('-').map(Number);
+  return { mes: m, anio: y };
+}
+
+async function verDetalleTotalSeleccion(){
+  const panel = document.getElementById('semResultado');
+  panel.style.display = 'block';
+  panel.innerHTML = '<p class="status-message" data-kind="info">Calculando…</p>';
+  try{
+    const ids = [...semSeleccion];
+    const headers = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken()}` };
+    const idsParam = `informe_id=in.(${ids.join(',')})`;
+    const [ventasRes, comprasRes, reservasRes, valoracionesRes, informesRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/informe_semanal_ventas?${idsParam}&select=informe_id,local,clientes_semana,ventas_semana`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/informe_semanal_compras?${idsParam}&select=informe_id,local,compras,mermas`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/informe_semanal_reservas?${idsParam}&select=informe_id,local,walkins,noshows`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/informe_semanal_valoraciones?${idsParam}&select=informe_id,local,resenas_gr,puntuacion_gr,resenas_cover,puntuacion_cover`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/informes_semanales?id=in.(${ids.join(',')})&select=id,semana_fin`, { headers }),
+    ]);
+    for(const r of [ventasRes, comprasRes, reservasRes, valoracionesRes, informesRes]){
+      if(!r.ok) throw new Error(await r.text() || r.statusText);
+    }
+    const ventas = await ventasRes.json();
+    const compras = await comprasRes.json();
+    const reservas = await reservasRes.json();
+    const valoraciones = await valoracionesRes.json();
+    const informes = await informesRes.json();
+
+    // Venta Sugerida ya es "acumulado del mes" dentro de cada informe semanal (no se
+    // suma entre semanas) — se toma del informe con la fecha de fin más reciente de
+    // la selección, igual criterio que la puntuación GR/Cover.
+    let ventaSugerida = [];
+    const informeReciente = [...informes].filter(i => i.semana_fin).sort((a, b) => (a.semana_fin < b.semana_fin ? 1 : -1))[0];
+    if(informeReciente){
+      const vsRes = await fetch(`${SUPABASE_URL}/rest/v1/informe_semanal_venta_sugerida?informe_id=eq.${informeReciente.id}&select=local,categoria,uds,kpi_pct,euros,venta_local_mes`, { headers });
+      if(vsRes.ok) ventaSugerida = await vsRes.json();
+    }
+
+    const fechaPorInforme = {};
+    informes.forEach(i => { fechaPorInforme[i.id] = i.semana_fin; });
+
+    const porLocal = {};
+    const get = (local) => (porLocal[local] = porLocal[local] || {
+      local, clientes: 0, ventas: 0, compras: 0, mermas: 0, walkins: 0, noshows: 0,
+      resenas_gr: 0, resenas_cover: 0, puntuacion_gr: null, puntuacion_cover: null,
+      _fechaGr: null, _fechaCover: null,
+    });
+
+    ventas.forEach(r => { const o = get(r.local); o.clientes += Number(r.clientes_semana) || 0; o.ventas += Number(r.ventas_semana) || 0; });
+    compras.forEach(r => { const o = get(r.local); o.compras += Number(r.compras) || 0; o.mermas += Number(r.mermas) || 0; });
+    reservas.forEach(r => { const o = get(r.local); o.walkins += Number(r.walkins) || 0; o.noshows += Number(r.noshows) || 0; });
+    valoraciones.forEach(r => {
+      const o = get(r.local);
+      o.resenas_gr += Number(r.resenas_gr) || 0;
+      o.resenas_cover += Number(r.resenas_cover) || 0;
+      const fecha = fechaPorInforme[r.informe_id] || '';
+      if(r.puntuacion_gr != null && (!o._fechaGr || fecha > o._fechaGr)){ o.puntuacion_gr = Number(r.puntuacion_gr); o._fechaGr = fecha; }
+      if(r.puntuacion_cover != null && (!o._fechaCover || fecha > o._fechaCover)){ o.puntuacion_cover = Number(r.puntuacion_cover); o._fechaCover = fecha; }
+    });
+
+    const filas = Object.values(porLocal).map(o => ({
+      local: o.local, clientes: o.clientes, ventas: o.ventas,
+      ic: o.clientes ? o.ventas / o.clientes : null,
+      compras: o.compras, pct_compras: o.ventas ? (o.compras / o.ventas) * 100 : null,
+      mermas: o.mermas, pct_mermas: o.compras ? (o.mermas / o.compras) * 100 : null,
+      walkins: o.walkins, pct_walkins: o.clientes ? (o.walkins / o.clientes) * 100 : null,
+      noshows: o.noshows,
+      resenas_gr: o.resenas_gr, puntuacion_gr: o.puntuacion_gr,
+      resenas_cover: o.resenas_cover, puntuacion_cover: o.puntuacion_cover,
+    })).sort((a, b) => a.local.localeCompare(b.local, 'es'));
+
+    renderResultadoSeleccion(filas, informes, ventaSugerida, informeReciente);
+  }catch(err){
+    console.error(err);
+    panel.innerHTML = `<p class="status-message" data-kind="error">Error calculando el total: ${err.message}</p>`;
+  }
+}
+
+function renderVentaSugeridaSeleccion(ventaSugerida){
+  if(!ventaSugerida.length) return '<p class="status-message" data-kind="info">Sin Venta Sugerida guardada en la semana más reciente de la selección.</p>';
+  const porLocal = {};
+  ventaSugerida.forEach(f => { (porLocal[f.local] = porLocal[f.local] || []).push(f); });
+  return Object.keys(porLocal).sort((a, b) => a.localeCompare(b, 'es')).map(local => {
+    const filas = porLocal[local].slice().sort((a, b) => CATEGORIAS_VENTA_SUGERIDA.indexOf(a.categoria) - CATEGORIAS_VENTA_SUGERIDA.indexOf(b.categoria));
+    let totalE = 0, totalU = 0;
+    const filasHtml = filas.map(f => {
+      totalE += Number(f.euros) || 0; totalU += Number(f.uds) || 0;
+      return `<tr><td>${f.categoria}</td><td>${f.uds ?? '—'}</td><td>${f.kpi_pct != null ? Number(f.kpi_pct).toFixed(1) + '%' : '—'}</td><td>${f.euros != null ? Number(f.euros).toFixed(2) + ' €' : '—'}</td></tr>`;
+    }).join('');
+    const ventaLocalMes = filas.find(f => f.venta_local_mes != null)?.venta_local_mes ?? null;
+    const pct = ventaLocalMes ? (totalE / ventaLocalMes) * 100 : null;
+    return `
+      <p style="font-weight:700; color:var(--navy); margin:14px 0 4px;">${local}</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Categoría</th><th>Uds.</th><th>KPI %</th><th>€</th></tr></thead>
+        <tbody>${filasHtml}</tbody>
+        <tfoot><tr style="font-weight:700; background:var(--bg);"><td>Total</td><td>${totalU}</td><td>${pct != null ? pct.toFixed(1) + '% s/venta' : '—'}</td><td>${totalE.toFixed(2)} €</td></tr></tfoot>
+      </table></div>`;
+  }).join('');
+}
+
+function renderResultadoSeleccion(filas, informes, ventaSugerida, informeReciente){
+  const panel = document.getElementById('semResultado');
+  const sugerido = sugerirMesAnio(informes);
+  const filasHtml = filas.map(f => `
+    <tr>
+      <td>${f.local}</td>
+      <td>${f.clientes}</td>
+      <td>${f.ventas.toFixed(2)} €</td>
+      <td>${f.ic != null ? f.ic.toFixed(2) + ' €' : '—'}</td>
+      <td>${f.compras.toFixed(2)} €</td>
+      <td>${f.pct_compras != null ? f.pct_compras.toFixed(1) + '%' : '—'}</td>
+      <td>${f.mermas.toFixed(2)} €</td>
+      <td>${f.pct_mermas != null ? f.pct_mermas.toFixed(1) + '%' : '—'}</td>
+      <td>${f.walkins}</td>
+      <td>${f.pct_walkins != null ? f.pct_walkins.toFixed(1) + '%' : '—'}</td>
+      <td>${f.noshows}</td>
+      <td>${f.puntuacion_gr != null ? f.puntuacion_gr.toFixed(1) : '—'}</td>
+      <td>${f.puntuacion_cover != null ? f.puntuacion_cover.toFixed(1) : '—'}</td>
+    </tr>
+  `).join('');
+  const mesesOptions = MESES_ES.map((m, i) => `<option value="${i + 1}" ${i + 1 === sugerido.mes ? 'selected' : ''}>${capitaliza(m)}</option>`).join('');
+
+  panel.innerHTML = `
+    <h2 style="margin:0 0 4px; font-size:17px; color:var(--navy);">Total de la selección (${filas.length} local(es), ${informes.length} semana(s))</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Local</th><th>Clientes</th><th>Ventas</th><th>IC</th><th>Compras</th><th>% Compras</th><th>Mermas</th><th>% Mermas</th><th>Walk-ins</th><th>% Walk-ins</th><th>No-shows</th><th>Punt. GR</th><th>Punt. Cover</th></tr></thead>
+        <tbody>${filasHtml}</tbody>
+      </table>
+    </div>
+
+    <p style="font-size:12px; color:var(--muted); margin:16px 0 0;">Venta Sugerida — de la semana más reciente de la selección${informeReciente && informeReciente.semana_fin ? ` (hasta ${informeReciente.semana_fin})` : ''}, ya es acumulado del mes, no se suma entre semanas.</p>
+    ${renderVentaSugeridaSeleccion(ventaSugerida)}
+
+    <div class="filters" style="margin-top:16px;">
+      <div class="field"><label>Mes</label><select id="semGuardarMes">${mesesOptions}</select></div>
+      <div class="field"><label>Año</label><input id="semGuardarAnio" type="number" value="${sugerido.anio}" style="width:100px;"></div>
+      <div class="field" style="justify-content:flex-end;"><button type="button" class="btn" id="btnGuardarAcumulado">Guardar como acumulado mensual</button></div>
+    </div>
+    <p id="semGuardarStatus" class="status-message"></p>
+  `;
+  document.getElementById('btnGuardarAcumulado').addEventListener('click', () => guardarAcumuladoMensual(filas, informes));
+}
+
+async function guardarAcumuladoMensual(filas, informes){
+  const statusEl = document.getElementById('semGuardarStatus');
+  const mes = Number(v('semGuardarMes'));
+  const anio = Number(v('semGuardarAnio'));
+  if(!mes || !anio){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Elige mes y año.'; return; }
+  const session = await refreshSessionIfNeeded();
+  if(!session){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Tu sesión ha caducado. Recarga la página e inicia sesión de nuevo.';
+    showLogin();
+    return;
+  }
+
+  const semanasIncluidas = informes.map(i => i.semana_fin).filter(Boolean).sort().join(', ');
+  const payload = filas.map(f => ({
+    local: f.local, mes, anio,
+    semanas_incluidas: semanasIncluidas,
+    clientes: f.clientes, ventas: f.ventas, ic: f.ic,
+    compras: f.compras, pct_compras: f.pct_compras,
+    mermas: f.mermas, pct_mermas: f.pct_mermas,
+    walkins: f.walkins, pct_walkins: f.pct_walkins, noshows: f.noshows,
+    resenas_gr: f.resenas_gr, puntuacion_gr: f.puntuacion_gr,
+    resenas_cover: f.resenas_cover, puntuacion_cover: f.puntuacion_cover,
+    creado_por: currentUserName(),
+  }));
+
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Guardando…';
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/informe_mensual_acumulado?on_conflict=local,mes,anio`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${accessToken()}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=representation',
+      },
+      body: JSON.stringify(payload),
+    });
+    if(!res.ok) throw new Error(await res.text() || res.statusText);
+    statusEl.style.color = 'var(--good)';
+    statusEl.textContent = `Acumulado de ${capitaliza(MESES_ES[mes - 1])} ${anio} guardado (${filas.length} local(es)).`;
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Error al guardar: ' + err.message;
+  }
+}
+
+async function init(){
+  const statusEl = document.getElementById('status');
+
+  if(typeof SUPABASE_CONFIGURED === 'undefined' || !SUPABASE_CONFIGURED){
+    statusEl.textContent = 'Supabase no está configurado (ver config.js). No se puede mostrar el histórico.';
+    statusEl.dataset.kind = 'error';
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('appRoot').classList.remove('hidden');
+    return;
+  }
+
+  const session = await refreshSessionIfNeeded();
+  if(session){ showApp(); await cargarHistorico(); }
+  else { showLogin(); }
+
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errEl = document.getElementById('loginError');
+    errEl.textContent = '';
+    const email = document.getElementById('loginUsuario').value;
+    const codigo = document.getElementById('loginCodigo').value;
+    if(!email || !codigo){ errEl.textContent = 'Escribe tu correo y tu código.'; return; }
+    try{ await loginConUsuarioCodigo(email, codigo); showApp(); await cargarHistorico(); }
+    catch(err){ errEl.textContent = err.message; }
+  });
+  document.getElementById('btnModoAuditorias').addEventListener('click', () => setModo('auditorias'));
+  document.getElementById('btnModoSemanal').addEventListener('click', () => setModo('semanal'));
+  document.getElementById('btnModoMensual').addEventListener('click', () => setModo('mensual'));
+  document.getElementById('btnVerTotalSeleccion').addEventListener('click', verDetalleTotalSeleccion);
+  document.getElementById('filtroTipo').addEventListener('change', aplicarFiltros);
+  document.getElementById('filtroLocal').addEventListener('change', aplicarFiltros);
+  document.getElementById('btnFiltroLocalTodos').addEventListener('click', () => {
+    [...document.getElementById('filtroLocal').options].forEach(o => o.selected = true);
+    aplicarFiltros();
+  });
+  document.getElementById('btnFiltroLocalNinguno').addEventListener('click', () => {
+    [...document.getElementById('filtroLocal').options].forEach(o => o.selected = false);
+    aplicarFiltros();
+  });
+  document.getElementById('filtroAM').addEventListener('change', aplicarFiltros);
+
+  document.getElementById('btnLogout').addEventListener('click', logout);
+  document.getElementById('btnChangePw').addEventListener('click', openChangePw);
+  document.getElementById('btnCancelChangePw').addEventListener('click', closeChangePw);
+  document.getElementById('changePwForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const statusEl = document.getElementById('changePwStatus');
+    const pw1 = document.getElementById('newPw1').value;
+    const pw2 = document.getElementById('newPw2').value;
+    if(pw1.length < 6){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'El código debe tener al menos 6 caracteres.'; return; }
+    if(pw1 !== pw2){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Los dos códigos no coinciden.'; return; }
+    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = 'Guardando…';
+    try{
+      await changePassword(pw1);
+      statusEl.style.color = 'var(--good)';
+      statusEl.textContent = 'Código actualizado. Úsalo la próxima vez que inicies sesión.';
+      setTimeout(closeChangePw, 1500);
+    }catch(err){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = err.message;
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
