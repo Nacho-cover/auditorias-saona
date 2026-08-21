@@ -1944,7 +1944,7 @@ function aplicarCampos(campos){
 }
 
 function guardarBorrador(){
-  if(editandoInformeId) return; // editando un informe ya guardado: no mezclar con el borrador de "informe nuevo"
+  if(editandoInformeId || editandoAuditId) return; // editando algo ya guardado: no mezclar con el borrador de "nuevo"
   if(currentTipo === 'informe_semanal'){
     localStorage.setItem(draftKeyFor('informe_semanal'), JSON.stringify({
       guardadoEl: new Date().toISOString(),
@@ -1971,7 +1971,7 @@ function formatoRelativo(iso){
 
 function mostrarAvisoBorradorSiExiste(){
   const banner = document.getElementById('draftBanner');
-  if(editandoInformeId){ banner.style.display = 'none'; return; }
+  if(editandoInformeId || editandoAuditId){ banner.style.display = 'none'; return; }
   if(borradorGestionadoEnSesion.has(currentTipo)){ banner.style.display = 'none'; return; }
   let datos;
   try{ datos = JSON.parse(localStorage.getItem(draftKeyFor(currentTipo)) || 'null'); }catch(e){ datos = null; }
@@ -2100,6 +2100,7 @@ let semLocales = []; // [{ id, nombre }]
 let semFacturaCounter = 0;
 let semFacturaIds = [];
 let editandoInformeId = null; // id del informe semanal que se está editando (null = informe nuevo)
+let editandoAuditId = null; // id de la auditoría VEO (visita_operativa/veo_externa) que se está editando (null = nueva)
 let semFranjas = []; // [{ local, dia_semana, franja, reservas }] — comportamiento de reservas por franja de 15 min
 let semFranjasAnteriores = {}; // misma forma, de la semana anterior guardada (para las alertas)
 
@@ -3457,6 +3458,31 @@ async function traerSemanaAnterior(){
   }
 }
 
+/* Sube una foto de un ítem no conforme al bucket privado "audit-fotos" (ver
+   schema_audit_fotos_bucket.sql) y devuelve la ruta guardada. Se sube el File
+   tal cual (sin recomprimir — la recompresión a JPEG de fileToJpegDataUrl es
+   solo para incrustar en el PDF, aquí basta con conservar el original). */
+async function subirFotoAuditoria(auditId, key, idx, file){
+  const ruta = `${auditId}/${key}/${idx}-${encodeURIComponent(file.name || 'foto.jpg')}`;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/audit-fotos/${ruta}`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken()}`, 'Content-Type': file.type || 'application/octet-stream' },
+    body: file,
+  });
+  if(!res.ok) throw new Error(await res.text() || res.statusText);
+  return ruta;
+}
+
+async function descargarFotoAuditoria(ruta){
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/audit-fotos/${ruta}`, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken()}` },
+  });
+  if(!res.ok) throw new Error('No se pudo descargar la foto (' + res.status + ')');
+  const blob = await res.blob();
+  const nombre = ruta.split('/').pop();
+  return new File([blob], nombre, { type: blob.type });
+}
+
 async function saveAuditoria(){
   const statusEl = document.getElementById('saveStatus');
   if(typeof SUPABASE_CONFIGURED === 'undefined' || !SUPABASE_CONFIGURED){
@@ -3473,6 +3499,36 @@ async function saveAuditoria(){
   }
   recalc();
   const bs = window._blockScores || {};
+  const auditId = editandoAuditId || crypto.randomUUID();
+
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = editandoAuditId ? 'Guardando cambios…' : 'Guardando…';
+
+  // Subir primero las fotos de los ítems no conformes (bucket "audit-fotos"),
+  // para poder incluir sus rutas dentro del JSON de bloques que se guarda a
+  // continuación. Un fallo al subir una foto NO bloquea el resto del guardado
+  // — se avisa al final, igual que el resto de guardados parciales de la app.
+  const rutasFotosPorItem = {}; // key -> [ruta, ruta, ...]
+  const fotosFallidas = [];
+  const subidas = [];
+  BLOQUES.forEach(bloque => {
+    bloque.subs.forEach(s => {
+      for(let i = 1; i <= s.items; i++){
+        const key = itemKey(bloque.prefix, s.n, i);
+        const row = document.getElementById(`itemrow_${key}`);
+        if(!row || row.dataset.answer !== 'No') continue;
+        const files = itemPhotos[key] || [];
+        files.forEach((file, idx) => {
+          subidas.push(
+            subirFotoAuditoria(auditId, key, idx, file)
+              .then(ruta => { (rutasFotosPorItem[key] = rutasFotosPorItem[key] || []).push(ruta); })
+              .catch(() => { fotosFallidas.push(key); })
+          );
+        });
+      }
+    });
+  });
+  await Promise.all(subidas);
 
   const bloques = BLOQUES.map(bloque => ({
     key: bloque.key,
@@ -3484,6 +3540,22 @@ async function saveAuditoria(){
       items: s.items,
       puntuacion: subScore(bloque.prefix, s),
       observaciones: v(`sub_${bloque.prefix}${s.n}_obs`),
+      // Respuesta Sí/No de cada ítem (y las fotos subidas, si las hay) — antes
+      // NO se guardaba nada de esto, solo el % final del subbloque, así que al
+      // reabrir una auditoría guardada el checklist ítem a ítem se perdía.
+      respuestas: (() => {
+        const out = [];
+        for(let i = 1; i <= s.items; i++){
+          const key = itemKey(bloque.prefix, s.n, i);
+          const row = document.getElementById(`itemrow_${key}`);
+          const r = row && row.dataset.answer;
+          if(!r) continue;
+          const entry = { i, r };
+          if(rutasFotosPorItem[key]) entry.fotos = rutasFotosPorItem[key];
+          out.push(entry);
+        }
+        return out;
+      })(),
     })),
   }));
 
@@ -3525,26 +3597,58 @@ async function saveAuditoria(){
     creado_por: currentUserName(),
   };
 
-  statusEl.style.color = 'var(--muted)';
-  statusEl.textContent = 'Guardando…';
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/audits`, {
-      method: 'POST', headers: restHeaders(), body: JSON.stringify(payload),
-    });
-    if(!res.ok) throw new Error(await res.text() || res.statusText);
-    const rows = JSON.parse(await res.text() || '[]');
-    // PostgREST solo devuelve representation si se pide con Prefer: return=representation
-    const auditId = rows[0] ? rows[0].id : null;
-    if(auditId){
-      const withAudit = (arr) => arr.map(x => ({ ...x, audit_id: auditId }));
-      const calls = [];
-      if(incidencias.length) calls.push(fetch(`${SUPABASE_URL}/rest/v1/incidencias`, {method:'POST', headers:restHeaders(), body:JSON.stringify(withAudit(incidencias))}));
-      if(productos.length) calls.push(fetch(`${SUPABASE_URL}/rest/v1/productos_no_homologados`, {method:'POST', headers:restHeaders(), body:JSON.stringify(withAudit(productos))}));
-      if(plan.length) calls.push(fetch(`${SUPABASE_URL}/rest/v1/plan_accion`, {method:'POST', headers:restHeaders(), body:JSON.stringify(withAudit(plan))}));
-      await Promise.all(calls);
+    if(editandoAuditId){
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/audits?id=eq.${auditId}`, {
+        method: 'PATCH', headers: restHeaders(), body: JSON.stringify(payload),
+      });
+      if(!res.ok) throw new Error(await res.text() || res.statusText);
+      // Al editar, se sustituyen las filas hijas por las del formulario actual
+      // (borrar + volver a insertar) — mismo criterio que guardarInformeSemanal().
+      await Promise.all(['incidencias','productos_no_homologados','plan_accion'].map(t =>
+        fetch(`${SUPABASE_URL}/rest/v1/${t}?audit_id=eq.${auditId}`, { method: 'DELETE', headers: restHeaders() })
+          .then(r => { if(!r.ok) throw new Error('borrar ' + t); })
+      ));
+    }else{
+      // Se fija el id en el propio cliente (crypto.randomUUID()) en vez de
+      // depender de que Supabase lo devuelva: por defecto PostgREST no
+      // devuelve la fila creada (hace falta pedir explícitamente "Prefer:
+      // return=representation"), y antes de este cambio no se pedía — el id
+      // volvía null y las incidencias/productos/plan de acción NUNCA
+      // llegaban a guardarse. Al fijarlo aquí no hace falta leer la
+      // respuesta para saber a qué auditoría enlazar las tablas hijas.
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/audits`, {
+        method: 'POST', headers: restHeaders(), body: JSON.stringify({ id: auditId, ...payload }),
+      });
+      if(!res.ok) throw new Error(await res.text() || res.statusText);
     }
-    statusEl.style.color = 'var(--good)';
-    statusEl.textContent = 'Auditoría guardada en el histórico.';
+
+    const withAudit = (arr) => arr.map(x => ({ ...x, audit_id: auditId }));
+    const tablasHijas = [
+      { nombre: 'incidencias', datos: incidencias },
+      { nombre: 'productos_no_homologados', datos: productos },
+      { nombre: 'plan_accion', datos: plan },
+    ].filter(t => t.datos.length);
+    const resultados = await Promise.allSettled(tablasHijas.map(t =>
+      fetch(`${SUPABASE_URL}/rest/v1/${t.nombre}`, { method: 'POST', headers: restHeaders(), body: JSON.stringify(withAudit(t.datos)) })
+        .then(r => { if(!r.ok) throw new Error(t.nombre); return r; })
+    ));
+    const fallidas = resultados
+      .map((r, i) => ({ r, nombre: tablasHijas[i].nombre }))
+      .filter(x => x.r.status === 'rejected')
+      .map(x => x.nombre);
+
+    const avisos = [];
+    if(fallidas.length) avisos.push(`fallaron estas secciones: ${fallidas.join(', ')}`);
+    if(fotosFallidas.length) avisos.push(`no se pudieron subir ${fotosFallidas.length} foto(s) (el resto de la auditoría sí se guardó)`);
+
+    if(avisos.length){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `Auditoría guardada, pero ${avisos.join(' y ')}.`;
+    }else{
+      statusEl.style.color = 'var(--good)';
+      statusEl.textContent = editandoAuditId ? 'Cambios guardados.' : 'Auditoría guardada en el histórico.';
+    }
     localStorage.removeItem(draftKeyFor(currentTipo));
   }catch(err){
     console.error(err);
@@ -3936,6 +4040,147 @@ async function cargarInformeSemanalParaEditar(id){
 /* ---------------------------------------------------------------
    8. Inicialización
    --------------------------------------------------------------- */
+/* ---------------------------------------------------------------
+   7d. Cargar una auditoría VEO (Visita Operativa / VEO Externa) ya
+   guardada para editarla — se dispara al entrar con ?editar=<id> en la
+   URL (enlace "Editar" desde el histórico). Antes de esto, saveAuditoria()
+   no guardaba las respuestas Sí/No de cada ítem ni las fotos (solo el %
+   final de cada subbloque), así que solo se puede reabrir del todo una
+   auditoría guardada DESPUÉS de ese cambio — las guardadas antes solo
+   recuperan cabecera/resúmenes/incidencias/plan, no el checklist ítem a
+   ítem ni las fotos (nunca se guardaron).
+   --------------------------------------------------------------- */
+function fechaVisitaADatetimeLocal(texto){
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})\s*\u00b7\s*(\d{2}):(\d{2})$/.exec((texto || '').trim());
+  if(!m) return '';
+  const [, d, mo, y, h, mi] = m;
+  return `${y}-${mo}-${d}T${h}:${mi}`;
+}
+
+async function cargarAuditoriaParaEditar(id){
+  const statusEl = document.getElementById('saveStatus');
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Cargando auditoría guardada…';
+  try{
+    const session = await refreshSessionIfNeeded();
+    if(!session){ showLogin(); return; }
+    const headers = restHeaders();
+    const tablasHijas = ['incidencias', 'productos_no_homologados', 'plan_accion'];
+    const [auditRes, ...hijasRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/audits?id=eq.${id}&select=*`, { headers }),
+      ...tablasHijas.map(t => fetch(`${SUPABASE_URL}/rest/v1/${t}?audit_id=eq.${id}`, { headers })),
+    ]);
+    for(const r of [auditRes, ...hijasRes]){
+      if(!r.ok) throw new Error('No se pudo cargar la auditoría (' + r.status + ')');
+    }
+    const auditRows = await auditRes.json();
+    const [incidencias, productos, plan] = await Promise.all(hijasRes.map(r => r.json()));
+    const audit = auditRows[0];
+    if(!audit){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = 'No se ha encontrado esa auditoría (puede que ya no exista).';
+      return;
+    }
+
+    editandoAuditId = id;
+    document.getElementById('f_tipo').value = audit.tipo;
+    onTipoChange();
+
+    document.getElementById('f_local').value = audit.local || '';
+    document.getElementById('f_fechaHora').value = fechaVisitaADatetimeLocal(audit.fecha_visita);
+    document.getElementById('f_supervisores').value = audit.supervisores || '';
+    document.getElementById('f_visitaAnterior').value = audit.fecha_visita_anterior || '';
+    document.getElementById('r_global').value = audit.resumen_resultado_global || '';
+    document.getElementById('r_bloques').value = audit.resumen_mejor_peor_bloque || '';
+    document.getElementById('r_incidencias').value = audit.resumen_incidencias_relevantes || '';
+    document.getElementById('r_nohom').value = audit.resumen_productos_no_homologados || '';
+    document.getElementById('r_recomendacion').value = audit.resumen_recomendacion || '';
+    document.getElementById('f_comentarioPuntuacion').value = audit.comentario_evolucion || '';
+    document.getElementById('f_conclusion').value = audit.valoracion_final || '';
+
+    // Checklist ítem a ítem + fotos, bloque a bloque. Las observaciones se
+    // marcan "dirty" ANTES de restaurar los ítems para que setItemAnswer()
+    // (que llama a recalc() en cada ítem) no las regenere por encima del
+    // texto guardado.
+    const descargasFotos = [];
+    (audit.bloques || []).forEach(bloqueGuardado => {
+      const bloqueDef = BLOQUES.find(b => b.key === bloqueGuardado.key);
+      if(!bloqueDef) return;
+      (bloqueGuardado.subs || []).forEach((subGuardado, idx) => {
+        const s = bloqueDef.subs[idx];
+        if(!s) return;
+        const obsId = `sub_${bloqueDef.prefix}${s.n}_obs`;
+        obsDirty.add(obsId);
+        const obsEl = document.getElementById(obsId);
+        if(obsEl) obsEl.value = subGuardado.observaciones || '';
+        (subGuardado.respuestas || []).forEach(item => {
+          setItemAnswer(bloqueDef.prefix, s.n, item.i, item.r);
+          if(item.fotos && item.fotos.length){
+            const key = itemKey(bloqueDef.prefix, s.n, item.i);
+            descargasFotos.push(
+              Promise.all(item.fotos.map(ruta => descargarFotoAuditoria(ruta).catch(() => null)))
+                .then(files => {
+                  itemPhotos[key] = files.filter(Boolean);
+                  renderThumbs(key);
+                })
+            );
+          }
+        });
+      });
+    });
+    await Promise.all(descargasFotos);
+
+    const porNumero = (arr) => {
+      const out = new Array(arr.length + 20).fill(null);
+      arr.forEach((r, i) => { const slot = (r.numero && r.numero >= 1) ? r.numero - 1 : i; out[slot] = r; });
+      return out;
+    };
+    porNumero(incidencias).forEach((r, i) => {
+      if(!r) return;
+      const n = i + 1;
+      document.getElementById(`inc${n}_bloque`).value = r.bloque || '';
+      document.getElementById(`inc${n}_desc`).value = r.descripcion || '';
+      document.getElementById(`inc${n}_grav`).value = r.gravedad || '';
+      document.getElementById(`inc${n}_resp`).value = r.responsable || '';
+      document.getElementById(`inc${n}_fecha`).value = r.fecha_limite || '';
+    });
+    productos.forEach((r, i) => {
+      const n = i + 1;
+      if(n > N_PNHD) return;
+      document.getElementById(`pnhd${n}_producto`).value = r.producto || '';
+      document.getElementById(`pnhd${n}_proveedor`).value = r.proveedor || '';
+      document.getElementById(`pnhd${n}_area`).value = r.area || '';
+      document.getElementById(`pnhd${n}_accion`).value = r.accion_tomada || '';
+      document.getElementById(`pnhd${n}_estado`).value = r.estado || '';
+    });
+    plan.forEach((r, i) => {
+      const n = i + 1;
+      if(n > N_PLAN) return;
+      document.getElementById(`plan${n}_accion`).value = r.accion || '';
+      document.getElementById(`plan${n}_resp`).value = r.responsable || '';
+      document.getElementById(`plan${n}_fecha`).value = r.fecha || '';
+      document.getElementById(`plan${n}_prioridad`).value = r.prioridad || '';
+    });
+
+    recalc();
+
+    document.getElementById('btnSave').textContent = 'Guardar cambios';
+    const banner = document.getElementById('editBanner');
+    document.getElementById('editBannerText').textContent = `Editando la auditoría de "${audit.local}" (${audit.fecha_visita || ''}). Al guardar se actualizará esta misma auditoría — no se creará una nueva.`;
+    banner.style.display = 'flex';
+    document.getElementById('draftBanner').style.display = 'none';
+
+    statusEl.textContent = '';
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'No se pudo cargar la auditoría: ' + err.message;
+  }
+}
+
+/* ---------------------------------------------------------------
+   8. Inicialización
+   --------------------------------------------------------------- */
 document.addEventListener('DOMContentLoaded', () => {
   populateLocalesDatalist();
   document.getElementById('f_tipo').value = currentTipo;
@@ -4022,9 +4267,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnCancelarEdicion').addEventListener('click', () => {
     window.location.href = window.location.pathname;
   });
-  const idAEditar = new URLSearchParams(window.location.search).get('editarSemanal');
+  const params = new URLSearchParams(window.location.search);
+  const idAEditar = params.get('editarSemanal');
+  const idAuditAEditar = params.get('editar');
   if(idAEditar){
     cargarInformeSemanalParaEditar(idAEditar);
+  }else if(idAuditAEditar){
+    cargarAuditoriaParaEditar(idAuditAEditar);
   }else{
     mostrarAvisoBorradorSiExiste();
   }

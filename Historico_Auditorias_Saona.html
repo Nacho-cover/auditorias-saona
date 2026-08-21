@@ -280,7 +280,7 @@ function fmtVariacion(actual, anterior){
 
 function renderTablaAuditorias(rows){
   document.getElementById('tablaHistoricoHead').innerHTML =
-    '<tr><th>Tipo</th><th>Local</th><th>Fecha visita</th><th>Area Manager</th><th>Puntuación</th><th>Variación</th><th>Guardada el</th></tr>';
+    '<tr><th>Tipo</th><th>Local</th><th>Fecha visita</th><th>Area Manager</th><th>Puntuación</th><th>Variación</th><th>Guardada el</th><th></th></tr>';
   const tbody = document.querySelector('#tablaHistorico tbody');
   tbody.innerHTML = '';
   rows.forEach(row => {
@@ -293,6 +293,7 @@ function renderTablaAuditorias(rows){
       <td>${row.puntuacion_total != null ? Number(row.puntuacion_total).toFixed(1) + ' / 10' : '—'}</td>
       <td>${fmtVariacion(row.puntuacion_total, row.puntuacion_anterior_total)}</td>
       <td>${row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : '—'}</td>
+      <td><a href="./Auditorias_Saona.html?editar=${row.id}" class="btn secondary" style="padding:4px 10px; font-size:12px; text-decoration:none; display:inline-block;">✎ Editar</a></td>
     `;
     tbody.appendChild(tr);
   });
