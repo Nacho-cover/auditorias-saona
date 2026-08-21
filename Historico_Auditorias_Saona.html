@@ -475,7 +475,7 @@ async function verDetalleTotalSeleccion(){
       fetch(`${SUPABASE_URL}/rest/v1/informe_semanal_ventas?${idsParam}&select=informe_id,local,clientes_semana,ventas_semana`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/informe_semanal_compras?${idsParam}&select=informe_id,local,compras,mermas`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/informe_semanal_reservas?${idsParam}&select=informe_id,local,walkins,noshows`, { headers }),
-      fetch(`${SUPABASE_URL}/rest/v1/informe_semanal_valoraciones?${idsParam}&select=informe_id,local,resenas_gr,puntuacion_gr,resenas_cover,puntuacion_cover`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/informe_semanal_valoraciones?${idsParam}&select=informe_id,local,resenas_gr,puntuacion_gr,resenas_cover,puntuacion_cover,puntos_criticos`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/informes_semanales?id=in.(${ids.join(',')})&select=id,semana_fin`, { headers }),
     ]);
     for(const r of [ventasRes, comprasRes, reservasRes, valoracionesRes, informesRes]){
@@ -504,7 +504,7 @@ async function verDetalleTotalSeleccion(){
     const get = (local) => (porLocal[local] = porLocal[local] || {
       local, clientes: 0, ventas: 0, compras: 0, mermas: 0, walkins: 0, noshows: 0,
       resenas_gr: 0, resenas_cover: 0, puntuacion_gr: null, puntuacion_cover: null,
-      _fechaGr: null, _fechaCover: null,
+      puntos_criticos: [], _fechaGr: null, _fechaCover: null,
     });
 
     ventas.forEach(r => { const o = get(r.local); o.clientes += Number(r.clientes_semana) || 0; o.ventas += Number(r.ventas_semana) || 0; });
@@ -517,6 +517,7 @@ async function verDetalleTotalSeleccion(){
       const fecha = fechaPorInforme[r.informe_id] || '';
       if(r.puntuacion_gr != null && (!o._fechaGr || fecha > o._fechaGr)){ o.puntuacion_gr = Number(r.puntuacion_gr); o._fechaGr = fecha; }
       if(r.puntuacion_cover != null && (!o._fechaCover || fecha > o._fechaCover)){ o.puntuacion_cover = Number(r.puntuacion_cover); o._fechaCover = fecha; }
+      if(r.puntos_criticos && r.puntos_criticos.trim()) o.puntos_criticos.push({ fecha, texto: r.puntos_criticos.trim() });
     });
 
     const filas = Object.values(porLocal).map(o => ({
@@ -528,6 +529,7 @@ async function verDetalleTotalSeleccion(){
       noshows: o.noshows,
       resenas_gr: o.resenas_gr, puntuacion_gr: o.puntuacion_gr,
       resenas_cover: o.resenas_cover, puntuacion_cover: o.puntuacion_cover,
+      puntos_criticos: o.puntos_criticos.map(p => informes.length > 1 && p.fecha ? `[${p.fecha}] ${p.texto}` : p.texto).join(' · '),
     })).sort((a, b) => a.local.localeCompare(b.local, 'es'));
 
     renderResultadoSeleccion(filas, informes, ventaSugerida, informeReciente);
@@ -578,6 +580,7 @@ function renderResultadoSeleccion(filas, informes, ventaSugerida, informeRecient
       <td>${f.noshows}</td>
       <td>${f.puntuacion_gr != null ? f.puntuacion_gr.toFixed(1) : '—'}</td>
       <td>${f.puntuacion_cover != null ? f.puntuacion_cover.toFixed(1) : '—'}</td>
+      <td style="text-align:left; max-width:260px;">${f.puntos_criticos || '—'}</td>
     </tr>
   `).join('');
   const mesesOptions = MESES_ES.map((m, i) => `<option value="${i + 1}" ${i + 1 === sugerido.mes ? 'selected' : ''}>${capitaliza(m)}</option>`).join('');
@@ -586,7 +589,7 @@ function renderResultadoSeleccion(filas, informes, ventaSugerida, informeRecient
     <h2 style="margin:0 0 4px; font-size:17px; color:var(--navy);">Total de la selección (${filas.length} local(es), ${informes.length} semana(s))</h2>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Local</th><th>Clientes</th><th>Ventas</th><th>IC</th><th>Compras</th><th>% Compras</th><th>Mermas</th><th>% Mermas</th><th>Walk-ins</th><th>% Walk-ins</th><th>No-shows</th><th>Punt. GR</th><th>Punt. Cover</th></tr></thead>
+        <thead><tr><th>Local</th><th>Clientes</th><th>Ventas</th><th>IC</th><th>Compras</th><th>% Compras</th><th>Mermas</th><th>% Mermas</th><th>Walk-ins</th><th>% Walk-ins</th><th>No-shows</th><th>Punt. GR</th><th>Punt. Cover</th><th>Puntos críticos</th></tr></thead>
         <tbody>${filasHtml}</tbody>
       </table>
     </div>

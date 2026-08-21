@@ -600,8 +600,9 @@
 
       <section class="card" id="sec-sem-valoraciones">
         <h2>Valoración de clientes (Google Reviews / TheFork Cover)</h2>
+        <p class="desc">En "Puntos críticos" apunta en 2-3 líneas lo que digan las reseñas de esta semana sobre la experiencia del cliente (quejas repetidas, algo que haya destacado) — no hace falta copiar reseñas enteras, solo el resumen.</p>
         <table class="datatable" id="tblSemValoraciones">
-          <thead><tr><th style="text-align:left;">Local</th><th>Reseñas GR</th><th>Puntuación GR</th><th>Tendencia GR</th><th>Reseñas Cover</th><th>Puntuación Cover</th><th>Tendencia Cover</th></tr></thead>
+          <thead><tr><th style="text-align:left;">Local</th><th>Reseñas GR</th><th>Puntuación GR</th><th>Tendencia GR</th><th>Reseñas Cover</th><th>Puntuación Cover</th><th>Tendencia Cover</th><th style="min-width:180px;">Puntos críticos</th></tr></thead>
           <tbody></tbody>
         </table>
       </section>
@@ -2152,6 +2153,7 @@ function semRow(cells){
 }
 function semTextCell(text){ return el('td', { text }); }
 function semInputCell(id, opts){ const td = el('td'); td.appendChild(el('input', { type:'text', id, ...(opts||{}) })); return td; }
+function semTextareaCell(id, opts){ const td = el('td'); td.appendChild(el('textarea', { id, ...(opts||{}) })); return td; }
 function semSelectCell(id, options){
   const td = el('td');
   const sel = el('select', { id });
@@ -2354,6 +2356,7 @@ function renderSemValoraciones(){
     semInputCell(`semva_${l.id}_resenasCover`, {inputmode:'numeric'}),
     semInputCell(`semva_${l.id}_puntCover`, {inputmode:'decimal'}),
     semSelectCell(`semva_${l.id}_tendCover`, ['up','down']),
+    semTextareaCell(`semva_${l.id}_puntosCriticos`, {placeholder:'Ej: quejas por tiempo de espera en comidas de sábado'}),
   ]) ]);
 }
 
@@ -3568,6 +3571,7 @@ async function guardarInformeSemanal(){
     resenas_cover: numOrNull(`semva_${l.id}_resenasCover`),
     puntuacion_cover: numOrNull(`semva_${l.id}_puntCover`),
     tendencia_cover: v(`semva_${l.id}_tendCover`) || null,
+    puntos_criticos: v(`semva_${l.id}_puntosCriticos`) || null,
   }));
 
   const ocupacion = [];
@@ -3766,6 +3770,7 @@ async function cargarInformeSemanalParaEditar(id){
       setVal(`semva_${lid}_resenasCover`, r.resenas_cover);
       setVal(`semva_${lid}_puntCover`, r.puntuacion_cover);
       setVal(`semva_${lid}_tendCover`, r.tendencia_cover);
+      setVal(`semva_${lid}_puntosCriticos`, r.puntos_criticos);
     });
 
     const vsPorLocal = {};
