@@ -601,6 +601,11 @@
       <section class="card" id="sec-sem-valoraciones">
         <h2>Valoración de clientes (Google Reviews / TheFork Cover)</h2>
         <p class="desc">En "Puntos críticos" apunta en 2-3 líneas lo que digan las reseñas de esta semana sobre la experiencia del cliente (quejas repetidas, algo que haya destacado) — no hace falta copiar reseñas enteras, solo el resumen.</p>
+        <div id="semValOcrBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+          <strong style="font-size:13px; white-space:nowrap;">📷 Puntos críticos desde una captura de reviews.saona.es</strong>
+          <input type="file" id="semValOcrFile" accept="image/*" style="flex:1 1 220px; font-size:12px;">
+          <span id="semValOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Sube la captura del informe de un local (el que se ve al entrar en ese local en reviews.saona.es/locals). Lee el local y resume el "Resumen Ejecutivo" en Puntos críticos — añade antes ese local al grupo, arriba en "Datos generales". Es lectura automática: revisa siempre el texto.</span>
+        </div>
         <table class="datatable" id="tblSemValoraciones">
           <thead><tr><th style="text-align:left;">Local</th><th>Reseñas GR</th><th>Puntuación GR</th><th>Tendencia GR</th><th>Reseñas Cover</th><th>Puntuación Cover</th><th>Tendencia Cover</th><th style="min-width:180px;">Puntos críticos</th></tr></thead>
           <tbody></tbody>
@@ -2497,13 +2502,13 @@ async function ensureTesseractLoaded(){
    reportamos el progreso real (m.progress) en el mensaje de estado, y
    cortamos con un error claro si no termina en un tiempo razonable, en
    vez de dejar la pantalla en "Leyendo la imagen…" para siempre. */
-async function reconocerImagen(file, statusEl){
+async function reconocerImagen(file, statusEl, lang){
   const TIMEOUT_MS = 90000;
   let timeoutId;
   const timeout = new Promise((_, reject) => {
     timeoutId = setTimeout(() => reject(new Error('La lectura está tardando demasiado — puede que la conexión sea lenta. Prueba con mejor wifi/datos, o rellena los datos a mano.')), TIMEOUT_MS);
   });
-  const recognize = Tesseract.recognize(file, 'eng', {
+  const recognize = Tesseract.recognize(file, lang || 'eng', {
     logger: (m) => {
       if(!m || !statusEl) return;
       const pct = m.progress != null ? ` ${Math.round(m.progress * 100)}%` : '';
@@ -3070,6 +3075,90 @@ async function leerCapturaVentaSugerida(file){
     statusEl.textContent = aplicados
       ? `Se han rellenado ${aplicados} local(es). Es lectura automática — revisa los números antes de guardar.`
       : 'Se leyeron locales en la imagen pero ninguno coincide con los ya añadidos al grupo — añádelos primero arriba.';
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'No se pudo leer la imagen: ' + err.message;
+  }
+}
+
+/* ---------------------------------------------------------------
+   Puntos críticos (Valoraciones) desde una captura del informe de un
+   local en reviews.saona.es — a diferencia de Venta Sugerida/Facturas
+   NO es una tabla de números: es un informe narrativo largo (Resumen
+   Ejecutivo, KPIs, Análisis por Aspecto, Áreas de Mejora Priorizadas…).
+   Como el usuario pidió expresamente "un pequeño feedback" (no todo el
+   informe), en vez de intentar reconstruir tablas por posición (frágil
+   en texto narrativo) se usa el texto plano de Tesseract y se recorta
+   solo el bloque "Resumen Ejecutivo" — es la única sección pensada para
+   leerse de un vistazo y ya resume los puntos críticos en prosa — hasta
+   la 2ª frase o ~320 caracteres, lo que sea más corto.
+
+   El local se busca como substring (sin acentos/mayúsculas) dentro de
+   los primeros ~200 caracteres reconocidos, no en todo el texto, para
+   no confundirlo con un local que se nombre de pasada en una reseña.
+
+   Idioma 'spa' (no 'eng' como el resto de lectores): esta es la única
+   captura con prosa española larga y con acentos — con 'eng' Tesseract
+   lee peor las tildes y la "ñ".
+--------------------------------------------------------------- */
+function parseValoracionesOCR(texto){
+  const plano = quitarAcentos(texto);
+  const cabecera = quitarAcentos(texto.slice(0, 200));
+  const local = LOCALES.find(l => cabecera.includes(quitarAcentos(l)))
+    || LOCALES.find(l => plano.includes(quitarAcentos(l)));
+  if(!local) return null;
+
+  const mIni = texto.match(/Resumen\s+Ejecutivo/i);
+  if(!mIni) return { local, resumen: null };
+  const desdeResumen = texto.slice(mIni.index + mIni[0].length);
+  const mFin = desdeResumen.match(/KPIs?\s+del\s+Per[ií]odo/i);
+  let bloque = (mFin ? desdeResumen.slice(0, mFin.index) : desdeResumen).trim();
+  bloque = bloque.replace(/\s+/g, ' ');
+
+  const LIMITE = 320;
+  let resumen = bloque;
+  if(resumen.length > LIMITE){
+    const corte = resumen.lastIndexOf('. ', LIMITE);
+    resumen = (corte > 40 ? resumen.slice(0, corte + 1) : resumen.slice(0, LIMITE) + '…');
+  }
+  return { local, resumen: resumen || null };
+}
+
+function aplicarValoracionesOCR(resultado){
+  const l = semLocales.find(x => x.nombre.toLowerCase() === resultado.local.toLowerCase());
+  if(!l) return false;
+  if(!resultado.resumen) return null; // local reconocido pero no se encontró "Resumen Ejecutivo"
+  const setVal = (id, val) => { const campo = document.getElementById(id); if(campo && val != null) campo.value = val; };
+  setVal(`semva_${l.id}_puntosCriticos`, resultado.resumen);
+  return true;
+}
+
+async function leerCapturaValoraciones(file){
+  const statusEl = document.getElementById('semValOcrStatus');
+  if(!semLocales.length){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Añade primero los locales del grupo arriba.'; return; }
+  try{
+    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = 'Cargando el lector de imagen…';
+    await ensureTesseractLoaded();
+    const data = await reconocerImagen(file, statusEl, 'spa');
+    const resultado = parseValoracionesOCR(data.text || '');
+    if(!resultado){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = 'No se ha reconocido ningún local en la imagen. Prueba con una foto más nítida, o rellena a mano.';
+      return;
+    }
+    const aplicado = aplicarValoracionesOCR(resultado);
+    if(aplicado === null){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `Se reconoció "${resultado.local}" pero no la sección "Resumen Ejecutivo" — prueba con una captura que empiece por ahí, o rellena a mano.`;
+    }else if(aplicado){
+      statusEl.style.color = 'var(--good)';
+      statusEl.textContent = `Puntos críticos de ${resultado.local} rellenados desde el Resumen Ejecutivo. Es lectura automática — revisa el texto antes de guardar.`;
+    }else{
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `Se reconoció "${resultado.local}" en la imagen pero no está añadido al grupo — añádelo primero arriba.`;
+    }
   }catch(err){
     console.error(err);
     statusEl.style.color = 'var(--bad)';
@@ -3900,6 +3989,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('semFacOcrFile').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if(file) leerCapturaFacturas(file);
+    e.target.value = '';
+  });
+  document.getElementById('semValOcrFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(file) leerCapturaValoraciones(file);
     e.target.value = '';
   });
   renderAllSemSections();
