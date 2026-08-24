@@ -523,6 +523,10 @@
       <section class="card" id="sec-sem-compras">
         <h2>Compras y mermas</h2>
         <p class="desc">Los datos de la semana (% sobre las ventas de esa semana) y, aparte, el acumulado del mes.</p>
+        <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center;">
+          <button class="small-btn" type="button" id="btnSemAcumuladoCompras">↻ Calcular acumulado del mes (suma semanas anteriores + esta)</button>
+          <span id="semAcumuladoComprasStatus" style="font-size:12px; color:var(--muted);"></span>
+        </div>
         <div class="table-wrap-scroll" style="overflow-x:auto;">
         <table class="datatable" id="tblSemCompras">
           <thead>
@@ -3476,6 +3480,67 @@ async function traerSemanaAnterior(){
   }
 }
 
+/* ---------------------------------------------------------------
+   Acumulado del mes de Compras/Mermas: antes había que teclearlo a
+   mano cada semana; ahora se calcula solo, igual criterio que "Traer
+   clientes/ventas de la semana anterior" — busca los informes
+   semanales YA GUARDADOS ese mismo mes natural para cada local (antes
+   de la semana actual), suma sus cifras SEMANALES de compras/mermas, y
+   le añade lo que se lleva escrito esta semana en el propio formulario.
+   --------------------------------------------------------------- */
+async function traerAcumuladoMesCompras(){
+  const statusEl = document.getElementById('semAcumuladoComprasStatus');
+  if(!semLocales.length){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Añade primero los locales del grupo.'; return; }
+  const inicioActual = v('sem_semanaInicio');
+  if(!inicioActual){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Pon la fecha de inicio de esta semana antes de calcular el acumulado.'; return; }
+  const session = await refreshSessionIfNeeded();
+  if(!session){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Tu sesión ha caducado. Recarga la página e inicia sesión de nuevo.';
+    showLogin();
+    return;
+  }
+  const primerDiaMes = inicioActual.slice(0, 8) + '01';
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Calculando…';
+  let calculados = 0;
+  try{
+    for(const l of semLocales){
+      const informes = await fetch(
+        `${SUPABASE_URL}/rest/v1/informes_semanales?locales=ilike.*${encodeURIComponent(l.nombre)}*&semana_inicio=gte.${primerDiaMes}&semana_fin=lt.${inicioActual}&select=id`,
+        { headers: restHeaders() }
+      ).then(r => r.json());
+      let sumaCompras = 0, sumaMermas = 0;
+      if(informes.length){
+        const idsParam = informes.map(i => i.id).join(',');
+        const filas = await fetch(
+          `${SUPABASE_URL}/rest/v1/informe_semanal_compras?informe_id=in.(${idsParam})&local=eq.${encodeURIComponent(l.nombre)}&select=compras_semana,mermas_semana`,
+          { headers: restHeaders() }
+        ).then(r => r.json());
+        filas.forEach(f => {
+          sumaCompras += Number(f.compras_semana) || 0;
+          sumaMermas += Number(f.mermas_semana) || 0;
+        });
+      }
+      sumaCompras += numOrNull(`semc_${l.id}_comprasSemana`) || 0;
+      sumaMermas += numOrNull(`semc_${l.id}_mermasSemana`) || 0;
+      const setVal = (id, val) => {
+        const campo = document.getElementById(id);
+        if(campo){ campo.value = val ? Number(val.toFixed(2)) : ''; campo.dispatchEvent(new Event('input', { bubbles: true })); }
+      };
+      setVal(`semc_${l.id}_compras`, sumaCompras);
+      setVal(`semc_${l.id}_mermas`, sumaMermas);
+      calculados++;
+    }
+    statusEl.style.color = 'var(--good)';
+    statusEl.textContent = `Acumulado del mes calculado para ${calculados} de ${semLocales.length} local(es) — suma de las semanas ya guardadas este mes más esta semana. Revísalo antes de guardar.`;
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Error al calcular: ' + err.message;
+  }
+}
+
 /* Sube una foto de un ítem no conforme al bucket privado "audit-fotos" (ver
    schema_audit_fotos_bucket.sql) y devuelve la ruta guardada. Se sube el File
    tal cual (sin recomprimir — la recompresión a JPEG de fileToJpegDataUrl es
@@ -4233,6 +4298,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('btnAddSemFactura').addEventListener('click', addSemFactura);
   document.getElementById('btnSemAnterior').addEventListener('click', traerSemanaAnterior);
+  document.getElementById('btnSemAcumuladoCompras').addEventListener('click', traerAcumuladoMesCompras);
   document.getElementById('sem_semanaInicio').addEventListener('change', () => { updateSemanaPreview(); refrescarFechasOcupacion(); });
   document.getElementById('sem_semanaFin').addEventListener('change', () => { updateSemanaPreview(); refrescarFechasOcupacion(); });
   document.getElementById('semOcupacionCsvFile').addEventListener('change', (e) => {
