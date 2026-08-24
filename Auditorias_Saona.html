@@ -493,13 +493,17 @@
 
       <section class="card" id="sec-sem-ventas">
         <h2>Ventas e ingreso por comensal (IC)</h2>
-        <p class="desc">Comparativa semanal — una fila por local del grupo.</p>
+        <p class="desc">Comparativa semanal — una fila por local del grupo, y aparte, el acumulado del mes (se usa para calcular el % de Compras/mermas sobre ventas del mes).</p>
         <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center;">
           <button class="small-btn" type="button" id="btnSemAnterior">↻ Traer clientes/ventas de la semana anterior</button>
           <span id="semAnteriorStatus" style="font-size:12px; color:var(--muted);"></span>
         </div>
+        <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center;">
+          <button class="small-btn" type="button" id="btnSemAcumuladoVentas">↻ Calcular ventas acumulado del mes (suma semanas anteriores + esta)</button>
+          <span id="semAcumuladoVentasStatus" style="font-size:12px; color:var(--muted);"></span>
+        </div>
         <table class="datatable" id="tblSemVentas">
-          <thead><tr><th style="text-align:left;">Local</th><th>Clientes (semana)</th><th>Clientes (sem. anterior)</th><th>Ventas semana (€)</th><th>Ventas sem. anterior (€)</th><th>IC semana (€)</th><th>IC sem. anterior (€)</th></tr></thead>
+          <thead><tr><th style="text-align:left;">Local</th><th>Clientes (semana)</th><th>Clientes (sem. anterior)</th><th>Ventas semana (€)</th><th>Ventas sem. anterior (€)</th><th>IC semana (€)</th><th>IC sem. anterior (€)</th><th>Ventas acumulado del mes (€)</th></tr></thead>
           <tbody></tbody>
         </table>
       </section>
@@ -2213,13 +2217,17 @@ function computeIC(id){
 }
 
 function computePctCompras(id){
-  const ventas = numOrNull(`semv_${id}_ventas`);
+  // "Acumulado del mes" de Compras/Mermas se divide entre las VENTAS DEL MES, no
+  // las de esta semana — antes usaba la venta semanal para las dos columnas
+  // (semana Y mes), lo que daba porcentajes disparados (ej. 165%) en cuanto el
+  // acumulado mensual superaba la venta de una sola semana.
+  const ventasMes = numOrNull(`semv_${id}_ventasMes`);
   const compras = numOrNull(`semc_${id}_compras`);
   const mermas = numOrNull(`semc_${id}_mermas`);
   const pctComprasEl = document.getElementById(`semc_${id}_pctCompras`);
   const pctMermasEl = document.getElementById(`semc_${id}_pctMermas`);
-  if(pctComprasEl) pctComprasEl.value = (ventas && compras != null) ? ((compras / ventas) * 100).toFixed(1) : '';
-  if(pctMermasEl) pctMermasEl.value = (ventas && mermas != null) ? ((mermas / ventas) * 100).toFixed(1) : '';
+  if(pctComprasEl) pctComprasEl.value = (ventasMes && compras != null) ? ((compras / ventasMes) * 100).toFixed(1) : '';
+  if(pctMermasEl) pctMermasEl.value = (ventasMes && mermas != null) ? ((mermas / ventasMes) * 100).toFixed(1) : '';
 }
 
 function computePctComprasSemana(id){
@@ -2259,11 +2267,13 @@ function renderSemVentas(){
       semInputCell(`semv_${l.id}_ventasAnt`, {inputmode:'decimal'}),
       semInputCell(`semv_${l.id}_ic`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
       semInputCell(`semv_${l.id}_icAnt`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
+      semInputCell(`semv_${l.id}_ventasMes`, {inputmode:'decimal'}),
     ]);
     ['clientes','clientesAnt','ventas','ventasAnt'].forEach(campo => {
       row.querySelector(`#semv_${l.id}_${campo}`).addEventListener('input', () => { computeIC(l.id); computePctCompras(l.id); computePctComprasSemana(l.id); });
     });
     row.querySelector(`#semv_${l.id}_clientes`).addEventListener('input', () => syncReservasClientes(l.id));
+    row.querySelector(`#semv_${l.id}_ventasMes`).addEventListener('input', () => computePctCompras(l.id));
     return [row];
   });
 }
@@ -3544,6 +3554,56 @@ async function traerAcumuladoMesCompras(){
   }
 }
 
+/* ---------------------------------------------------------------
+   Igual que traerAcumuladoMesCompras() pero para Ventas — hace falta
+   como base para el % de Compras/mermas del mes (antes dividía por la
+   venta de la semana, ver computePctCompras).
+   --------------------------------------------------------------- */
+async function traerAcumuladoMesVentas(){
+  const statusEl = document.getElementById('semAcumuladoVentasStatus');
+  if(!semLocales.length){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Añade primero los locales del grupo.'; return; }
+  const inicioActual = v('sem_semanaInicio');
+  if(!inicioActual){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Pon la fecha de inicio de esta semana antes de calcular el acumulado.'; return; }
+  const session = await refreshSessionIfNeeded();
+  if(!session){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Tu sesión ha caducado. Recarga la página e inicia sesión de nuevo.';
+    showLogin();
+    return;
+  }
+  const primerDiaMes = inicioActual.slice(0, 8) + '01';
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Calculando…';
+  let calculados = 0;
+  try{
+    for(const l of semLocales){
+      const informes = await fetch(
+        `${SUPABASE_URL}/rest/v1/informes_semanales?locales=ilike.*${encodeURIComponent(l.nombre)}*&semana_inicio=gte.${primerDiaMes}&semana_fin=lt.${inicioActual}&select=id`,
+        { headers: restHeaders() }
+      ).then(r => r.json());
+      let sumaVentas = 0;
+      if(informes.length){
+        const idsParam = informes.map(i => i.id).join(',');
+        const filas = await fetch(
+          `${SUPABASE_URL}/rest/v1/informe_semanal_ventas?informe_id=in.(${idsParam})&local=eq.${encodeURIComponent(l.nombre)}&select=ventas_semana`,
+          { headers: restHeaders() }
+        ).then(r => r.json());
+        filas.forEach(f => { sumaVentas += Number(f.ventas_semana) || 0; });
+      }
+      sumaVentas += numOrNull(`semv_${l.id}_ventas`) || 0;
+      const campo = document.getElementById(`semv_${l.id}_ventasMes`);
+      if(campo){ campo.value = sumaVentas ? Number(sumaVentas.toFixed(2)) : ''; campo.dispatchEvent(new Event('input', { bubbles: true })); }
+      calculados++;
+    }
+    statusEl.style.color = 'var(--good)';
+    statusEl.textContent = `Ventas acumulado del mes calculado para ${calculados} de ${semLocales.length} local(es) — suma de las semanas ya guardadas este mes más esta semana. Revísalo antes de guardar.`;
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Error al calcular: ' + err.message;
+  }
+}
+
 /* Sube una foto de un ítem no conforme al bucket privado "audit-fotos" (ver
    schema_audit_fotos_bucket.sql) y devuelve la ruta guardada. Se sube el File
    tal cual (sin recomprimir — la recompresión a JPEG de fileToJpegDataUrl es
@@ -3804,6 +3864,7 @@ async function guardarInformeSemanal(){
     ventas_semana_anterior: numOrNull(`semv_${l.id}_ventasAnt`),
     ic_semana: numOrNull(`semv_${l.id}_ic`),
     ic_semana_anterior: numOrNull(`semv_${l.id}_icAnt`),
+    ventas_mes: numOrNull(`semv_${l.id}_ventasMes`),
   }));
 
   const ventaSugerida = [];
@@ -4028,6 +4089,7 @@ async function cargarInformeSemanalParaEditar(id){
       setVal(`semv_${lid}_clientesAnt`, r.clientes_semana_anterior);
       setVal(`semv_${lid}_ventas`, r.ventas_semana);
       setVal(`semv_${lid}_ventasAnt`, r.ventas_semana_anterior);
+      setVal(`semv_${lid}_ventasMes`, r.ventas_mes);
     });
 
     compras.forEach(r => {
@@ -4302,6 +4364,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnAddSemFactura').addEventListener('click', addSemFactura);
   document.getElementById('btnSemAnterior').addEventListener('click', traerSemanaAnterior);
   document.getElementById('btnSemAcumuladoCompras').addEventListener('click', traerAcumuladoMesCompras);
+  document.getElementById('btnSemAcumuladoVentas').addEventListener('click', traerAcumuladoMesVentas);
   document.getElementById('sem_semanaInicio').addEventListener('change', () => { updateSemanaPreview(); refrescarFechasOcupacion(); });
   document.getElementById('sem_semanaFin').addEventListener('change', () => { updateSemanaPreview(); refrescarFechasOcupacion(); });
   document.getElementById('semOcupacionCsvFile').addEventListener('change', (e) => {
