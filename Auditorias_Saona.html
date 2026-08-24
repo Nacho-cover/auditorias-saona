@@ -3958,6 +3958,21 @@ async function guardarInformeSemanal(){
     });
   });
 
+  // Antes de guardar: un KPI % fuera de rango (columna kpi_pct numeric(5,2),
+  // máximo 999,99) hace fallar TODO el guardado de venta_sugerida con un error
+  // genérico de Postgres sin decir qué campo es. Suele pasar cuando el lector de
+  // captura pierde la coma decimal (24,21% -> 2421) — se valida aquí antes de
+  // enviar nada, para señalar el local y la categoría exactos en vez de que el
+  // usuario tenga que buscarlo a ojo por toda la tabla.
+  const kpiFueraDeRango = ventaSugerida.filter(r => r.kpi_pct != null && Math.abs(r.kpi_pct) >= 1000);
+  if(kpiFueraDeRango.length){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'No se puede guardar: KPI % fuera de rango en ' +
+      kpiFueraDeRango.map(r => `${r.local} / ${r.categoria} (${r.kpi_pct}%)`).join(', ') +
+      ' — seguramente falta la coma decimal (ej. 2421 en vez de 24,21). Corrígelo en Venta Sugerida y vuelve a guardar.';
+    return;
+  }
+
   statusEl.style.color = 'var(--muted)';
   statusEl.textContent = editandoInformeId ? 'Guardando cambios…' : 'Guardando…';
   try{
