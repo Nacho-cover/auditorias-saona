@@ -3516,6 +3516,11 @@ async function traerAcumuladoMesCompras(){
   const primerDiaMes = inicioActual.slice(0, 8) + '01';
   statusEl.style.color = 'var(--muted)';
   statusEl.textContent = 'Calculando…';
+  // El % de este acumulado se calcula sobre el acumulado de VENTAS del mes
+  // (ver computePctCompras) — antes había que ir aparte a la sección de
+  // Ventas y pulsar su propio botón para que el % no saliera en blanco. Se
+  // llama aquí primero para que baste con este único botón.
+  await traerAcumuladoMesVentas();
   let calculados = 0;
   try{
     for(const l of semLocales){
