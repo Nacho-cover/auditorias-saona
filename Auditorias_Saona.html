@@ -2538,7 +2538,10 @@ async function reconocerImagen(file, statusEl, lang){
 // (mapea a objeto por cabecera y perdería datos) — se usa tokenizarCSV() y se
 // localiza cada local por posición de columna.
 function fechaDDMMaISO(str){
-  const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec((str || '').trim());
+  // Cover exporta con barras (17/08/2026); admite también guiones por si
+  // algún informe viene así — antes solo aceptaba guiones y con barras
+  // (el formato real) no reconocía NINGUNA fecha, fallando siempre.
+  const m = /^(\d{2})[/-](\d{2})[/-](\d{4})$/.exec((str || '').trim());
   return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
 }
 
