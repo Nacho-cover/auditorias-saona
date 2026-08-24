@@ -510,7 +510,7 @@
         <div id="semVsOcrBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📷 Rellenar desde una captura</strong>
           <input type="file" id="semVsOcrFile" accept="image/*" style="flex:1 1 220px; font-size:12px;">
-          <span id="semVsOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Lee el local directamente de la tabla de la captura — añade antes ese local al grupo, arriba en "Datos generales". Es lectura automática: revisa siempre los números.</span>
+          <span id="semVsOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Lee el local directamente de la tabla de la captura — añade antes ese local al grupo, arriba en "Datos generales". Usa una captura con la letra grande y nítida (recorta solo la tabla, sin reducirla mucho) — con texto muy pequeño falla la lectura. Es lectura automática: revisa siempre los números.</span>
         </div>
         <div class="table-wrap-scroll" style="overflow-x:auto;">
         <table class="datatable" id="tblSemVentaSugerida">
@@ -3038,23 +3038,32 @@ function parseVentaSugeridaOCR(data){
 }
 
 function aplicarVentaSugeridaOCR(resultados){
+  // aplicados: locales encontrados en la imagen que ya estaban añadidos al
+  // grupo. sinDatos: de esos, cuántos no tenían NINGún número legible (fallo
+  // real de lectura, aunque el local en sí se reconociera bien) — antes esto
+  // se contaba como éxito silencioso ("rellenado") aunque la tabla quedara
+  // completamente vacía, que es justo lo que reportó el usuario.
   let aplicados = 0;
+  let sinDatos = 0;
   resultados.forEach(r => {
     const l = semLocales.find(x => x.nombre.toLowerCase() === r.local.toLowerCase());
     if(!l) return; // local leído en la imagen pero no añadido al grupo — se ignora
     const setVal = (id, val) => { const campo = document.getElementById(id); if(campo && val != null) campo.value = val; };
+    let huboDatos = r.ventaLocalMes != null;
     if(r.ventaLocalMes != null) setVal(`semvs_${l.id}_total_ventaLocalMes`, r.ventaLocalMes);
     r.categorias.forEach(c => {
       const ci = CATEGORIAS_VENTA_SUGERIDA.indexOf(c.categoria);
       if(ci === -1) return;
+      if(c.uds != null || c.kpi != null || c.euros != null) huboDatos = true;
       setVal(`semvs_${l.id}_${ci}_uds`, c.uds);
       setVal(`semvs_${l.id}_${ci}_kpi`, c.kpi);
       setVal(`semvs_${l.id}_${ci}_euros`, c.euros);
     });
     computeTotalVentaSugerida(l.id);
     aplicados++;
+    if(!huboDatos) sinDatos++;
   });
-  return aplicados;
+  return { aplicados, sinDatos };
 }
 
 async function leerCapturaVentaSugerida(file){
@@ -3071,11 +3080,20 @@ async function leerCapturaVentaSugerida(file){
       statusEl.textContent = 'No se ha reconocido ningún local en la imagen. Prueba con una foto más nítida, o rellena a mano.';
       return;
     }
-    const aplicados = aplicarVentaSugeridaOCR(resultados);
-    statusEl.style.color = aplicados ? 'var(--good)' : 'var(--bad)';
-    statusEl.textContent = aplicados
-      ? `Se han rellenado ${aplicados} local(es). Es lectura automática — revisa los números antes de guardar.`
-      : 'Se leyeron locales en la imagen pero ninguno coincide con los ya añadidos al grupo — añádelos primero arriba.';
+    const { aplicados, sinDatos } = aplicarVentaSugeridaOCR(resultados);
+    if(!aplicados){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = 'Se leyeron locales en la imagen pero ninguno coincide con los ya añadidos al grupo — añádelos primero arriba.';
+    }else if(sinDatos === aplicados){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `Se ha reconocido el local, pero no se ha podido leer ningún número de la tabla — prueba con una captura más grande/nítida (letra más grande sale mejor que recortada muy pequeña), o rellena a mano.`;
+    }else if(sinDatos > 0){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `Se han rellenado ${aplicados} local(es), pero en ${sinDatos} no se pudo leer ningún número — revisa esos locales o rellena a mano. Repasa igualmente los números que sí se rellenaron.`;
+    }else{
+      statusEl.style.color = 'var(--good)';
+      statusEl.textContent = `Se han rellenado ${aplicados} local(es). Es lectura automática — revisa los números antes de guardar.`;
+    }
   }catch(err){
     console.error(err);
     statusEl.style.color = 'var(--bad)';
