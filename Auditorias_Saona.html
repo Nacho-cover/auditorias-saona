@@ -3873,16 +3873,19 @@ async function guardarInformeSemanal(){
     const tablas = tablasTodas.filter(t => t.datos.length);
     const resultados = await Promise.allSettled(tablas.map(t =>
       fetch(`${SUPABASE_URL}/rest/v1/${t.nombre}`, { method: 'POST', headers: restHeaders(), body: JSON.stringify(withInforme(t.datos)) })
-        .then(r => { if(!r.ok) throw new Error(t.nombre); return r; })
+        .then(async r => { if(!r.ok) throw new Error(t.nombre + ': ' + (await r.text() || r.statusText)); return r; })
     ));
     const fallidas = resultados
-      .map((r, i) => ({ r, nombre: tablas[i].nombre }))
-      .filter(x => x.r.status === 'rejected')
-      .map(x => x.nombre);
+      .filter(r => r.status === 'rejected')
+      .map(r => r.reason && r.reason.message ? r.reason.message : String(r.reason));
 
     if(fallidas.length){
       statusEl.style.color = 'var(--bad)';
-      statusEl.textContent = `Informe guardado, pero fallaron estas secciones: ${fallidas.join(', ')}. No repitas el guardado completo (duplicaría la cabecera) — avisa para revisarlo.`;
+      // El detalle real del error de Supabase (no solo el nombre de la tabla)
+      // para poder diagnosticar sin tener que pedir capturas de la consola —
+      // antes se descartaba el texto de la respuesta y solo se guardaba el
+      // nombre de la tabla que había fallado.
+      statusEl.textContent = `Informe guardado, pero fallaron estas secciones: ${fallidas.join(' | ')}. No repitas el guardado completo (duplicaría la cabecera) — avisa para revisarlo.`;
     }else{
       statusEl.style.color = 'var(--good)';
       statusEl.textContent = editandoInformeId ? 'Cambios guardados.' : 'Informe semanal guardado en el histórico.';
