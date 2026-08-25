@@ -511,6 +511,7 @@
       <section class="card" id="sec-sem-ventasug">
         <h2>Venta sugerida</h2>
         <p class="desc">Por categoría y local, acumulado del mes (igual que Compras y Mermas). En la fila "Total" escribe la venta total del local este mes para que el % salga bien.</p>
+        <p style="margin:0 0 12px;"><a class="small-btn" href="https://app.powerbi.com/home?experience=power-bi" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Power BI (Venta sugerida)</a></p>
         <div id="semVsOcrBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📷 Rellenar desde una captura</strong>
           <input type="file" id="semVsOcrFile" accept="image/*" style="flex:1 1 220px; font-size:12px;">
@@ -527,6 +528,7 @@
       <section class="card" id="sec-sem-compras">
         <h2>Compras y mermas</h2>
         <p class="desc">Los datos de la semana (% sobre las ventas de esa semana) y, aparte, el acumulado del mes.</p>
+        <p style="margin:0 0 12px;"><a class="small-btn" href="https://cliente.yurest.com/login" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Yurest (Compras y mermas)</a></p>
         <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center;">
           <button class="small-btn" type="button" id="btnSemAcumuladoCompras">↻ Calcular acumulado del mes (suma semanas anteriores + esta)</button>
           <span id="semAcumuladoComprasStatus" style="font-size:12px; color:var(--muted);"></span>
@@ -552,6 +554,7 @@
       <section class="card" id="sec-sem-facturas">
         <h2>Facturas / pedidos pendientes de recepcionar</h2>
         <p class="desc">Añade o elimina filas según haga falta. Deja la tabla vacía si no hay pendientes.</p>
+        <p style="margin:0 0 12px;"><a class="small-btn" href="https://cliente.yurest.com/login" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Yurest (Facturas pendientes)</a></p>
         <div id="semFacOcrBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📷 Rellenar desde una captura</strong>
           <input type="file" id="semFacOcrFile" accept="image/*" style="flex:1 1 220px; font-size:12px;">
@@ -566,6 +569,7 @@
 
       <section class="card" id="sec-sem-reservas">
         <h2>Reservas, walk-ins y no-shows</h2>
+        <p style="margin:0 0 12px;"><a class="small-btn" href="https://www.covermanager.com/index.php" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Cover (Reservas)</a></p>
         <div id="semCsvBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📄 Informe de Cover "Tracking de Reservas" (walk-ins / no-shows)</strong>
           <button type="button" class="small-btn" id="semCsvListBtn">🔄 Ver informes recibidos por email</button>
@@ -584,6 +588,7 @@
       <section class="card" id="sec-sem-ocupacion">
         <h2>Ocupación diaria por local y turno</h2>
         <p class="desc">Un bloque por local y día. La fecha se calcula sola a partir de la semana elegida arriba, y el % de ocupación se calcula solo (comensales ÷ aforo).</p>
+        <p style="margin:0 0 12px;"><a class="small-btn" href="https://www.covermanager.com/index.php" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Cover (Ocupación)</a></p>
         <div id="semOcupacionCsvBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:10px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📄 Informe de Cover "Número de Personas por Turno y Día"</strong>
           <input type="file" id="semOcupacionCsvFile" accept=".csv" style="flex:1 1 260px; font-size:12px;">
@@ -609,6 +614,10 @@
       <section class="card" id="sec-sem-valoraciones">
         <h2>Valoración de clientes (Google Reviews / TheFork Cover)</h2>
         <p class="desc">En "Puntos críticos" apunta en 2-3 líneas lo que digan las reseñas de esta semana sobre la experiencia del cliente (quejas repetidas, algo que haya destacado) — no hace falta copiar reseñas enteras, solo el resumen.</p>
+        <p style="margin:0 0 12px; display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="small-btn" href="https://gruposaona.gastroranking.pro/global/home/460-N" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Gastroranking (reseñas GR)</a>
+          <a class="small-btn" href="https://reviews.saona.es/login" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Saona Reviews (opiniones)</a>
+        </p>
         <div id="semValOcrBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📷 Puntos críticos desde una captura de reviews.saona.es</strong>
           <input type="file" id="semValOcrFile" accept="image/*" style="flex:1 1 220px; font-size:12px;">
