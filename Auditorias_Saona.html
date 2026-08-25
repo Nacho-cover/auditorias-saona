@@ -635,8 +635,8 @@
 
       <section class="card" id="sec-sem-saonareviews">
         <h2>Informe de Saona Reviews</h2>
-        <p class="desc">Pega aquí el texto completo del informe de reviews.saona.es (el análisis de experiencia de cliente del grupo). No se procesa automáticamente ni se guarda con el informe — es solo para que Claude lo lea y resuma el feedback en Puntos críticos / Incidencias.</p>
-        <div class="field"><textarea id="sem_saonaReviewsTexto" style="min-height:220px;" placeholder="Pega aquí el informe completo de reviews.saona.es…"></textarea></div>
+        <p class="desc">Un cuadro por local del grupo — pega en cada uno el texto del informe de reviews.saona.es de ese local. No se procesa automáticamente ni se guarda con el informe — es solo para que Claude lo lea y resuma el feedback en Puntos críticos / Incidencias.</p>
+        <div id="semSaonaReviewsGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;"></div>
       </section>
 
       <section class="card" id="sec-sem-notas">
@@ -3378,6 +3378,27 @@ function renderAllSemSections(){
   renderSemReservas();
   renderSemValoraciones();
   renderSemOcupacion();
+  renderSemSaonaReviews();
+}
+
+function saonaReviewCard(l){
+  const card = document.createElement('div');
+  card.dataset.localId = l.id;
+  card.style.cssText = 'border:1px solid var(--border); border-radius:8px; padding:12px; background:#fff;';
+  const head = document.createElement('strong');
+  head.style.cssText = 'display:block; margin-bottom:6px; font-size:13px;';
+  head.textContent = l.nombre;
+  const ta = document.createElement('textarea');
+  ta.id = `semSaonaRev_${l.id}_texto`;
+  ta.placeholder = `Pega aquí el informe de reviews.saona.es de ${l.nombre}…`;
+  ta.style.cssText = 'min-height:180px; width:100%;';
+  card.appendChild(head);
+  card.appendChild(ta);
+  return card;
+}
+
+function renderSemSaonaReviews(){
+  syncSemTable('#semSaonaReviewsGrid', l => [ saonaReviewCard(l) ]);
 }
 
 function addSemFactura(){
