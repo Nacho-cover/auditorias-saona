@@ -2744,7 +2744,12 @@ function aplicarTextoCsvReservas(texto){
 
   const resumenPorLocal = {};
   filas.forEach(f => {
-    const fecha = (f['Fecha'] || '').trim();
+    // f['Fecha'] viene en formato Cover (DD/MM/YYYY); inicio/fin son del
+    // <input type="date"> (YYYY-MM-DD). Comparar las dos cadenas directamente
+    // (como se hacía antes) nunca coincide -- "24/08/2026" no es mayor ni
+    // menor que "2026-08-24" de forma que tenga sentido, así que se
+    // descartaban todas las filas reales. Convertir a ISO antes de comparar.
+    const fecha = fechaDDMMaISO((f['Fecha'] || '').trim());
     if(!fecha || !enSemana(fecha)) return;
     const restauranteCsv = quitarAcentos((f['Restaurante'] || '').trim());
     const local = semLocales.find(l => {
