@@ -513,11 +513,11 @@
         <h2>Venta sugerida</h2>
         <p class="desc">Por categoría y local, acumulado del mes (igual que Compras y Mermas). En la fila "Total" escribe la venta total del local este mes para que el % salga bien.</p>
         <p style="margin:0 0 12px;"><a class="small-btn" href="https://app.powerbi.com/home?experience=power-bi" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Power BI (Venta sugerida)</a></p>
-        <div id="semVsOcrBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
-          <strong style="font-size:13px; white-space:nowrap;">📷 Adjuntar capturas (una por local)</strong>
-          <input type="file" id="semVsOcrFile" accept="image/*" multiple style="flex:1 1 220px; font-size:12px;">
-          <span id="semVsOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Selecciona una captura por cada local que estés analizando (puedes elegir varias a la vez) — se leen y rellenan solas, una a una. Usa una captura con la letra grande y nítida. Es lectura automática: revisa siempre los números antes de guardar.</span>
-          <div id="semVsOcrPreviews" style="display:flex; flex-wrap:wrap; gap:8px; width:100%;"></div>
+        <div id="semVsPegadoBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+          <strong style="font-size:13px; white-space:nowrap;">📋 Pegar tabla de Power BI</strong>
+          <textarea id="semVsPegadoTexto" placeholder="Selecciona la tabla en Power BI (con la cabecera y todos los locales que quieras), cópiala (Ctrl+C) y pégala aquí (Ctrl+V)…" style="min-height:90px; width:100%; font-size:12px;"></textarea>
+          <button class="small-btn" type="button" id="btnSemVsPegado">Rellenar desde el texto pegado</button>
+          <span id="semVsPegadoStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Pega la tabla completa (puede traer varios locales a la vez, se rellenan todos los que coincidan con el grupo). Es lectura automática: revisa siempre los números antes de guardar.</span>
         </div>
         <div class="table-wrap-scroll" style="overflow-x:auto;">
         <table class="datatable" id="tblSemVentaSugerida">
@@ -3148,6 +3148,110 @@ async function adjuntarYProcesarCapturas(e, containerId, leerFn){
   }
 }
 
+// Pegar la tabla de Power BI directamente (en vez de leer una captura por
+// OCR) — la tabla de Power BI es un formato ancho (una fila por local, con
+// tríos Uds./KPI/€ por categoría) muy distinto del que intentaba leer el
+// OCR de capturas, y el reconocimiento de imagen fallaba con frecuencia en
+// cuanto la captura no estaba perfectamente recortada y nítida. Pegando el
+// texto tal cual se copia de la tabla (seleccionar + Ctrl+C en Power BI) no
+// hay lectura de imagen de por medio, así que no puede fallar por nitidez.
+const CATEGORIA_KEYWORDS_VS = [
+  { categoria: 'Sugerencia núcleo', kw: 'sugerid' },
+  { categoria: 'Picoteo', kw: 'picar' },
+  { categoria: 'Café', kw: 'cafe' },
+  { categoria: 'Menú degustación', kw: 'deg' },
+  { categoria: 'Menú de grupo', kw: 'grupo' },
+  { categoria: 'Platos con suplemento', kw: 'supl' },
+  { categoria: 'Pan', kw: 'pan' },
+  { categoria: 'Postres', kw: 'postre' },
+];
+
+function partirLineaPegada(linea){
+  const porTab = linea.split('\t');
+  return porTab.length > 1 ? porTab : linea.split(/ {2,}/);
+}
+
+// A partir de la cabecera pegada, localiza en qué columna empieza el trío
+// Uds./KPI/€ de cada categoría, buscando la primera cabecera que contenga
+// su palabra clave (esa primera coincidencia es siempre la columna de
+// "Uds.", porque en la tabla de Power BI cada trío va Uds./KPI/€ en ese
+// orden y la palabra clave de la categoría aparece primero ahí).
+function columnasVentaSugeridaPegado(header){
+  const columnas = {};
+  CATEGORIA_KEYWORDS_VS.forEach(({ categoria, kw }) => {
+    const idx = header.findIndex(h => h.includes(kw));
+    if(idx !== -1) columnas[categoria] = idx;
+  });
+  return columnas;
+}
+
+function parseVentaSugeridaPegado(texto){
+  const lineas = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if(lineas.length < 2) return [];
+  const header = partirLineaPegada(lineas[0]).map(h => quitarAcentos(h));
+  const columnas = columnasVentaSugeridaPegado(header);
+
+  const resultados = [];
+  for(let i = 1; i < lineas.length; i++){
+    const cols = partirLineaPegada(lineas[i]);
+    const nombreCol = (cols[0] || '').trim();
+    if(!nombreCol || /^total$/i.test(quitarAcentos(nombreCol))) continue;
+    const categorias = Object.entries(columnas).map(([categoria, idx]) => ({
+      categoria,
+      uds: parseNumeroEs(cols[idx]),
+      kpi: parseNumeroEs(cols[idx + 1]),
+      euros: parseNumeroEs(cols[idx + 2]),
+    }));
+    resultados.push({ localTexto: nombreCol, categorias });
+  }
+  return resultados;
+}
+
+function rellenarVentaSugeridaDesdeTexto(){
+  const statusEl = document.getElementById('semVsPegadoStatus');
+  const texto = v('semVsPegadoTexto');
+  if(!texto.trim()){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Pega primero el texto de la tabla.';
+    return;
+  }
+  if(!semLocales.length){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Añade primero al menos un local del grupo arriba.';
+    return;
+  }
+  const filas = parseVentaSugeridaPegado(texto);
+  if(!filas.length){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'No se ha podido leer ninguna fila — comprueba que has pegado la tabla completa, con la fila de cabecera.';
+    return;
+  }
+  const setVal = (id, val) => { const campo = document.getElementById(id); if(campo && val != null) campo.value = val; };
+  let aplicados = 0;
+  const localesEncontrados = [];
+  filas.forEach(fila => {
+    const nombreNorm = quitarAcentos(fila.localTexto);
+    const local = semLocales.find(l => nombreNorm.includes(quitarAcentos(l.nombre)));
+    if(!local) return;
+    localesEncontrados.push(local.nombre);
+    fila.categorias.forEach(c => {
+      const ci = CATEGORIAS_VENTA_SUGERIDA.indexOf(c.categoria);
+      if(ci === -1) return;
+      setVal(`semvs_${local.id}_${ci}_uds`, c.uds);
+      setVal(`semvs_${local.id}_${ci}_kpi`, c.kpi);
+      setVal(`semvs_${local.id}_${ci}_euros`, c.euros);
+    });
+    computeTotalVentaSugerida(local.id);
+    aplicados++;
+  });
+  const sinDatos = semLocales.filter(l => !localesEncontrados.includes(l.nombre)).map(l => l.nombre);
+  statusEl.style.color = aplicados ? 'var(--good)' : 'var(--bad)';
+  statusEl.textContent = aplicados
+    ? `Rellenados ${aplicados} local(es): ${localesEncontrados.join(', ')}. Es lectura automática: revisa siempre los números antes de guardar.`
+      + (sinDatos.length ? ` Sin datos en la tabla pegada para: ${sinDatos.join(', ')}.` : '')
+    : 'No se ha encontrado ningún local del grupo en la tabla pegada — revisa que el nombre del local en la tabla coincida con el del grupo.';
+}
+
 async function leerCapturaVentaSugerida(file){
   const statusEl = document.getElementById('semVsOcrStatus');
   if(!semLocales.length){ statusEl.textContent = 'Añade primero los locales del grupo arriba.'; return; }
@@ -4513,7 +4617,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('semCsvListBtn').addEventListener('click', listarInformesCorreo);
   document.getElementById('semFranjasLocal').addEventListener('change', renderFranjas);
-  document.getElementById('semVsOcrFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'semVsOcrPreviews', leerCapturaVentaSugerida));
+  document.getElementById('btnSemVsPegado').addEventListener('click', rellenarVentaSugeridaDesdeTexto);
   document.getElementById('semFacOcrFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'semFacOcrPreviews', leerCapturaFacturas));
   document.getElementById('semValOcrFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'semValOcrPreviews', leerCapturaValoraciones));
   renderAllSemSections();
