@@ -513,11 +513,11 @@
         <h2>Venta sugerida</h2>
         <p class="desc">Por categoría y local, acumulado del mes (igual que Compras y Mermas). En la fila "Total" escribe la venta total del local este mes para que el % salga bien.</p>
         <p style="margin:0 0 12px;"><a class="small-btn" href="https://app.powerbi.com/home?experience=power-bi" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Power BI (Venta sugerida)</a></p>
-        <div id="semVsPegadoBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
-          <strong style="font-size:13px; white-space:nowrap;">📋 Pegar tabla de Power BI</strong>
-          <textarea id="semVsPegadoTexto" placeholder="Selecciona la tabla en Power BI (con la cabecera y todos los locales que quieras), cópiala (Ctrl+C) y pégala aquí (Ctrl+V)…" style="min-height:90px; width:100%; font-size:12px;"></textarea>
-          <button class="small-btn" type="button" id="btnSemVsPegado">Rellenar desde el texto pegado</button>
-          <span id="semVsPegadoStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Pega la tabla completa (puede traer varios locales a la vez, se rellenan todos los que coincidan con el grupo). Es lectura automática: revisa siempre los números antes de guardar.</span>
+        <div id="semVsExcelBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+          <strong style="font-size:13px; white-space:nowrap;">📊 Subir Excel de Power BI</strong>
+          <input type="file" id="semVsExcelFile" accept=".xlsx,.xls,.csv" multiple style="flex:1 1 220px; font-size:12px;">
+          <span id="semVsExcelStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En la tabla de Power BI: los tres puntos "···" → Exportar datos → Excel. Sube aquí ese archivo (uno por local, puedes elegir varios a la vez) — se leen y rellenan solos. Es lectura automática: revisa siempre los números antes de guardar.</span>
+          <div id="semVsExcelPreviews" style="display:flex; flex-wrap:wrap; gap:8px; width:100%;"></div>
         </div>
         <div class="table-wrap-scroll" style="overflow-x:auto;">
         <table class="datatable" id="tblSemVentaSugerida">
@@ -3121,12 +3121,19 @@ function mostrarCapturasAdjuntas(e, containerId){
   semCapturasUrls.length = 0;
   cont.innerHTML = '';
   Array.from(e.target.files).forEach((file, i) => {
-    const url = URL.createObjectURL(file);
-    semCapturasUrls.push(url);
+    const esImagen = file.type.startsWith('image/');
     const fig = document.createElement('figure');
     fig.dataset.capturaIdx = i;
     fig.style.cssText = 'margin:0; width:160px; font-size:11px; color:var(--muted); text-align:center;';
-    fig.innerHTML = `<img src="${url}" style="width:100%; height:110px; object-fit:contain; border:1px solid var(--border); border-radius:6px; background:#fff;"><figcaption style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${file.name}</figcaption><div class="captura-estado" style="font-size:10px;">Pendiente…</div>`;
+    let vista;
+    if(esImagen){
+      const url = URL.createObjectURL(file);
+      semCapturasUrls.push(url);
+      vista = `<img src="${url}" style="width:100%; height:110px; object-fit:contain; border:1px solid var(--border); border-radius:6px; background:#fff;">`;
+    }else{
+      vista = `<div style="width:100%; height:110px; display:flex; align-items:center; justify-content:center; font-size:32px; border:1px solid var(--border); border-radius:6px; background:#fff;">📄</div>`;
+    }
+    fig.innerHTML = `${vista}<figcaption style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${file.name}</figcaption><div class="captura-estado" style="font-size:10px;">Pendiente…</div>`;
     cont.appendChild(fig);
   });
 }
@@ -3152,9 +3159,11 @@ async function adjuntarYProcesarCapturas(e, containerId, leerFn){
 // OCR) — la tabla de Power BI es un formato ancho (una fila por local, con
 // tríos Uds./KPI/€ por categoría) muy distinto del que intentaba leer el
 // OCR de capturas, y el reconocimiento de imagen fallaba con frecuencia en
-// cuanto la captura no estaba perfectamente recortada y nítida. Pegando el
-// texto tal cual se copia de la tabla (seleccionar + Ctrl+C en Power BI) no
-// hay lectura de imagen de por medio, así que no puede fallar por nitidez.
+// cuanto la captura no estaba perfectamente recortada y nítida. Copiar la
+// tabla como texto tampoco es fiable (ese visual de Power BI solo permite
+// copiarla como imagen) — la única exportación fiable que da ese informe es
+// "Exportar datos" a Excel, con los números en bruto (KPI como fracción
+// 0-1, no como "24,21%", y € como número, no como "278€").
 const CATEGORIA_KEYWORDS_VS = [
   { categoria: 'Sugerencia núcleo', kw: 'sugerid' },
   { categoria: 'Picoteo', kw: 'picar' },
@@ -3166,66 +3175,49 @@ const CATEGORIA_KEYWORDS_VS = [
   { categoria: 'Postres', kw: 'postre' },
 ];
 
-function partirLineaPegada(linea){
-  const porTab = linea.split('\t');
-  return porTab.length > 1 ? porTab : linea.split(/ {2,}/);
-}
-
-// A partir de la cabecera pegada, localiza en qué columna empieza el trío
-// Uds./KPI/€ de cada categoría, buscando la primera cabecera que contenga
-// su palabra clave (esa primera coincidencia es siempre la columna de
-// "Uds.", porque en la tabla de Power BI cada trío va Uds./KPI/€ en ese
-// orden y la palabra clave de la categoría aparece primero ahí).
-function columnasVentaSugeridaPegado(header){
+// A partir de la cabecera del Excel, localiza en qué columna empieza el
+// trío Uds./KPI/€ de cada categoría, buscando la primera cabecera que
+// contenga su palabra clave (esa primera coincidencia es siempre la
+// columna de "Uds.", porque en la tabla de Power BI cada trío va
+// Uds./KPI/€ en ese orden y la palabra clave de la categoría aparece
+// primero ahí).
+function columnasVentaSugerida(header){
+  const norm = header.map(h => quitarAcentos(String(h || '')));
   const columnas = {};
   CATEGORIA_KEYWORDS_VS.forEach(({ categoria, kw }) => {
-    const idx = header.findIndex(h => h.includes(kw));
+    const idx = norm.findIndex(h => h.includes(kw));
     if(idx !== -1) columnas[categoria] = idx;
   });
   return columnas;
 }
 
-function parseVentaSugeridaPegado(texto){
-  const lineas = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  if(lineas.length < 2) return [];
-  const header = partirLineaPegada(lineas[0]).map(h => quitarAcentos(h));
-  const columnas = columnasVentaSugeridaPegado(header);
+// filas: array de arrays (una fila por local, primera fila = cabecera),
+// tal como lo devuelve XLSX.utils.sheet_to_json(hoja, {header:1}). Los
+// números vienen en bruto: KPI como fracción (0.2317 = 23,17%) y € como
+// número plano — no hace falta (ni hay que) quitar comas ni símbolos.
+function parseVentaSugeridaExcel(filas){
+  if(!filas || filas.length < 2) return [];
+  const columnas = columnasVentaSugerida(filas[0]);
+  const numero = (x) => (x === undefined || x === null || x === '') ? null : Number(x);
+  const redondear = (n, dec) => n == null || isNaN(n) ? null : Number(n.toFixed(dec));
 
   const resultados = [];
-  for(let i = 1; i < lineas.length; i++){
-    const cols = partirLineaPegada(lineas[i]);
-    const nombreCol = (cols[0] || '').trim();
+  for(let i = 1; i < filas.length; i++){
+    const cols = filas[i] || [];
+    const nombreCol = String(cols[0] || '').trim();
     if(!nombreCol || /^total$/i.test(quitarAcentos(nombreCol))) continue;
     const categorias = Object.entries(columnas).map(([categoria, idx]) => ({
       categoria,
-      uds: parseNumeroEs(cols[idx]),
-      kpi: parseNumeroEs(cols[idx + 1]),
-      euros: parseNumeroEs(cols[idx + 2]),
+      uds: redondear(numero(cols[idx]), 0),
+      kpi: redondear(numero(cols[idx + 1]) * 100, 2),
+      euros: redondear(numero(cols[idx + 2]), 2),
     }));
     resultados.push({ localTexto: nombreCol, categorias });
   }
   return resultados;
 }
 
-function rellenarVentaSugeridaDesdeTexto(){
-  const statusEl = document.getElementById('semVsPegadoStatus');
-  const texto = v('semVsPegadoTexto');
-  if(!texto.trim()){
-    statusEl.style.color = 'var(--bad)';
-    statusEl.textContent = 'Pega primero el texto de la tabla.';
-    return;
-  }
-  if(!semLocales.length){
-    statusEl.style.color = 'var(--bad)';
-    statusEl.textContent = 'Añade primero al menos un local del grupo arriba.';
-    return;
-  }
-  const filas = parseVentaSugeridaPegado(texto);
-  if(!filas.length){
-    statusEl.style.color = 'var(--bad)';
-    statusEl.textContent = 'No se ha podido leer ninguna fila — comprueba que has pegado la tabla completa, con la fila de cabecera.';
-    return;
-  }
+function aplicarVentaSugeridaExcel(filas){
   const setVal = (id, val) => { const campo = document.getElementById(id); if(campo && val != null) campo.value = val; };
   let aplicados = 0;
   const localesEncontrados = [];
@@ -3244,12 +3236,55 @@ function rellenarVentaSugeridaDesdeTexto(){
     computeTotalVentaSugerida(local.id);
     aplicados++;
   });
-  const sinDatos = semLocales.filter(l => !localesEncontrados.includes(l.nombre)).map(l => l.nombre);
-  statusEl.style.color = aplicados ? 'var(--good)' : 'var(--bad)';
-  statusEl.textContent = aplicados
-    ? `Rellenados ${aplicados} local(es): ${localesEncontrados.join(', ')}. Es lectura automática: revisa siempre los números antes de guardar.`
-      + (sinDatos.length ? ` Sin datos en la tabla pegada para: ${sinDatos.join(', ')}.` : '')
-    : 'No se ha encontrado ningún local del grupo en la tabla pegada — revisa que el nombre del local en la tabla coincida con el del grupo.';
+  return { aplicados, localesEncontrados };
+}
+
+async function ensureXlsxLoaded(){
+  if(window.XLSX) return;
+  await new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    const timeoutId = setTimeout(() => reject(new Error('No se pudo cargar el lector de Excel (tarda demasiado en responder — revisa la conexión a internet).')), 20000);
+    s.onload = () => { clearTimeout(timeoutId); resolve(); };
+    s.onerror = () => { clearTimeout(timeoutId); reject(new Error('No se pudo cargar el lector de Excel (revisa la conexión a internet).')); };
+    document.head.appendChild(s);
+  });
+}
+
+async function leerVentaSugeridaExcel(file){
+  const statusEl = document.getElementById('semVsExcelStatus');
+  if(!semLocales.length){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Añade primero al menos un local del grupo arriba.';
+    return;
+  }
+  try{
+    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = 'Cargando el lector de Excel…';
+    await ensureXlsxLoaded();
+    const buffer = await file.arrayBuffer();
+    const libro = XLSX.read(buffer, { type: 'array' });
+    const hoja = libro.Sheets[libro.SheetNames[0]];
+    const filas = XLSX.utils.sheet_to_json(hoja, { header: 1, defval: null });
+    const datos = parseVentaSugeridaExcel(filas);
+    if(!datos.length){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `${file.name}: no se ha podido leer ninguna fila — comprueba que es el Excel exportado de Power BI (con cabecera).`;
+      return;
+    }
+    const { aplicados, localesEncontrados } = aplicarVentaSugeridaExcel(datos);
+    if(!aplicados){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `${file.name}: no coincide ningún local de la hoja con los del grupo — revisa el nombre.`;
+      return;
+    }
+    statusEl.style.color = 'var(--good)';
+    statusEl.textContent = `${file.name}: rellenado ${localesEncontrados.join(', ')}. Es lectura automática: revisa siempre los números antes de guardar.`;
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = `${file.name}: no se pudo leer el archivo (${err.message}).`;
+  }
 }
 
 async function leerCapturaVentaSugerida(file){
@@ -4617,7 +4652,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('semCsvListBtn').addEventListener('click', listarInformesCorreo);
   document.getElementById('semFranjasLocal').addEventListener('change', renderFranjas);
-  document.getElementById('btnSemVsPegado').addEventListener('click', rellenarVentaSugeridaDesdeTexto);
+  document.getElementById('semVsExcelFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'semVsExcelPreviews', leerVentaSugeridaExcel));
   document.getElementById('semFacOcrFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'semFacOcrPreviews', leerCapturaFacturas));
   document.getElementById('semValOcrFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'semValOcrPreviews', leerCapturaValoraciones));
   renderAllSemSections();
