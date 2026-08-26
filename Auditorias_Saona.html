@@ -635,7 +635,7 @@
 
       <section class="card" id="sec-sem-saonareviews">
         <h2>Informe de Saona Reviews</h2>
-        <p class="desc">Un cuadro por local del grupo — pega en cada uno el texto del informe de reviews.saona.es de ese local. No se procesa automáticamente ni se guarda con el informe — es solo para que Claude lo lea y resuma el feedback en Puntos críticos / Incidencias.</p>
+        <p class="desc">Un cuadro por local del grupo — pega en cada uno el texto del informe de reviews.saona.es de ese local. Se guarda con el informe (no se procesa automáticamente) para que Claude lo lea y resuma el feedback en Puntos críticos / Incidencias cuando genere el documento final.</p>
         <div id="semSaonaReviewsGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;"></div>
       </section>
 
@@ -3978,6 +3978,7 @@ async function guardarInformeSemanal(){
     puntuacion_cover: numOrNull(`semva_${l.id}_puntCover`),
     tendencia_cover: v(`semva_${l.id}_tendCover`) || null,
     puntos_criticos: v(`semva_${l.id}_puntosCriticos`) || null,
+    saona_reviews_texto: v(`semSaonaRev_${l.id}_texto`) || null,
   }));
 
   const ocupacion = [];
@@ -4222,6 +4223,7 @@ async function cargarInformeSemanalParaEditar(id){
       setVal(`semva_${lid}_puntCover`, r.puntuacion_cover);
       setVal(`semva_${lid}_tendCover`, r.tendencia_cover);
       setVal(`semva_${lid}_puntosCriticos`, r.puntos_criticos);
+      setVal(`semSaonaRev_${lid}_texto`, r.saona_reviews_texto);
     });
 
     const vsPorLocal = {};
