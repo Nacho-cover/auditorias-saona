@@ -516,7 +516,7 @@
         <div id="semVsOcrBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📷 Adjuntar capturas (una por local)</strong>
           <input type="file" id="semVsOcrFile" accept="image/*" multiple style="flex:1 1 220px; font-size:12px;">
-          <span id="semVsOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Selecciona una captura por cada local que estés analizando (puedes elegir varias a la vez). Se quedan aquí como referencia — pide a Claude que las lea y rellene la tabla de abajo.</span>
+          <span id="semVsOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Selecciona una captura por cada local que estés analizando (puedes elegir varias a la vez) — se leen y rellenan solas, una a una. Usa una captura con la letra grande y nítida. Es lectura automática: revisa siempre los números antes de guardar.</span>
           <div id="semVsOcrPreviews" style="display:flex; flex-wrap:wrap; gap:8px; width:100%;"></div>
         </div>
         <div class="table-wrap-scroll" style="overflow-x:auto;">
@@ -560,7 +560,7 @@
         <div id="semFacOcrBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📷 Adjuntar capturas (una por local)</strong>
           <input type="file" id="semFacOcrFile" accept="image/*" multiple style="flex:1 1 220px; font-size:12px;">
-          <span id="semFacOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Selecciona una captura por cada local que estés analizando (puedes elegir varias a la vez). Se quedan aquí como referencia — pide a Claude que las lea y añada las facturas que falten.</span>
+          <span id="semFacOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Selecciona una captura por cada local que estés analizando (puedes elegir varias a la vez) — se leen y añaden solas, una a una. Lee una tabla con cabecera (#, Fecha, Local, Proveedor, Empleado, Subtotal, Total). Es lectura automática: revisa siempre los datos, sobre todo nombres de proveedor.</span>
           <div id="semFacOcrPreviews" style="display:flex; flex-wrap:wrap; gap:8px; width:100%;"></div>
         </div>
         <div class="add-btn-row"><button class="small-btn" type="button" id="btnAddSemFactura">+ Añadir factura</button></div>
@@ -624,7 +624,7 @@
         <div id="semValOcrBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📷 Adjuntar capturas (una por local)</strong>
           <input type="file" id="semValOcrFile" accept="image/*" multiple style="flex:1 1 220px; font-size:12px;">
-          <span id="semValOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Selecciona una captura por cada local que estés analizando (puedes elegir varias a la vez) — de Gastroranking, reviews.saona.es o el panel de Cover. Se quedan aquí como referencia — pide a Claude que las lea y rellene Puntos críticos.</span>
+          <span id="semValOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Selecciona una captura por cada local que estés analizando (puedes elegir varias a la vez) — de reviews.saona.es. Se leen y rellenan solas, una a una. Es lectura automática: revisa siempre el texto.</span>
           <div id="semValOcrPreviews" style="display:flex; flex-wrap:wrap; gap:8px; width:100%;"></div>
         </div>
         <table class="datatable" id="tblSemValoraciones">
@@ -3107,25 +3107,45 @@ function aplicarVentaSugeridaOCR(resultados){
   return { aplicados, sinDatos };
 }
 
-// Adjuntar varias capturas (una por local) sin pasarlas por el lector Tesseract
-// de la app, que ha dado problemas (comas perdidas, desbordamientos). Se
-// muestran como miniaturas en la propia página para que Claude las lea con su
-// visión directamente desde el navegador y rellene los datos a mano — no se
-// procesan automáticamente.
+// Adjuntar varias capturas a la vez (una por local) y procesarlas todas
+// automáticamente con el lector de la sección — sin esto, adjuntar la
+// captura no rellenaba nada por sí solo y había que pedirle a Claude que la
+// leyera a mano en el navegador, lo cual añadía trabajo en vez de quitarlo.
+// Se muestran como miniaturas (con un indicador de progreso) y se procesan
+// una a una en secuencia, cada una con el lector de siempre (Tesseract) —
+// el aviso "revisa siempre los números" de cada sección sigue aplicando.
 const semCapturasUrls = [];
 function mostrarCapturasAdjuntas(e, containerId){
   const cont = document.getElementById(containerId);
   semCapturasUrls.forEach(u => URL.revokeObjectURL(u));
   semCapturasUrls.length = 0;
   cont.innerHTML = '';
-  Array.from(e.target.files).forEach(file => {
+  Array.from(e.target.files).forEach((file, i) => {
     const url = URL.createObjectURL(file);
     semCapturasUrls.push(url);
     const fig = document.createElement('figure');
+    fig.dataset.capturaIdx = i;
     fig.style.cssText = 'margin:0; width:160px; font-size:11px; color:var(--muted); text-align:center;';
-    fig.innerHTML = `<img src="${url}" style="width:100%; height:110px; object-fit:contain; border:1px solid var(--border); border-radius:6px; background:#fff;"><figcaption style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${file.name}</figcaption>`;
+    fig.innerHTML = `<img src="${url}" style="width:100%; height:110px; object-fit:contain; border:1px solid var(--border); border-radius:6px; background:#fff;"><figcaption style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${file.name}</figcaption><div class="captura-estado" style="font-size:10px;">Pendiente…</div>`;
     cont.appendChild(fig);
   });
+}
+
+async function adjuntarYProcesarCapturas(e, containerId, leerFn){
+  const files = Array.from(e.target.files);
+  mostrarCapturasAdjuntas(e, containerId);
+  const cont = document.getElementById(containerId);
+  for(let i = 0; i < files.length; i++){
+    const estadoEl = cont.querySelector(`[data-captura-idx="${i}"] .captura-estado`);
+    if(estadoEl) estadoEl.textContent = 'Leyendo…';
+    try{
+      await leerFn(files[i]);
+      if(estadoEl) estadoEl.textContent = '✓ Procesada';
+    }catch(err){
+      console.error(err);
+      if(estadoEl) estadoEl.textContent = '✗ Error al leer';
+    }
+  }
 }
 
 async function leerCapturaVentaSugerida(file){
@@ -4493,9 +4513,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('semCsvListBtn').addEventListener('click', listarInformesCorreo);
   document.getElementById('semFranjasLocal').addEventListener('change', renderFranjas);
-  document.getElementById('semVsOcrFile').addEventListener('change', (e) => mostrarCapturasAdjuntas(e, 'semVsOcrPreviews'));
-  document.getElementById('semFacOcrFile').addEventListener('change', (e) => mostrarCapturasAdjuntas(e, 'semFacOcrPreviews'));
-  document.getElementById('semValOcrFile').addEventListener('change', (e) => mostrarCapturasAdjuntas(e, 'semValOcrPreviews'));
+  document.getElementById('semVsOcrFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'semVsOcrPreviews', leerCapturaVentaSugerida));
+  document.getElementById('semFacOcrFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'semFacOcrPreviews', leerCapturaFacturas));
+  document.getElementById('semValOcrFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'semValOcrPreviews', leerCapturaValoraciones));
   renderAllSemSections();
   renderSemFacturas();
 
