@@ -124,6 +124,7 @@
     <div class="mode-toggle" style="display:flex; gap:8px; margin-bottom:16px;">
       <button type="button" class="btn" id="btnModoAuditorias">Auditorías</button>
       <button type="button" class="btn secondary" id="btnModoSemanal">Informes Semanales</button>
+      <button type="button" class="btn secondary" id="btnModoInformeMensual">Informes Mensuales</button>
       <button type="button" class="btn secondary" id="btnModoMensual">Acumulados Mensuales</button>
     </div>
     <div class="filters">
@@ -251,7 +252,10 @@ function closeChangePw(){ document.getElementById('changePwOverlay').classList.a
 const TIPO_LABEL = { visita_operativa: 'Visita Operativa', veo_externa: 'VEO Externa 2.0' };
 const MESES_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const CATEGORIAS_VENTA_SUGERIDA = ['Sugerencia núcleo','Picoteo','Café','Menú degustación','Menú de grupo','Platos con suplemento','Postres','Pan'];
-let modo = 'auditorias'; // 'auditorias' | 'semanal' | 'mensual'
+let modo = 'auditorias'; // 'auditorias' | 'semanal' | 'informeMensual' | 'mensual'
+// 'informeMensual' (Informes Mensuales, tabla informes_mensuales) es el análisis
+// estratégico nuevo — no confundir con 'mensual' (Acumulados Mensuales, tabla
+// informe_mensual_acumulado), que solo suma cifras del Informe Semanal sin análisis.
 let allRows = [];
 let semSeleccion = new Set(); // ids de informes_semanales marcados con checkbox (modo 'semanal')
 
@@ -323,6 +327,27 @@ function renderTablaSemanal(rows){
   });
 }
 
+function renderTablaInformeMensual(rows){
+  document.getElementById('tablaHistoricoHead').innerHTML =
+    '<tr><th>Locales</th><th>Mes</th><th>Preparado para</th><th>Guardado por</th><th>Guardado el</th><th></th></tr>';
+  const tbody = document.querySelector('#tablaHistorico tbody');
+  tbody.innerHTML = '';
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+    const [anio, mes] = (row.mes || '').split('-').map(Number);
+    const mesTexto = mes ? `${capitaliza(MESES_ES[mes - 1])} ${anio}` : '—';
+    tr.innerHTML = `
+      <td>${row.locales ?? '—'}</td>
+      <td>${mesTexto}</td>
+      <td>${row.preparado_para || '—'}</td>
+      <td>${row.creado_por ?? '—'}</td>
+      <td>${row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : '—'}</td>
+      <td><a href="./Auditorias_Saona.html?editarMensual=${row.id}" class="btn secondary" style="padding:4px 10px; font-size:12px; text-decoration:none; display:inline-block;">✎ Editar</a></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 function renderTablaMensual(rows){
   document.getElementById('tablaHistoricoHead').innerHTML =
     '<tr><th>Local</th><th>Mes</th><th>Clientes</th><th>Ventas</th><th>IC</th><th>Compras</th><th>% Compras</th><th>Mermas</th><th>% Mermas</th><th>Walk-ins</th><th>% Walk-ins</th><th>No-shows</th><th>Punt. GR</th><th>Punt. Cover</th><th>Guardado el</th></tr>';
@@ -362,6 +387,7 @@ function actualizarBarraSeleccion(){
 
 function renderTabla(rows){
   if(modo === 'semanal') renderTablaSemanal(rows);
+  else if(modo === 'informeMensual') renderTablaInformeMensual(rows);
   else if(modo === 'mensual') renderTablaMensual(rows);
   else renderTablaAuditorias(rows);
   actualizarBarraSeleccion();
@@ -374,7 +400,7 @@ function localesSeleccionados(){
 function aplicarFiltros(){
   const locales = localesSeleccionados();
   let filtradas;
-  if(modo === 'semanal'){
+  if(modo === 'semanal' || modo === 'informeMensual'){
     filtradas = allRows.filter(r => !locales.length || (r.locales || '').split('·').map(s => s.trim()).some(l => locales.includes(l)));
   }else if(modo === 'mensual'){
     filtradas = allRows.filter(r => !locales.length || locales.includes(r.local));
@@ -393,7 +419,10 @@ function aplicarFiltros(){
   const hayFiltro = modo === 'auditorias'
     ? (document.getElementById('filtroTipo').value || locales.length || document.getElementById('filtroAM').value)
     : locales.length > 0;
-  const etiqueta = modo === 'semanal' ? 'informe(s) semanal(es)' : modo === 'mensual' ? 'acumulado(s) mensual(es)' : 'auditoría(s)';
+  const etiqueta = modo === 'semanal' ? 'informe(s) semanal(es)'
+    : modo === 'informeMensual' ? 'informe(s) mensual(es)'
+    : modo === 'mensual' ? 'acumulado(s) mensual(es)'
+    : 'auditoría(s)';
   statusEl.textContent = `${filtradas.length} de ${allRows.length} ${etiqueta}${hayFiltro ? ' (filtrado)' : ''}.`;
   statusEl.dataset.kind = 'ok';
 }
@@ -406,6 +435,8 @@ async function cargarHistorico(){
   try{
     const url = modo === 'semanal'
       ? `${SUPABASE_URL}/rest/v1/informes_semanales?select=id,locales,semana_texto,semana_corto,acumulado_mes,creado_por,created_at&order=created_at.desc`
+      : modo === 'informeMensual'
+      ? `${SUPABASE_URL}/rest/v1/informes_mensuales?select=id,locales,mes,preparado_para,creado_por,created_at&order=mes.desc`
       : modo === 'mensual'
       ? `${SUPABASE_URL}/rest/v1/informe_mensual_acumulado?select=id,local,mes,anio,clientes,ventas,ic,compras,pct_compras,mermas,pct_mermas,walkins,pct_walkins,noshows,puntuacion_gr,puntuacion_cover,creado_por,created_at&order=anio.desc,mes.desc,local.asc`
       : `${SUPABASE_URL}/rest/v1/audits?select=id,tipo,local,supervisores,fecha_visita,puntuacion_total,puntuacion_anterior_total,created_at&order=created_at.desc`;
@@ -416,6 +447,7 @@ async function cargarHistorico(){
 
     if(!rows.length){
       statusEl.textContent = modo === 'semanal' ? 'Todavía no se ha guardado ningún informe semanal.'
+        : modo === 'informeMensual' ? 'Todavía no se ha guardado ningún informe mensual.'
         : modo === 'mensual' ? 'Todavía no se ha guardado ningún acumulado mensual.'
         : 'Todavía no se ha guardado ninguna auditoría.';
       statusEl.dataset.kind = 'info';
@@ -424,7 +456,7 @@ async function cargarHistorico(){
       return;
     }
 
-    if(modo === 'semanal'){
+    if(modo === 'semanal' || modo === 'informeMensual'){
       const locales = uniqueSorted(rows.flatMap(r => (r.locales || '').split('·').map(s => s.trim())));
       poblarFiltro(document.getElementById('filtroLocal'), locales, 'Todos los locales', true);
     }else if(modo === 'mensual'){
@@ -447,6 +479,7 @@ function setModo(nuevo){
   modo = nuevo;
   document.getElementById('btnModoAuditorias').className = modo === 'auditorias' ? 'btn' : 'btn secondary';
   document.getElementById('btnModoSemanal').className = modo === 'semanal' ? 'btn' : 'btn secondary';
+  document.getElementById('btnModoInformeMensual').className = modo === 'informeMensual' ? 'btn' : 'btn secondary';
   document.getElementById('btnModoMensual').className = modo === 'mensual' ? 'btn' : 'btn secondary';
   document.getElementById('filtroTipoWrap').style.display = modo === 'auditorias' ? '' : 'none';
   document.getElementById('filtroAMWrap').style.display = modo === 'auditorias' ? '' : 'none';
@@ -684,6 +717,7 @@ async function init(){
   });
   document.getElementById('btnModoAuditorias').addEventListener('click', () => setModo('auditorias'));
   document.getElementById('btnModoSemanal').addEventListener('click', () => setModo('semanal'));
+  document.getElementById('btnModoInformeMensual').addEventListener('click', () => setModo('informeMensual'));
   document.getElementById('btnModoMensual').addEventListener('click', () => setModo('mensual'));
   document.getElementById('btnVerTotalSeleccion').addEventListener('click', verDetalleTotalSeleccion);
   document.getElementById('filtroTipo').addEventListener('change', aplicarFiltros);
