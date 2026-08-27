@@ -689,9 +689,16 @@
 
       <section class="card" id="sec-men-ventasug">
         <h2>Venta sugerida</h2>
-        <p class="desc">Acumulado del mes, por categoría — 9 categorías (las 8 del Informe Semanal más Alcohol, que solo se ve en el resumen mensual de Power BI). Las 8 primeras se pueden traer solas del último informe semanal guardado ese mes (ya es acumulado del mes ahí, no se suma entre semanas); Alcohol se escribe a mano.</p>
+        <p class="desc">Acumulado del mes, por categoría — 9 categorías (las 8 del Informe Semanal más Alcohol, que solo se ve en el resumen mensual de Power BI).</p>
+        <p style="margin:0 0 12px;"><a class="small-btn" href="https://app.powerbi.com/home?experience=power-bi" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Power BI (Venta sugerida)</a></p>
+        <div id="menVsExcelBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+          <strong style="font-size:13px; white-space:nowrap;">📊 Subir Excel de Power BI (mensual)</strong>
+          <input type="file" id="menVsExcelFile" accept=".xlsx,.xls,.csv" multiple style="flex:1 1 220px; font-size:12px;">
+          <span id="menVsExcelStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En la tabla mensual de Power BI: los tres puntos "···" → Exportar datos → Excel. Sube aquí ese archivo (uno por local, puedes elegir varios a la vez) — se leen y rellenan solas las 9 categorías. Es lectura automática: revisa siempre los números antes de guardar.</span>
+          <div id="menVsExcelPreviews" style="display:flex; flex-wrap:wrap; gap:8px; width:100%;"></div>
+        </div>
         <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center;">
-          <button class="small-btn" type="button" id="btnMenTraerVentaSugerida">↻ Traer del informe semanal más reciente del mes</button>
+          <button class="small-btn" type="button" id="btnMenTraerVentaSugerida">↻ O traer del informe semanal más reciente del mes (sin Alcohol)</button>
           <span id="menVentaSugeridaStatus" style="font-size:12px; color:var(--muted);"></span>
         </div>
         <div class="table-wrap-scroll" style="overflow-x:auto;">
@@ -3379,6 +3386,10 @@ const CATEGORIA_KEYWORDS_VS = [
   { categoria: 'Platos con suplemento', kw: 'supl' },
   { categoria: 'Pan', kw: 'pan' },
   { categoria: 'Postres', kw: 'postre' },
+  // Solo aparece en el Excel mensual de Power BI (no en el semanal) — se
+  // añade aquí igualmente porque columnasVentaSugerida() simplemente no
+  // encuentra la palabra clave y la ignora si la hoja no la trae.
+  { categoria: 'Alcohol', kw: 'alcohol' },
 ];
 
 // A partir de la cabecera del Excel, localiza en qué columna empieza el
@@ -3443,6 +3454,67 @@ function aplicarVentaSugeridaExcel(filas){
     aplicados++;
   });
   return { aplicados, localesEncontrados };
+}
+
+// Igual que aplicarVentaSugeridaExcel()/leerVentaSugeridaExcel() pero para el
+// Informe Mensual: menLocales en vez de semLocales, las 9 categorías
+// (incluye Alcohol) en vez de 8, ids `menvs_` en vez de `semvs_`.
+function aplicarVentaSugeridaExcelMensual(filas){
+  const setVal = (id, val) => { const campo = document.getElementById(id); if(campo && val != null) campo.value = val; };
+  let aplicados = 0;
+  const localesEncontrados = [];
+  filas.forEach(fila => {
+    const nombreNorm = quitarAcentos(fila.localTexto);
+    const local = menLocales.find(l => nombreNorm.includes(quitarAcentos(l.nombre)));
+    if(!local) return;
+    localesEncontrados.push(local.nombre);
+    fila.categorias.forEach(c => {
+      const ci = CATEGORIAS_VENTA_SUGERIDA_MENSUAL.indexOf(c.categoria);
+      if(ci === -1) return;
+      setVal(`menvs_${local.id}_${ci}_uds`, c.uds);
+      setVal(`menvs_${local.id}_${ci}_kpi`, c.kpi);
+      setVal(`menvs_${local.id}_${ci}_euros`, c.euros);
+    });
+    computeTotalMenVentaSugerida(local.id);
+    aplicados++;
+  });
+  return { aplicados, localesEncontrados };
+}
+
+async function leerVentaSugeridaExcelMensual(file){
+  const statusEl = document.getElementById('menVsExcelStatus');
+  if(!menLocales.length){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Añade primero al menos un local del grupo arriba.';
+    return;
+  }
+  try{
+    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = 'Cargando el lector de Excel…';
+    await ensureXlsxLoaded();
+    const buffer = await file.arrayBuffer();
+    const libro = XLSX.read(buffer, { type: 'array' });
+    const hoja = libro.Sheets[libro.SheetNames[0]];
+    const filas = XLSX.utils.sheet_to_json(hoja, { header: 1, defval: null });
+    const datos = parseVentaSugeridaExcel(filas);
+    if(!datos.length){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `${file.name}: no se ha podido leer ninguna fila — comprueba que es el Excel exportado de Power BI (con cabecera).`;
+      return;
+    }
+    const { aplicados, localesEncontrados } = aplicarVentaSugeridaExcelMensual(datos);
+    if(!aplicados){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `${file.name}: no coincide ningún local de la hoja con los del grupo — revisa el nombre.`;
+      return;
+    }
+    statusEl.style.color = 'var(--good)';
+    statusEl.textContent = `${file.name}: rellenado ${localesEncontrados.join(', ')}. Es lectura automática: revisa siempre los números (incluido Alcohol) antes de guardar.`;
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = `${file.name}: no se pudo leer el archivo (${err.message}).`;
+  }
 }
 
 async function ensureXlsxLoaded(){
@@ -5401,6 +5473,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('btnMenTraerDatos').addEventListener('click', traerDatosMesTendencias);
   document.getElementById('btnMenTraerVentaSugerida').addEventListener('click', traerMenVentaSugerida);
+  document.getElementById('menVsExcelFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'menVsExcelPreviews', leerVentaSugeridaExcelMensual));
   document.getElementById('btnAddSemFactura').addEventListener('click', addSemFactura);
   document.getElementById('btnSemAnterior').addEventListener('click', traerSemanaAnterior);
   document.getElementById('btnSemAcumuladoCompras').addEventListener('click', traerAcumuladoMesCompras);
