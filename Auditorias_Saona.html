@@ -684,7 +684,13 @@
           <tbody></tbody>
         </table>
         </div>
-        <div class="field" style="margin-top:14px;"><label>Lectura de tendencias</label><textarea id="men_lecturaTendencias" style="min-height:90px;" placeholder="Interpretación de las tendencias del mes: impacto de iniciativas comerciales, evolución del IC, protección de margen…"></textarea></div>
+        <div class="field" style="margin-top:14px;">
+          <label>Lectura de tendencias</label>
+          <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center; margin-bottom:6px;">
+            <button class="small-btn" type="button" id="btnMenAutoLectura">✍️ Generar lectura automática a partir de la tabla</button>
+          </div>
+          <textarea id="men_lecturaTendencias" style="min-height:90px;" placeholder="Interpretación de las tendencias del mes: impacto de iniciativas comerciales, evolución del IC, protección de margen…"></textarea>
+        </div>
       </section>
 
       <section class="card" id="sec-men-ventasug">
@@ -706,6 +712,13 @@
           <thead><tr><th style="text-align:left;">Local</th><th style="text-align:left;">Categoría</th><th>Uds.</th><th>KPI %</th><th>€</th><th style="width:13%;">Venta local (mes) €</th><th>% s/venta</th></tr></thead>
           <tbody></tbody>
         </table>
+        </div>
+        <div class="field" style="margin-top:14px;">
+          <label>Lectura de venta sugerida</label>
+          <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center; margin-bottom:6px;">
+            <button class="small-btn" type="button" id="btnMenAutoLecturaVs">✍️ Generar lectura automática a partir de la tabla</button>
+          </div>
+          <textarea id="men_lecturaVentaSugerida" style="min-height:90px;" placeholder="Interpretación de la venta sugerida del mes: peso sobre la venta total, categorías que más aportan…"></textarea>
         </div>
       </section>
 
@@ -3812,6 +3825,117 @@ function computeVarMen(id){
   if(varIcEl) varIcEl.value = (icAnt && ic != null) ? (((ic - icAnt) / icAnt) * 100).toFixed(1) : '';
 }
 
+/* Genera la "Lectura de tendencias" a partir de los datos ya escritos en la
+   tabla — mismo criterio que autoResumen() de las auditorías VEO (plantilla
+   determinista, sin IA): no hace falta que Claude esté delante, cualquier
+   AM puede pulsar el botón después de rellenar Tendencias e IC. Se puede
+   volver a pulsar tantas veces como se quiera — SIEMPRE sobrescribe el
+   texto (igual que autoResumen), así que si alguien ya editó el texto a
+   mano y quiere conservarlo, que no vuelva a pulsar el botón. */
+function fmtEurTendencia(n){ return Math.round(n).toLocaleString('es-ES') + '€'; }
+function fmtPctTendencia(n){ return (n > 0 ? '+' : '') + n.toFixed(1) + '%'; }
+
+function lecturaTendenciaLocal(id){
+  const clientesMes = numOrNull(`men_${id}_clientesMes`);
+  const clientesAnt = numOrNull(`men_${id}_clientesAnioAnt`);
+  const ventasMes = numOrNull(`men_${id}_ventasMes`);
+  const ventasAnt = numOrNull(`men_${id}_ventasAnioAnt`);
+  const ic = numOrNull(`men_${id}_icMes`);
+  const icAnt = numOrNull(`men_${id}_icAnioAnt`);
+  const varV = numOrNull(`men_${id}_varVentas`);
+  const varIc = numOrNull(`men_${id}_varIc`);
+
+  if(ventasMes == null && clientesMes == null) return null; // local sin datos, no se incluye
+
+  if(ventasAnt == null || clientesAnt == null){
+    const partes = [];
+    if(ventasMes != null) partes.push(`ventas de ${fmtEurTendencia(ventasMes)}`);
+    if(clientesMes != null) partes.push(`${clientesMes} clientes`);
+    if(ic != null) partes.push(`IC de ${ic}€`);
+    return partes.length ? `${partes.join(', ')}. Sin dato del mismo mes del año anterior para comparar.` : null;
+  }
+
+  const clientesVarPct = clientesAnt ? ((clientesMes - clientesAnt) / clientesAnt) * 100 : null;
+  const ventasSuben = varV >= 0;
+  const clientesSuben = clientesVarPct >= 0;
+  const icSube = varIc >= 0;
+
+  let frase = `Ventas ${ventasSuben ? 'suben' : 'bajan'} un ${Math.abs(varV).toFixed(1)}% interanual (${fmtEurTendencia(ventasMes)} frente a ${fmtEurTendencia(ventasAnt)}) y los clientes ${clientesSuben ? 'suben' : 'bajan'} un ${Math.abs(clientesVarPct).toFixed(1)}% (${clientesMes} frente a ${clientesAnt}), mientras que el Ingreso por Comensal ${icSube ? 'mejora' : 'empeora'} de ${icAnt}€ a ${ic}€ (${fmtPctTendencia(varIc)})`;
+
+  if(!clientesSuben && icSube){
+    frase += '. El alza del IC amortigua parcialmente la caída de tráfico, sin llegar a compensarla del todo.';
+  }else if(clientesSuben && icSube){
+    frase += '. Buen mes: crecen tanto las visitas como el gasto medio.';
+  }else if(clientesSuben && !icSube){
+    frase += '. Entran más clientes, pero cada uno deja de media menos que el año pasado — revisar venta sugerida y coste de la carta.';
+  }else{
+    frase += '. Caen tanto las visitas como el gasto medio — mes a vigilar.';
+  }
+  return frase;
+}
+
+function autoLecturaTendencias(){
+  const mesVal = v('men_mes');
+  const partes = (mesVal || '').split('-').map(Number);
+  const mesNombre = partes[1] ? capitaliza(MESES_ES[partes[1] - 1]) : 'Este mes';
+  const variosLocales = menLocales.length > 1;
+  const parrafos = menLocales.map(l => {
+    const texto = lecturaTendenciaLocal(l.id);
+    if(!texto) return null;
+    return `${variosLocales ? l.nombre : mesNombre}: ${texto}`;
+  }).filter(Boolean);
+  const ta = document.getElementById('men_lecturaTendencias');
+  ta.value = parrafos.length
+    ? parrafos.join('\n\n')
+    : 'No hay datos suficientes en Tendencias e IC para generar la lectura automática — rellena al menos ventas y clientes de este mes.';
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+/* Igual criterio que autoLecturaTendencias(): plantilla determinista sobre
+   los datos ya escritos en la tabla de Venta Sugerida, en el mismo estilo
+   que el informe real de Thader ("El X% de la venta viene de sugerencias
+   […], los motores claros son…"). */
+function lecturaVentaSugeridaLocal(id){
+  const totalEuros = numOrNull(`menvs_${id}_total_euros`);
+  const totalPct = numOrNull(`menvs_${id}_total_pct`);
+  if(totalEuros == null || totalEuros === 0) return null;
+
+  const cats = CATEGORIAS_VENTA_SUGERIDA_MENSUAL.map((cat, ci) => ({
+    cat,
+    uds: numOrNull(`menvs_${id}_${ci}_uds`),
+    kpi: numOrNull(`menvs_${id}_${ci}_kpi`),
+    euros: numOrNull(`menvs_${id}_${ci}_euros`),
+  })).filter(c => c.euros != null && c.euros > 0);
+
+  let frase = totalPct != null
+    ? `El ${totalPct}% de la venta local viene de venta sugerida (${fmtEurTendencia(totalEuros)})`
+    : `La venta sugerida suma ${fmtEurTendencia(totalEuros)} este mes`;
+
+  if(cats.length){
+    cats.sort((a, b) => b.euros - a.euros);
+    const top = cats.slice(0, 2);
+    const describe = (c) => `"${c.cat}" (${c.uds != null ? c.uds + ' uds, ' : ''}${fmtEurTendencia(c.euros)}${c.kpi != null ? `, ${c.kpi}% KPI` : ''})`;
+    frase += `. El motor principal es ${describe(top[0])}`;
+    if(top[1]) frase += `, seguido de ${describe(top[1])}`;
+    frase += '.';
+  }
+  return frase;
+}
+
+function autoLecturaVentaSugerida(){
+  const variosLocales = menLocales.length > 1;
+  const parrafos = menLocales.map(l => {
+    const texto = lecturaVentaSugeridaLocal(l.id);
+    if(!texto) return null;
+    return variosLocales ? `${l.nombre}: ${texto}` : texto;
+  }).filter(Boolean);
+  const ta = document.getElementById('men_lecturaVentaSugerida');
+  ta.value = parrafos.length
+    ? parrafos.join('\n\n')
+    : 'No hay datos suficientes en Venta Sugerida para generar la lectura automática — rellena al menos una categoría y la venta local del mes.';
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 function computeDesviacionCostes(id){
   const teorico = numOrNull(`menc_${id}_teorico`);
   const real = numOrNull(`menc_${id}_real`);
@@ -5032,6 +5156,7 @@ async function guardarInformeMensual(){
     locales: menLocales.map(l => l.nombre).join(' · '),
     preparado_para: v('men_preparadoPara'),
     lectura_tendencias: v('men_lecturaTendencias'),
+    lectura_venta_sugerida: v('men_lecturaVentaSugerida'),
     lineas_estrategicas: v('men_lineasEstrategicas'),
     prioridades: v('men_prioridades'),
     creado_por: currentUserName(),
@@ -5218,6 +5343,7 @@ async function cargarInformeMensualParaEditar(id){
     document.getElementById('men_mes').value = (informe.mes || '').slice(0, 7);
     document.getElementById('men_preparadoPara').value = informe.preparado_para || '';
     document.getElementById('men_lecturaTendencias').value = informe.lectura_tendencias || '';
+    document.getElementById('men_lecturaVentaSugerida').value = informe.lectura_venta_sugerida || '';
     document.getElementById('men_lineasEstrategicas').value = informe.lineas_estrategicas || '';
     document.getElementById('men_prioridades').value = informe.prioridades || '';
 
@@ -5472,6 +5598,8 @@ document.addEventListener('DOMContentLoaded', () => {
     poblarMenLocalesCheckGrid();
   });
   document.getElementById('btnMenTraerDatos').addEventListener('click', traerDatosMesTendencias);
+  document.getElementById('btnMenAutoLectura').addEventListener('click', autoLecturaTendencias);
+  document.getElementById('btnMenAutoLecturaVs').addEventListener('click', autoLecturaVentaSugerida);
   document.getElementById('btnMenTraerVentaSugerida').addEventListener('click', traerMenVentaSugerida);
   document.getElementById('menVsExcelFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'menVsExcelPreviews', leerVentaSugeridaExcelMensual));
   document.getElementById('btnAddSemFactura').addEventListener('click', addSemFactura);
