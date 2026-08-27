@@ -683,7 +683,7 @@
                 <option value="11">Noviembre</option>
                 <option value="12">Diciembre</option>
               </select>
-              <input id="men_anioInput" type="number" placeholder="Año" style="width:90px;">
+              <select id="men_anioInput" style="width:90px;"></select>
             </div>
           </div>
           <div class="field"><label>Preparado para</label><input id="men_preparadoPara" type="text" placeholder="Opcional"></div>
@@ -2317,6 +2317,22 @@ let semFranjasAnteriores = {}; // misma forma, de la semana anterior guardada (p
 // Mes del Informe Mensual como desplegable + año (no <input type="month">:
 // no lo soportan bien todos los navegadores, p.ej. Safari lo deja en blanco
 // sin selector) — devuelve 'YYYY-MM' o '' si falta alguno de los dos.
+// Desplegable de año (en vez de <input type="number">, más finicky en móvil
+// y sin valor por defecto — la selección de mes se quedaba sin efecto si el
+// usuario no tocaba también el año). Año actual ya viene preseleccionado.
+function poblarMenAnioSelect(){
+  const sel = document.getElementById('men_anioInput');
+  const actual = new Date().getFullYear();
+  sel.innerHTML = '';
+  for(let y = actual - 1; y <= actual + 1; y++){
+    const opt = document.createElement('option');
+    opt.value = String(y);
+    opt.textContent = String(y);
+    if(y === actual) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
 function menMesValue(){
   const mes = v('men_mesSelect');
   const anio = v('men_anioInput');
@@ -5623,6 +5639,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   poblarMenLocalesCheckGrid();
+  poblarMenAnioSelect();
   document.getElementById('menLocalTodos').addEventListener('change', (e) => {
     if(e.target.checked) LOCALES.forEach(addMenLocalPorNombre);
     else{ menLocales = []; renderAllMenSections(); }
