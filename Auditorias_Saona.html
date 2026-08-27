@@ -372,6 +372,7 @@
       <a href="#sec-sem-reservas">Reservas y walk-ins</a>
       <a href="#sec-sem-ocupacion">Ocupación diaria</a>
       <a href="#sec-sem-valoraciones">Valoraciones</a>
+      <a href="#sec-sem-saonareviews">Informe Saona Reviews</a>
       <a href="#sec-sem-notas">Notas</a>
     </div>
     <div id="sideNavMensual" style="display:none;">
@@ -518,10 +519,12 @@
       <section class="card" id="sec-sem-ventasug">
         <h2>Venta sugerida</h2>
         <p class="desc">Por categoría y local, acumulado del mes (igual que Compras y Mermas). En la fila "Total" escribe la venta total del local este mes para que el % salga bien.</p>
-        <div id="semVsOcrBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
-          <strong style="font-size:13px; white-space:nowrap;">📷 Rellenar desde una captura</strong>
-          <input type="file" id="semVsOcrFile" accept="image/*" style="flex:1 1 220px; font-size:12px;">
-          <span id="semVsOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Lee el local directamente de la tabla de la captura — añade antes ese local al grupo, arriba en "Datos generales". Usa una captura con la letra grande y nítida (recorta solo la tabla, sin reducirla mucho) — con texto muy pequeño falla la lectura. Es lectura automática: revisa siempre los números.</span>
+        <p style="margin:0 0 12px;"><a class="small-btn" href="https://app.powerbi.com/home?experience=power-bi" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Power BI (Venta sugerida)</a></p>
+        <div id="semVsExcelBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+          <strong style="font-size:13px; white-space:nowrap;">📊 Subir Excel de Power BI</strong>
+          <input type="file" id="semVsExcelFile" accept=".xlsx,.xls,.csv" multiple style="flex:1 1 220px; font-size:12px;">
+          <span id="semVsExcelStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En la tabla de Power BI: los tres puntos "···" → Exportar datos → Excel. Sube aquí ese archivo (uno por local, puedes elegir varios a la vez) — se leen y rellenan solos. Es lectura automática: revisa siempre los números antes de guardar.</span>
+          <div id="semVsExcelPreviews" style="display:flex; flex-wrap:wrap; gap:8px; width:100%;"></div>
         </div>
         <div class="table-wrap-scroll" style="overflow-x:auto;">
         <table class="datatable" id="tblSemVentaSugerida">
@@ -534,6 +537,7 @@
       <section class="card" id="sec-sem-compras">
         <h2>Compras y mermas</h2>
         <p class="desc">Los datos de la semana (% sobre las ventas de esa semana) y, aparte, el acumulado del mes.</p>
+        <p style="margin:0 0 12px;"><a class="small-btn" href="https://cliente.yurest.com/login" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Yurest (Compras y mermas)</a></p>
         <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center;">
           <button class="small-btn" type="button" id="btnSemAcumuladoCompras">↻ Calcular acumulado del mes (suma semanas anteriores + esta)</button>
           <span id="semAcumuladoComprasStatus" style="font-size:12px; color:var(--muted);"></span>
@@ -559,10 +563,11 @@
       <section class="card" id="sec-sem-facturas">
         <h2>Facturas / pedidos pendientes de recepcionar</h2>
         <p class="desc">Añade o elimina filas según haga falta. Deja la tabla vacía si no hay pendientes.</p>
-        <div id="semFacOcrBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
-          <strong style="font-size:13px; white-space:nowrap;">📷 Rellenar desde una captura</strong>
-          <input type="file" id="semFacOcrFile" accept="image/*" style="flex:1 1 220px; font-size:12px;">
-          <span id="semFacOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Lee una tabla con cabecera (#, Fecha, Local, Proveedor, Empleado, Subtotal, Total). Añade las filas que falten. Es lectura automática: revisa siempre los datos, sobre todo nombres de proveedor.</span>
+        <p style="margin:0 0 12px;"><a class="small-btn" href="https://cliente.yurest.com/login" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Yurest (Facturas pendientes)</a></p>
+        <div id="semFacCsvBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+          <strong style="font-size:13px; white-space:nowrap;">📄 Subir CSV de Yurest (Resumen de pedidos)</strong>
+          <input type="file" id="semFacCsvFile" accept=".csv" multiple style="flex:1 1 220px; font-size:12px;">
+          <span id="semFacCsvStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En Yurest, exporta el "Resumen de pedidos" (con columnas #, Fecha, Local, Proveedor, Empleado, Subtotal, Total) y súbelo aquí — añade sola una fila por cada pedido de los locales del grupo. Es lectura automática: revisa siempre los datos.</span>
         </div>
         <div class="add-btn-row"><button class="small-btn" type="button" id="btnAddSemFactura">+ Añadir factura</button></div>
         <table class="datatable" id="tblSemFacturas">
@@ -573,6 +578,7 @@
 
       <section class="card" id="sec-sem-reservas">
         <h2>Reservas, walk-ins y no-shows</h2>
+        <p style="margin:0 0 12px;"><a class="small-btn" href="https://www.covermanager.com/index.php" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Cover (Reservas)</a></p>
         <div id="semCsvBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📄 Informe de Cover "Tracking de Reservas" (walk-ins / no-shows)</strong>
           <button type="button" class="small-btn" id="semCsvListBtn">🔄 Ver informes recibidos por email</button>
@@ -591,6 +597,7 @@
       <section class="card" id="sec-sem-ocupacion">
         <h2>Ocupación diaria por local y turno</h2>
         <p class="desc">Un bloque por local y día. La fecha se calcula sola a partir de la semana elegida arriba, y el % de ocupación se calcula solo (comensales ÷ aforo).</p>
+        <p style="margin:0 0 12px;"><a class="small-btn" href="https://www.covermanager.com/index.php" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Cover (Ocupación)</a></p>
         <div id="semOcupacionCsvBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:10px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📄 Informe de Cover "Número de Personas por Turno y Día"</strong>
           <input type="file" id="semOcupacionCsvFile" accept=".csv" style="flex:1 1 260px; font-size:12px;">
@@ -616,15 +623,26 @@
       <section class="card" id="sec-sem-valoraciones">
         <h2>Valoración de clientes (Google Reviews / TheFork Cover)</h2>
         <p class="desc">En "Puntos críticos" apunta en 2-3 líneas lo que digan las reseñas de esta semana sobre la experiencia del cliente (quejas repetidas, algo que haya destacado) — no hace falta copiar reseñas enteras, solo el resumen.</p>
+        <p style="margin:0 0 12px; display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="small-btn" href="https://gruposaona.gastroranking.pro/global/home/460-N" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Gastroranking (reseñas GR)</a>
+          <a class="small-btn" href="https://reviews.saona.es/login" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Saona Reviews (opiniones)</a>
+        </p>
         <div id="semValOcrBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
-          <strong style="font-size:13px; white-space:nowrap;">📷 Puntos críticos desde una captura de reviews.saona.es</strong>
-          <input type="file" id="semValOcrFile" accept="image/*" style="flex:1 1 220px; font-size:12px;">
-          <span id="semValOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Sube la captura del informe de un local (el que se ve al entrar en ese local en reviews.saona.es/locals). Lee el local y resume el "Resumen Ejecutivo" en Puntos críticos — añade antes ese local al grupo, arriba en "Datos generales". Es lectura automática: revisa siempre el texto.</span>
+          <strong style="font-size:13px; white-space:nowrap;">📷 Adjuntar capturas (una por local)</strong>
+          <input type="file" id="semValOcrFile" accept="image/*" multiple style="flex:1 1 220px; font-size:12px;">
+          <span id="semValOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Selecciona una captura por cada local que estés analizando (puedes elegir varias a la vez) — de reviews.saona.es. Se leen y rellenan solas, una a una. Es lectura automática: revisa siempre el texto.</span>
+          <div id="semValOcrPreviews" style="display:flex; flex-wrap:wrap; gap:8px; width:100%;"></div>
         </div>
         <table class="datatable" id="tblSemValoraciones">
           <thead><tr><th style="text-align:left;">Local</th><th>Reseñas GR</th><th>Puntuación GR</th><th>Tendencia GR</th><th>Reseñas Cover</th><th>Puntuación Cover</th><th>Tendencia Cover</th><th style="min-width:180px;">Puntos críticos</th></tr></thead>
           <tbody></tbody>
         </table>
+      </section>
+
+      <section class="card" id="sec-sem-saonareviews">
+        <h2>Informe de Saona Reviews</h2>
+        <p class="desc">Un cuadro por local del grupo — pega en cada uno el texto del informe de reviews.saona.es de ese local. Se guarda con el informe (no se procesa automáticamente) para que Claude lo lea y resuma el feedback en Puntos críticos / Incidencias cuando genere el documento final.</p>
+        <div id="semSaonaReviewsGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;"></div>
       </section>
 
       <section class="card" id="sec-sem-notas">
@@ -2792,7 +2810,8 @@ function quitarAcentos(str){
 // con comas dentro, etc.) en filas de columnas SIN interpretar cabeceras, para
 // informes cuyas columnas se repiten (mismo nombre varias veces) y no se pueden
 // mapear a un objeto {cabecera: valor} sin perder datos. Separador: punto y coma.
-function tokenizarCSV(texto){
+function tokenizarCSV(texto, delimitador){
+  delimitador = delimitador || ';';
   const filas = [];
   let fila = [], campo = '', dentroComillas = false;
   for(let i = 0; i < texto.length; i++){
@@ -2804,7 +2823,7 @@ function tokenizarCSV(texto){
       } else campo += c;
     } else if(c === '"'){
       dentroComillas = true;
-    } else if(c === ';'){
+    } else if(c === delimitador){
       fila.push(campo); campo = '';
     } else if(c === '\n' || c === '\r'){
       if(c === '\r' && texto[i + 1] === '\n') i++;
@@ -2820,8 +2839,8 @@ function tokenizarCSV(texto){
 // Igual que arriba, pero devuelve un array de objetos {cabecera: valor} usando la
 // primera fila como cabecera — para informes con nombres de columna únicos (como
 // el de reservas de Cover).
-function parseCSV(texto){
-  const filas = tokenizarCSV(texto);
+function parseCSV(texto, delimitador){
+  const filas = tokenizarCSV(texto, delimitador);
   if(!filas.length) return [];
   const cabeceras = filas[0];
   return filas.slice(1).map(f => {
@@ -2866,7 +2885,12 @@ function aplicarTextoCsvReservas(texto){
 
   const resumenPorLocal = {};
   filas.forEach(f => {
-    const fecha = (f['Fecha'] || '').trim();
+    // f['Fecha'] viene en formato Cover (DD/MM/YYYY); inicio/fin son del
+    // <input type="date"> (YYYY-MM-DD). Comparar las dos cadenas directamente
+    // (como se hacía antes) nunca coincide -- "24/08/2026" no es mayor ni
+    // menor que "2026-08-24" de forma que tenga sentido, así que se
+    // descartaban todas las filas reales. Convertir a ISO antes de comparar.
+    const fecha = fechaDDMMaISO((f['Fecha'] || '').trim());
     if(!fecha || !enSemana(fecha)) return;
     const restauranteCsv = quitarAcentos((f['Restaurante'] || '').trim());
     const local = semLocales.find(l => {
@@ -3224,6 +3248,186 @@ function aplicarVentaSugeridaOCR(resultados){
   return { aplicados, sinDatos };
 }
 
+// Adjuntar varias capturas a la vez (una por local) y procesarlas todas
+// automáticamente con el lector de la sección — sin esto, adjuntar la
+// captura no rellenaba nada por sí solo y había que pedirle a Claude que la
+// leyera a mano en el navegador, lo cual añadía trabajo en vez de quitarlo.
+// Se muestran como miniaturas (con un indicador de progreso) y se procesan
+// una a una en secuencia, cada una con el lector de siempre (Tesseract) —
+// el aviso "revisa siempre los números" de cada sección sigue aplicando.
+const semCapturasUrls = [];
+function mostrarCapturasAdjuntas(e, containerId){
+  const cont = document.getElementById(containerId);
+  semCapturasUrls.forEach(u => URL.revokeObjectURL(u));
+  semCapturasUrls.length = 0;
+  cont.innerHTML = '';
+  Array.from(e.target.files).forEach((file, i) => {
+    const esImagen = file.type.startsWith('image/');
+    const fig = document.createElement('figure');
+    fig.dataset.capturaIdx = i;
+    fig.style.cssText = 'margin:0; width:160px; font-size:11px; color:var(--muted); text-align:center;';
+    let vista;
+    if(esImagen){
+      const url = URL.createObjectURL(file);
+      semCapturasUrls.push(url);
+      vista = `<img src="${url}" style="width:100%; height:110px; object-fit:contain; border:1px solid var(--border); border-radius:6px; background:#fff;">`;
+    }else{
+      vista = `<div style="width:100%; height:110px; display:flex; align-items:center; justify-content:center; font-size:32px; border:1px solid var(--border); border-radius:6px; background:#fff;">📄</div>`;
+    }
+    fig.innerHTML = `${vista}<figcaption style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${file.name}</figcaption><div class="captura-estado" style="font-size:10px;">Pendiente…</div>`;
+    cont.appendChild(fig);
+  });
+}
+
+async function adjuntarYProcesarCapturas(e, containerId, leerFn){
+  const files = Array.from(e.target.files);
+  mostrarCapturasAdjuntas(e, containerId);
+  const cont = document.getElementById(containerId);
+  for(let i = 0; i < files.length; i++){
+    const estadoEl = cont.querySelector(`[data-captura-idx="${i}"] .captura-estado`);
+    if(estadoEl) estadoEl.textContent = 'Leyendo…';
+    try{
+      await leerFn(files[i]);
+      if(estadoEl) estadoEl.textContent = '✓ Procesada';
+    }catch(err){
+      console.error(err);
+      if(estadoEl) estadoEl.textContent = '✗ Error al leer';
+    }
+  }
+}
+
+// Pegar la tabla de Power BI directamente (en vez de leer una captura por
+// OCR) — la tabla de Power BI es un formato ancho (una fila por local, con
+// tríos Uds./KPI/€ por categoría) muy distinto del que intentaba leer el
+// OCR de capturas, y el reconocimiento de imagen fallaba con frecuencia en
+// cuanto la captura no estaba perfectamente recortada y nítida. Copiar la
+// tabla como texto tampoco es fiable (ese visual de Power BI solo permite
+// copiarla como imagen) — la única exportación fiable que da ese informe es
+// "Exportar datos" a Excel, con los números en bruto (KPI como fracción
+// 0-1, no como "24,21%", y € como número, no como "278€").
+const CATEGORIA_KEYWORDS_VS = [
+  { categoria: 'Sugerencia núcleo', kw: 'sugerid' },
+  { categoria: 'Picoteo', kw: 'picar' },
+  { categoria: 'Café', kw: 'cafe' },
+  { categoria: 'Menú degustación', kw: 'deg' },
+  { categoria: 'Menú de grupo', kw: 'grupo' },
+  { categoria: 'Platos con suplemento', kw: 'supl' },
+  { categoria: 'Pan', kw: 'pan' },
+  { categoria: 'Postres', kw: 'postre' },
+];
+
+// A partir de la cabecera del Excel, localiza en qué columna empieza el
+// trío Uds./KPI/€ de cada categoría, buscando la primera cabecera que
+// contenga su palabra clave (esa primera coincidencia es siempre la
+// columna de "Uds.", porque en la tabla de Power BI cada trío va
+// Uds./KPI/€ en ese orden y la palabra clave de la categoría aparece
+// primero ahí).
+function columnasVentaSugerida(header){
+  const norm = header.map(h => quitarAcentos(String(h || '')));
+  const columnas = {};
+  CATEGORIA_KEYWORDS_VS.forEach(({ categoria, kw }) => {
+    const idx = norm.findIndex(h => h.includes(kw));
+    if(idx !== -1) columnas[categoria] = idx;
+  });
+  return columnas;
+}
+
+// filas: array de arrays (una fila por local, primera fila = cabecera),
+// tal como lo devuelve XLSX.utils.sheet_to_json(hoja, {header:1}). Los
+// números vienen en bruto: KPI como fracción (0.2317 = 23,17%) y € como
+// número plano — no hace falta (ni hay que) quitar comas ni símbolos.
+function parseVentaSugeridaExcel(filas){
+  if(!filas || filas.length < 2) return [];
+  const columnas = columnasVentaSugerida(filas[0]);
+  const numero = (x) => (x === undefined || x === null || x === '') ? null : Number(x);
+  const redondear = (n, dec) => n == null || isNaN(n) ? null : Number(n.toFixed(dec));
+
+  const resultados = [];
+  for(let i = 1; i < filas.length; i++){
+    const cols = filas[i] || [];
+    const nombreCol = String(cols[0] || '').trim();
+    if(!nombreCol || /^total$/i.test(quitarAcentos(nombreCol))) continue;
+    const categorias = Object.entries(columnas).map(([categoria, idx]) => ({
+      categoria,
+      uds: redondear(numero(cols[idx]), 0),
+      kpi: redondear(numero(cols[idx + 1]) * 100, 2),
+      euros: redondear(numero(cols[idx + 2]), 2),
+    }));
+    resultados.push({ localTexto: nombreCol, categorias });
+  }
+  return resultados;
+}
+
+function aplicarVentaSugeridaExcel(filas){
+  const setVal = (id, val) => { const campo = document.getElementById(id); if(campo && val != null) campo.value = val; };
+  let aplicados = 0;
+  const localesEncontrados = [];
+  filas.forEach(fila => {
+    const nombreNorm = quitarAcentos(fila.localTexto);
+    const local = semLocales.find(l => nombreNorm.includes(quitarAcentos(l.nombre)));
+    if(!local) return;
+    localesEncontrados.push(local.nombre);
+    fila.categorias.forEach(c => {
+      const ci = CATEGORIAS_VENTA_SUGERIDA.indexOf(c.categoria);
+      if(ci === -1) return;
+      setVal(`semvs_${local.id}_${ci}_uds`, c.uds);
+      setVal(`semvs_${local.id}_${ci}_kpi`, c.kpi);
+      setVal(`semvs_${local.id}_${ci}_euros`, c.euros);
+    });
+    computeTotalVentaSugerida(local.id);
+    aplicados++;
+  });
+  return { aplicados, localesEncontrados };
+}
+
+async function ensureXlsxLoaded(){
+  if(window.XLSX) return;
+  await new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    const timeoutId = setTimeout(() => reject(new Error('No se pudo cargar el lector de Excel (tarda demasiado en responder — revisa la conexión a internet).')), 20000);
+    s.onload = () => { clearTimeout(timeoutId); resolve(); };
+    s.onerror = () => { clearTimeout(timeoutId); reject(new Error('No se pudo cargar el lector de Excel (revisa la conexión a internet).')); };
+    document.head.appendChild(s);
+  });
+}
+
+async function leerVentaSugeridaExcel(file){
+  const statusEl = document.getElementById('semVsExcelStatus');
+  if(!semLocales.length){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Añade primero al menos un local del grupo arriba.';
+    return;
+  }
+  try{
+    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = 'Cargando el lector de Excel…';
+    await ensureXlsxLoaded();
+    const buffer = await file.arrayBuffer();
+    const libro = XLSX.read(buffer, { type: 'array' });
+    const hoja = libro.Sheets[libro.SheetNames[0]];
+    const filas = XLSX.utils.sheet_to_json(hoja, { header: 1, defval: null });
+    const datos = parseVentaSugeridaExcel(filas);
+    if(!datos.length){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `${file.name}: no se ha podido leer ninguna fila — comprueba que es el Excel exportado de Power BI (con cabecera).`;
+      return;
+    }
+    const { aplicados, localesEncontrados } = aplicarVentaSugeridaExcel(datos);
+    if(!aplicados){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `${file.name}: no coincide ningún local de la hoja con los del grupo — revisa el nombre.`;
+      return;
+    }
+    statusEl.style.color = 'var(--good)';
+    statusEl.textContent = `${file.name}: rellenado ${localesEncontrados.join(', ')}. Es lectura automática: revisa siempre los números antes de guardar.`;
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = `${file.name}: no se pudo leer el archivo (${err.message}).`;
+  }
+}
+
 async function leerCapturaVentaSugerida(file){
   const statusEl = document.getElementById('semVsOcrStatus');
   if(!semLocales.length){ statusEl.textContent = 'Añade primero los locales del grupo arriba.'; return; }
@@ -3344,131 +3548,70 @@ async function leerCapturaValoraciones(file){
 }
 
 /* ---------------------------------------------------------------
-   Rellenar Facturas pendientes desde una captura — tabla con cabecera
-   (#, Fecha, Hora, Local, Proveedor, Empleado, Nº productos,
-   Imp. Alternativos, Subtotal, Total) y una fila por factura. A
-   diferencia de Ocupación/Venta Sugerida hay columnas de texto libre
-   (Proveedor, Empleado) además de números — más fácil que se
-   equivoque, revisar siempre antes de guardar.
-
-   Estrategia: se localizan las cabeceras conocidas por su texto para
-   fijar la posición X de cada columna que nos interesa (se ignoran
-   Hora, Nº productos e Imp. Alternativos); todo lo que caiga a la
-   izquierda de "Fecha" es el nº de factura. Cada palabra por debajo
-   de la cabecera se agrupa en filas por su Y, y dentro de cada fila
-   se asigna a la columna más cercana por X — las palabras de una
-   misma columna se concatenan en orden (para nombres de varias
-   palabras, ej. "EUROPASTRY, S.A.").
+   Rellenar Facturas pendientes desde el CSV de Yurest ("Resumen de
+   pedidos"), en vez de una captura — mismo motivo que Venta Sugerida:
+   el OCR de una tabla con columnas de texto libre (Proveedor, Empleado)
+   además de números fallaba con facilidad, y este CSV es una fuente
+   100% fiable con cabecera propia: #, Fecha, Hora, Local, Proveedor,
+   Empleado, Nº productos, Imp. Alternativos, Subtotal, Total, Estado.
+   Solo se añaden filas de los locales ya presentes en el grupo — el
+   export es de todo el grupo, no hace falta filtrarlo a mano antes.
    --------------------------------------------------------------- */
-function parseFacturasOCR(data){
-  const words = (data.words || [])
-    .map(w => ({ text: (w.text || '').trim(), x: (w.bbox.x0 + w.bbox.x1) / 2, y: (w.bbox.y0 + w.bbox.y1) / 2 }))
-    .filter(w => w.text);
-
-  const buscarCabecera = (texto) => words.find(w => w.text.toLowerCase().replace(/[.:]/g, '') === texto);
-  const hFecha = buscarCabecera('fecha');
-  const hProveedor = buscarCabecera('proveedor');
-  const hEmpleado = buscarCabecera('empleado');
-  const hSubtotal = buscarCabecera('subtotal');
-  const hTotal = buscarCabecera('total');
-  if(!hFecha || !hProveedor || !hEmpleado || !hSubtotal || !hTotal) return [];
-
-  const hLocal = buscarCabecera('local');
-  const hHora = buscarCabecera('hora');
-  const hProductos = words.find(w => w.text.toLowerCase().includes('producto'));
-  const hAlternativos = words.find(w => w.text.toLowerCase().includes('alternativ'));
-
-  const columnas = [
-    { campo: 'fecha', x: hFecha.x },
-    hHora ? { campo: '_hora', x: hHora.x } : null,
-    hLocal ? { campo: 'local', x: hLocal.x } : null,
-    { campo: 'proveedor', x: hProveedor.x },
-    { campo: 'usuario', x: hEmpleado.x },
-    hProductos ? { campo: '_productos', x: hProductos.x } : null,
-    hAlternativos ? { campo: '_alternativos', x: hAlternativos.x } : null,
-    { campo: 'base', x: hSubtotal.x },
-    { campo: 'total', x: hTotal.x },
-  ].filter(Boolean).sort((a, b) => a.x - b.x);
-
-  const gapEstimado = columnas.length > 1 ? (columnas[1].x - columnas[0].x) : 120;
-  const limiteNumeroFactura = columnas[0].x - gapEstimado / 2;
-
-  function asignarColumna(x){
-    if(x < limiteNumeroFactura) return 'numero_factura';
-    for(let i = 0; i < columnas.length; i++){
-      const izq = i === 0 ? limiteNumeroFactura : (columnas[i - 1].x + columnas[i].x) / 2;
-      const der = i === columnas.length - 1 ? Infinity : (columnas[i].x + columnas[i + 1].x) / 2;
-      if(x >= izq && x < der) return columnas[i].campo;
-    }
-    return columnas[columnas.length - 1].campo;
-  }
-
-  const yCabecera = hFecha.y;
-  const abajo = words.filter(w => w.y > yCabecera + 5).sort((a, b) => a.y - b.y);
-
-  const filas = [];
-  abajo.forEach(w => {
-    let fila = filas.find(f => Math.abs(f.y - w.y) < 14);
-    if(!fila){ fila = { y: w.y, palabras: [] }; filas.push(fila); }
-    fila.palabras.push(w);
-  });
-
-  return filas.map(fila => {
-    const porCampo = {};
-    fila.palabras.sort((a, b) => a.x - b.x).forEach(w => {
-      const campo = asignarColumna(w.x);
-      if(campo.startsWith('_')) return;
-      porCampo[campo] = porCampo[campo] ? `${porCampo[campo]} ${w.text}` : w.text;
-    });
-    return {
-      numero_factura: porCampo.numero_factura || null,
-      fecha: porCampo.fecha || null,
-      local: porCampo.local || null,
-      proveedor: porCampo.proveedor || null,
-      usuario: porCampo.usuario || null,
-      base: porCampo.base != null ? parseNumeroEs(porCampo.base) : null,
-      total: porCampo.total != null ? parseNumeroEs(porCampo.total) : null,
-    };
-  }).filter(f => f.numero_factura || f.total);
-}
-
-function aplicarFacturasOCR(resultados){
-  const nuevosIds = resultados.map(() => { semFacturaCounter++; semFacturaIds.push(semFacturaCounter); return semFacturaCounter; });
-  renderSemFacturas();
-  resultados.forEach((r, i) => {
-    const id = nuevosIds[i];
+function aplicarFacturasCSV(filas){
+  let añadidas = 0;
+  filas.forEach(f => {
+    const numero = (f['#'] || '').trim();
+    if(!numero) return; // fila de totales al final, sin nº de pedido
+    const localCsv = quitarAcentos((f['Local'] || '').trim());
+    const local = semLocales.find(l => localCsv.includes(quitarAcentos(l.nombre)));
+    if(!local) return;
+    semFacturaCounter++;
+    const id = semFacturaCounter;
+    semFacturaIds.push(id);
+    renderSemFacturas();
     const setVal = (campo, val) => { const el = document.getElementById(`semf_${id}_${campo}`); if(el && val != null) el.value = val; };
-    setVal('numero', r.numero_factura);
-    setVal('fecha', r.fecha);
-    setVal('local', r.local);
-    setVal('proveedor', r.proveedor);
-    setVal('usuario', r.usuario);
-    setVal('base', r.base);
-    setVal('total', r.total);
+    setVal('numero', numero);
+    setVal('fecha', f['Fecha']);
+    setVal('local', local.nombre);
+    setVal('proveedor', f['Proveedor']);
+    setVal('usuario', f['Empleado']);
+    setVal('base', Number(f['Subtotal']));
+    setVal('total', Number(f['Total']));
+    añadidas++;
   });
-  return resultados.length;
+  return añadidas;
 }
 
-async function leerCapturaFacturas(file){
-  const statusEl = document.getElementById('semFacOcrStatus');
+async function leerFacturasPendientesCSV(file){
+  const statusEl = document.getElementById('semFacCsvStatus');
+  if(!semLocales.length){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Añade primero al menos un local del grupo arriba.';
+    return;
+  }
   try{
-    statusEl.style.color = 'var(--muted)';
-    statusEl.textContent = 'Cargando el lector de imagen…';
-    await ensureTesseractLoaded();
-    const data = await reconocerImagen(file, statusEl);
-    const resultados = parseFacturasOCR(data);
-    if(!resultados.length){
+    let texto = await file.text();
+    texto = texto.replace(/^﻿/, '');
+    // El CSV de Yurest usa comas como separador (con campos entre comillas),
+    // a diferencia del de Cover que usa punto y coma.
+    const filas = parseCSV(texto, ',');
+    if(!filas.length){
       statusEl.style.color = 'var(--bad)';
-      statusEl.textContent = 'No se ha reconocido la tabla (o le faltan columnas: Fecha, Proveedor, Empleado, Subtotal, Total). Prueba con una foto más nítida, o rellena a mano.';
+      statusEl.textContent = `${file.name}: no se ha podido leer ninguna fila — comprueba que es el CSV de "Resumen de pedidos" de Yurest.`;
       return;
     }
-    const aplicadas = aplicarFacturasOCR(resultados);
+    const añadidas = aplicarFacturasCSV(filas);
+    if(!añadidas){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `${file.name}: no se ha encontrado ningún pedido de los locales del grupo en este archivo.`;
+      return;
+    }
     statusEl.style.color = 'var(--good)';
-    statusEl.textContent = `Se han añadido ${aplicadas} factura(s). Es lectura automática — revisa sobre todo el proveedor y los importes antes de guardar.`;
+    statusEl.textContent = `${file.name}: añadidas ${añadidas} factura(s). Es lectura automática: revisa siempre los datos antes de guardar.`;
   }catch(err){
     console.error(err);
     statusEl.style.color = 'var(--bad)';
-    statusEl.textContent = 'No se pudo leer la imagen: ' + err.message;
+    statusEl.textContent = `${file.name}: no se pudo leer el archivo (${err.message}).`;
   }
 }
 
@@ -3479,6 +3622,27 @@ function renderAllSemSections(){
   renderSemReservas();
   renderSemValoraciones();
   renderSemOcupacion();
+  renderSemSaonaReviews();
+}
+
+function saonaReviewCard(l){
+  const card = document.createElement('div');
+  card.dataset.localId = l.id;
+  card.style.cssText = 'border:1px solid var(--border); border-radius:8px; padding:12px; background:#fff;';
+  const head = document.createElement('strong');
+  head.style.cssText = 'display:block; margin-bottom:6px; font-size:13px;';
+  head.textContent = l.nombre;
+  const ta = document.createElement('textarea');
+  ta.id = `semSaonaRev_${l.id}_texto`;
+  ta.placeholder = `Pega aquí el informe de reviews.saona.es de ${l.nombre}…`;
+  ta.style.cssText = 'min-height:180px; width:100%;';
+  card.appendChild(head);
+  card.appendChild(ta);
+  return card;
+}
+
+function renderSemSaonaReviews(){
+  syncSemTable('#semSaonaReviewsGrid', l => [ saonaReviewCard(l) ]);
 }
 
 /* ---------------------------------------------------------------
@@ -4201,6 +4365,7 @@ async function guardarInformeSemanal(){
     puntuacion_cover: numOrNull(`semva_${l.id}_puntCover`),
     tendencia_cover: v(`semva_${l.id}_tendCover`) || null,
     puntos_criticos: v(`semva_${l.id}_puntosCriticos`) || null,
+    saona_reviews_texto: v(`semSaonaRev_${l.id}_texto`) || null,
   }));
 
   const ocupacion = [];
@@ -4242,18 +4407,44 @@ async function guardarInformeSemanal(){
     });
   });
 
-  // Antes de guardar: un KPI % fuera de rango (columna kpi_pct numeric(5,2),
-  // máximo 999,99) hace fallar TODO el guardado de venta_sugerida con un error
-  // genérico de Postgres sin decir qué campo es. Suele pasar cuando el lector de
-  // captura pierde la coma decimal (24,21% -> 2421) — se valida aquí antes de
-  // enviar nada, para señalar el local y la categoría exactos en vez de que el
-  // usuario tenga que buscarlo a ojo por toda la tabla.
-  const kpiFueraDeRango = ventaSugerida.filter(r => r.kpi_pct != null && Math.abs(r.kpi_pct) >= 1000);
-  if(kpiFueraDeRango.length){
+  // Antes de guardar: varias columnas numéricas del informe semanal son
+  // numeric(5,2) (máx. ±999,99) o, en Valoraciones, numeric(3,1) (máx. ±99,9).
+  // Un valor fuera de rango hace fallar TODO el guardado con un error genérico
+  // de Postgres que no dice qué campo es. Suele pasar por perder la coma
+  // decimal al leer una captura (24,21% -> 2421) o por una división con un
+  // denominador casi a cero (p.ej. % walk-ins con "Clientes" mal rellenado).
+  // La primera versión de esta validación solo cubría el KPI de Venta
+  // Sugerida — el mismo error de Postgres podía (y volvió a) aparecer por
+  // Compras/Mermas, Walk-ins, Ocupación o Valoraciones sin que nada lo
+  // avisara antes de enviarlo. Se valida aquí TODAS las columnas con este
+  // límite, para todas las secciones, antes de enviar nada. El límite exacto
+  // (999.995 y 99.95, no 1000/100) es donde el propio redondeo de Postgres
+  // empieza a desbordar — un valor algo por debajo de 1000/100 puede
+  // redondear hacia arriba y desbordar igualmente si no se corta ahí.
+  const fueraDeRango = [];
+  const chequearRango = (arr, campo, etiqueta, limite) => {
+    arr.forEach(r => {
+      const val = r[campo];
+      if(val != null && Math.abs(val) >= limite){
+        fueraDeRango.push(`${r.local}${r.dia ? ' (' + r.dia + ')' : ''} / ${etiqueta} (${val})`);
+      }
+    });
+  };
+  chequearRango(ventaSugerida, 'kpi_pct', 'Venta Sugerida — KPI %', 999.995);
+  chequearRango(compras, 'pct_compras', 'Compras — % acumulado mes', 999.995);
+  chequearRango(compras, 'pct_mermas', 'Mermas — % acumulado mes', 999.995);
+  chequearRango(compras, 'pct_compras_semana', 'Compras — % semana', 999.995);
+  chequearRango(compras, 'pct_mermas_semana', 'Mermas — % semana', 999.995);
+  chequearRango(reservas, 'pct_walkins', 'Walk-ins %', 999.995);
+  chequearRango(ocupacion, 'pct_mediodia', 'Ocupación mediodía %', 999.995);
+  chequearRango(ocupacion, 'pct_cena', 'Ocupación cena %', 999.995);
+  chequearRango(valoraciones, 'puntuacion_gr', 'Puntuación Google Reviews', 99.95);
+  chequearRango(valoraciones, 'puntuacion_cover', 'Puntuación Cover', 99.95);
+  if(fueraDeRango.length){
     statusEl.style.color = 'var(--bad)';
-    statusEl.textContent = 'No se puede guardar: KPI % fuera de rango en ' +
-      kpiFueraDeRango.map(r => `${r.local} / ${r.categoria} (${r.kpi_pct}%)`).join(', ') +
-      ' — seguramente falta la coma decimal (ej. 2421 en vez de 24,21). Corrígelo en Venta Sugerida y vuelve a guardar.';
+    statusEl.textContent = 'No se puede guardar: valor fuera de rango en ' +
+      fueraDeRango.join(', ') +
+      ' — revisa esos campos (coma decimal perdida o un cálculo con un denominador casi a cero) y vuelve a guardar.';
     return;
   }
 
@@ -4419,6 +4610,7 @@ async function cargarInformeSemanalParaEditar(id){
       setVal(`semva_${lid}_puntCover`, r.puntuacion_cover);
       setVal(`semva_${lid}_tendCover`, r.tendencia_cover);
       setVal(`semva_${lid}_puntosCriticos`, r.puntos_criticos);
+      setVal(`semSaonaRev_${lid}_texto`, r.saona_reviews_texto);
     });
 
     const vsPorLocal = {};
@@ -4917,21 +5109,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('semCsvListBtn').addEventListener('click', listarInformesCorreo);
   document.getElementById('semFranjasLocal').addEventListener('change', renderFranjas);
-  document.getElementById('semVsOcrFile').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if(file) leerCapturaVentaSugerida(file);
+  document.getElementById('semVsExcelFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'semVsExcelPreviews', leerVentaSugeridaExcel));
+  document.getElementById('semFacCsvFile').addEventListener('change', (e) => {
+    Array.from(e.target.files).forEach(leerFacturasPendientesCSV);
     e.target.value = '';
   });
-  document.getElementById('semFacOcrFile').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if(file) leerCapturaFacturas(file);
-    e.target.value = '';
-  });
-  document.getElementById('semValOcrFile').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if(file) leerCapturaValoraciones(file);
-    e.target.value = '';
-  });
+  document.getElementById('semValOcrFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'semValOcrPreviews', leerCapturaValoraciones));
   renderAllSemSections();
   renderSemFacturas();
   renderAllMenSections();
