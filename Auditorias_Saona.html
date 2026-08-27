@@ -671,14 +671,14 @@
 
       <section class="card" id="sec-men-tendencias">
         <h2>Tendencias e Ingreso por Comensal (IC)</h2>
-        <p class="desc">Evalúa el impacto de las iniciativas comerciales en la captura de valor y la protección del margen. Los datos del mes se pueden traer solos a partir de los informes semanales ya guardados (suma de las semanas de ese mes), o escribirse a mano.</p>
+        <p class="desc">Evalúa el impacto de las iniciativas comerciales en la captura de valor y la protección del margen, comparando con el MISMO MES DEL AÑO ANTERIOR (no con el mes anterior). Los datos de este mes se pueden traer solos a partir de los informes semanales ya guardados; el año anterior, mientras el histórico no llegue tan atrás, se escribe a mano donde se tenga el dato (Cover, TPV, Yurest).</p>
         <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center;">
-          <button class="small-btn" type="button" id="btnMenTraerDatos">↻ Traer datos del mes (y del mes anterior) desde informes semanales</button>
+          <button class="small-btn" type="button" id="btnMenTraerDatos">↻ Traer datos del mes desde informes semanales</button>
           <span id="menTraerDatosStatus" style="font-size:12px; color:var(--muted);"></span>
         </div>
         <div class="table-wrap-scroll" style="overflow-x:auto;">
         <table class="datatable" id="tblMenTendencias">
-          <thead><tr><th style="text-align:left;">Local</th><th>Clientes mes</th><th>Clientes mes anterior</th><th>Ventas mes (€)</th><th>Ventas mes anterior (€)</th><th>IC mes (€)</th><th>IC mes anterior (€)</th><th>Var. ventas %</th><th>Var. IC %</th></tr></thead>
+          <thead><tr><th style="text-align:left;">Local</th><th>Clientes mes</th><th>Clientes (año anterior)</th><th>Ventas mes (€)</th><th>Ventas (año anterior) €</th><th>IC mes (€)</th><th>IC (año anterior) €</th><th>Var. ventas %</th><th>Var. IC %</th></tr></thead>
           <tbody></tbody>
         </table>
         </div>
@@ -3655,23 +3655,23 @@ function renderSemSaonaReviews(){
 function computeICMen(id){
   const clientesMes = numOrNull(`men_${id}_clientesMes`);
   const ventasMes = numOrNull(`men_${id}_ventasMes`);
-  const clientesMesAnt = numOrNull(`men_${id}_clientesMesAnt`);
-  const ventasMesAnt = numOrNull(`men_${id}_ventasMesAnt`);
+  const clientesAnioAnt = numOrNull(`men_${id}_clientesAnioAnt`);
+  const ventasAnioAnt = numOrNull(`men_${id}_ventasAnioAnt`);
   const icEl = document.getElementById(`men_${id}_icMes`);
-  const icAntEl = document.getElementById(`men_${id}_icMesAnt`);
+  const icAntEl = document.getElementById(`men_${id}_icAnioAnt`);
   if(icEl) icEl.value = (clientesMes && ventasMes != null) ? (ventasMes / clientesMes).toFixed(2) : '';
-  if(icAntEl) icAntEl.value = (clientesMesAnt && ventasMesAnt != null) ? (ventasMesAnt / clientesMesAnt).toFixed(2) : '';
+  if(icAntEl) icAntEl.value = (clientesAnioAnt && ventasAnioAnt != null) ? (ventasAnioAnt / clientesAnioAnt).toFixed(2) : '';
   computeVarMen(id);
 }
 
 function computeVarMen(id){
   const ventasMes = numOrNull(`men_${id}_ventasMes`);
-  const ventasMesAnt = numOrNull(`men_${id}_ventasMesAnt`);
+  const ventasAnioAnt = numOrNull(`men_${id}_ventasAnioAnt`);
   const ic = numOrNull(`men_${id}_icMes`);
-  const icAnt = numOrNull(`men_${id}_icMesAnt`);
+  const icAnt = numOrNull(`men_${id}_icAnioAnt`);
   const varVEl = document.getElementById(`men_${id}_varVentas`);
   const varIcEl = document.getElementById(`men_${id}_varIc`);
-  if(varVEl) varVEl.value = (ventasMesAnt && ventasMes != null) ? (((ventasMes - ventasMesAnt) / ventasMesAnt) * 100).toFixed(1) : '';
+  if(varVEl) varVEl.value = (ventasAnioAnt && ventasMes != null) ? (((ventasMes - ventasAnioAnt) / ventasAnioAnt) * 100).toFixed(1) : '';
   if(varIcEl) varIcEl.value = (icAnt && ic != null) ? (((ic - icAnt) / icAnt) * 100).toFixed(1) : '';
 }
 
@@ -3687,15 +3687,15 @@ function renderMenTendencias(){
     const row = semLocalRow(l, [
       semTextCell(l.nombre),
       semInputCell(`men_${l.id}_clientesMes`, {inputmode:'numeric'}),
-      semInputCell(`men_${l.id}_clientesMesAnt`, {inputmode:'numeric'}),
+      semInputCell(`men_${l.id}_clientesAnioAnt`, {inputmode:'numeric'}),
       semInputCell(`men_${l.id}_ventasMes`, {inputmode:'decimal'}),
-      semInputCell(`men_${l.id}_ventasMesAnt`, {inputmode:'decimal'}),
+      semInputCell(`men_${l.id}_ventasAnioAnt`, {inputmode:'decimal'}),
       semInputCell(`men_${l.id}_icMes`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
-      semInputCell(`men_${l.id}_icMesAnt`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
+      semInputCell(`men_${l.id}_icAnioAnt`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
       semInputCell(`men_${l.id}_varVentas`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
       semInputCell(`men_${l.id}_varIc`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
     ]);
-    ['clientesMes','clientesMesAnt','ventasMes','ventasMesAnt'].forEach(campo => {
+    ['clientesMes','clientesAnioAnt','ventasMes','ventasAnioAnt'].forEach(campo => {
       row.querySelector(`#men_${l.id}_${campo}`).addEventListener('input', () => computeICMen(l.id));
     });
     return [row];
@@ -3723,11 +3723,17 @@ function renderAllMenSections(){
   renderMenCostes();
 }
 
-/* Traer datos del mes elegido (y del mes anterior) sumando los informes
-   semanales YA GUARDADOS en cada uno, igual criterio que
-   traerAcumuladoMesVentas() del Informe Semanal. Es una opción explícita
-   (botón), no rellena solo — no se quiere pisar sin avisar lo que el AM ya
-   haya escrito a mano. */
+/* Traer datos del mes elegido sumando los informes semanales YA GUARDADOS
+   en él, igual criterio que traerAcumuladoMesVentas() del Informe Semanal.
+   La comparación es con el MISMO MES DEL AÑO ANTERIOR (no con el mes
+   anterior) — pero el histórico de informes semanales no llega tan atrás
+   todavía, así que el año anterior normalmente sale vacío y hay que
+   escribirlo a mano (dato de Cover/TPV/Yurest de ese mismo mes el año
+   pasado). Se deja el intento automático igualmente: en cuanto haya un año
+   completo de informes semanales guardados, este mismo botón empezará a
+   rellenar el año anterior solo, sin tocar el código. Es una opción
+   explícita (botón), no rellena solo — no se quiere pisar sin avisar lo que
+   el AM ya haya escrito a mano. */
 async function traerDatosMesTendencias(){
   const statusEl = document.getElementById('menTraerDatosStatus');
   if(!menLocales.length){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Añade primero los locales del grupo.'; return; }
@@ -3743,13 +3749,13 @@ async function traerDatosMesTendencias(){
   const [anio, mes] = mesVal.split('-').map(Number);
   const inicioMes = `${mesVal}-01`;
   const finMes = mes === 12 ? `${anio + 1}-01-01` : `${anio}-${String(mes + 1).padStart(2, '0')}-01`;
-  const anioAnt = mes === 1 ? anio - 1 : anio;
-  const mesAnt = mes === 1 ? 12 : mes - 1;
-  const inicioMesAnt = `${anioAnt}-${String(mesAnt).padStart(2, '0')}-01`;
+  const inicioMesAnioAnt = `${anio - 1}-${String(mes).padStart(2, '0')}-01`;
+  const finMesAnioAnt = mes === 12 ? `${anio}-01-01` : `${anio - 1}-${String(mes + 1).padStart(2, '0')}-01`;
 
   statusEl.style.color = 'var(--muted)';
   statusEl.textContent = 'Calculando…';
   let calculados = 0;
+  let algunoAnioAnt = false;
   try{
     const sumaPeriodo = async (nombreLocal, desde, hasta) => {
       const informes = await fetch(
@@ -3768,19 +3774,22 @@ async function traerDatosMesTendencias(){
     };
     for(const l of menLocales){
       const actual = await sumaPeriodo(l.nombre, inicioMes, finMes);
-      const anterior = await sumaPeriodo(l.nombre, inicioMesAnt, inicioMes);
+      const anioAnterior = await sumaPeriodo(l.nombre, inicioMesAnioAnt, finMesAnioAnt);
+      if(anioAnterior.ventas || anioAnterior.clientes) algunoAnioAnt = true;
       const setVal = (id, val) => {
         const campo = document.getElementById(id);
         if(campo){ campo.value = val; campo.dispatchEvent(new Event('input', { bubbles: true })); }
       };
       setVal(`men_${l.id}_ventasMes`, actual.ventas ? Number(actual.ventas.toFixed(2)) : '');
       setVal(`men_${l.id}_clientesMes`, actual.clientes || '');
-      setVal(`men_${l.id}_ventasMesAnt`, anterior.ventas ? Number(anterior.ventas.toFixed(2)) : '');
-      setVal(`men_${l.id}_clientesMesAnt`, anterior.clientes || '');
+      setVal(`men_${l.id}_ventasAnioAnt`, anioAnterior.ventas ? Number(anioAnterior.ventas.toFixed(2)) : '');
+      setVal(`men_${l.id}_clientesAnioAnt`, anioAnterior.clientes || '');
       calculados++;
     }
     statusEl.style.color = 'var(--good)';
-    statusEl.textContent = `Datos traídos para ${calculados} de ${menLocales.length} local(es) — suma de los informes semanales guardados en cada mes. Revísalo antes de guardar.`;
+    statusEl.textContent = algunoAnioAnt
+      ? `Datos traídos para ${calculados} de ${menLocales.length} local(es), incluido el año anterior — revísalo antes de guardar.`
+      : `Datos del mes traídos para ${calculados} de ${menLocales.length} local(es). El año anterior no tiene informes semanales guardados en el histórico — escríbelo a mano si lo tienes por otra vía (Cover, TPV, Yurest).`;
   }catch(err){
     console.error(err);
     statusEl.style.color = 'var(--bad)';
@@ -4729,11 +4738,11 @@ async function guardarInformeMensual(){
   const tendencias = menLocales.map(l => ({
     local: l.nombre,
     clientes_mes: numOrNull(`men_${l.id}_clientesMes`),
-    clientes_mes_anterior: numOrNull(`men_${l.id}_clientesMesAnt`),
+    clientes_anio_anterior: numOrNull(`men_${l.id}_clientesAnioAnt`),
     ventas_mes: numOrNull(`men_${l.id}_ventasMes`),
-    ventas_mes_anterior: numOrNull(`men_${l.id}_ventasMesAnt`),
+    ventas_anio_anterior: numOrNull(`men_${l.id}_ventasAnioAnt`),
     ic_mes: numOrNull(`men_${l.id}_icMes`),
-    ic_mes_anterior: numOrNull(`men_${l.id}_icMesAnt`),
+    ic_anio_anterior: numOrNull(`men_${l.id}_icAnioAnt`),
     variacion_ventas_pct: numOrNull(`men_${l.id}_varVentas`),
     variacion_ic_pct: numOrNull(`men_${l.id}_varIc`),
   }));
@@ -4880,9 +4889,9 @@ async function cargarInformeMensualParaEditar(id){
     tendencias.forEach(r => {
       const lid = localId(r.local); if(!lid) return;
       setVal(`men_${lid}_clientesMes`, r.clientes_mes);
-      setVal(`men_${lid}_clientesMesAnt`, r.clientes_mes_anterior);
+      setVal(`men_${lid}_clientesAnioAnt`, r.clientes_anio_anterior);
       setVal(`men_${lid}_ventasMes`, r.ventas_mes);
-      setVal(`men_${lid}_ventasMesAnt`, r.ventas_mes_anterior);
+      setVal(`men_${lid}_ventasAnioAnt`, r.ventas_anio_anterior);
     });
 
     costes.forEach(r => {
