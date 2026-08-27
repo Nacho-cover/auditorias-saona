@@ -666,7 +666,26 @@
           <div id="menLocalesCheckGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:7px 14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;"></div>
         </div>
         <div class="grid4">
-          <div class="field"><label>Mes</label><input id="men_mes" type="month"></div>
+          <div class="field"><label>Mes</label>
+            <div style="display:flex; gap:6px;">
+              <select id="men_mesSelect" style="flex:1;">
+                <option value="">Mes</option>
+                <option value="1">Enero</option>
+                <option value="2">Febrero</option>
+                <option value="3">Marzo</option>
+                <option value="4">Abril</option>
+                <option value="5">Mayo</option>
+                <option value="6">Junio</option>
+                <option value="7">Julio</option>
+                <option value="8">Agosto</option>
+                <option value="9">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+              </select>
+              <input id="men_anioInput" type="number" placeholder="Año" style="width:90px;">
+            </div>
+          </div>
           <div class="field"><label>Preparado para</label><input id="men_preparadoPara" type="text" placeholder="Opcional"></div>
         </div>
       </section>
@@ -2295,6 +2314,16 @@ let editandoAuditId = null; // id de la auditoría VEO (visita_operativa/veo_ext
 let semFranjas = []; // [{ local, dia_semana, franja, reservas }] — comportamiento de reservas por franja de 15 min
 let semFranjasAnteriores = {}; // misma forma, de la semana anterior guardada (para las alertas)
 
+// Mes del Informe Mensual como desplegable + año (no <input type="month">:
+// no lo soportan bien todos los navegadores, p.ej. Safari lo deja en blanco
+// sin selector) — devuelve 'YYYY-MM' o '' si falta alguno de los dos.
+function menMesValue(){
+  const mes = v('men_mesSelect');
+  const anio = v('men_anioInput');
+  if(!mes || !anio) return '';
+  return `${anio}-${String(mes).padStart(2, '0')}`;
+}
+
 // Informe Mensual: mismo patrón de local con id estable que el Informe
 // Semanal (semLocales), pero independiente — un informe mensual analiza un
 // mes natural, no una semana, y es un tipo de informe distinto (no se debe
@@ -3875,7 +3904,7 @@ function lecturaTendenciaLocal(id){
 }
 
 function autoLecturaTendencias(){
-  const mesVal = v('men_mes');
+  const mesVal = menMesValue();
   const partes = (mesVal || '').split('-').map(Number);
   const mesNombre = partes[1] ? capitaliza(MESES_ES[partes[1] - 1]) : 'Este mes';
   const variosLocales = menLocales.length > 1;
@@ -4076,7 +4105,7 @@ function renderMenVentaSugerida(){
 async function traerMenVentaSugerida(){
   const statusEl = document.getElementById('menVentaSugeridaStatus');
   if(!menLocales.length){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Añade primero los locales del grupo.'; return; }
-  const mesVal = v('men_mes');
+  const mesVal = menMesValue();
   if(!mesVal){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Elige el mes antes de traer los datos.'; return; }
   const session = await refreshSessionIfNeeded();
   if(!session){
@@ -4163,7 +4192,7 @@ function renderAllMenSections(){
 async function traerDatosMesTendencias(){
   const statusEl = document.getElementById('menTraerDatosStatus');
   if(!menLocales.length){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Añade primero los locales del grupo.'; return; }
-  const mesVal = v('men_mes');
+  const mesVal = menMesValue();
   if(!mesVal){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Elige el mes antes de traer los datos.'; return; }
   const session = await refreshSessionIfNeeded();
   if(!session){
@@ -5144,7 +5173,7 @@ async function guardarInformeMensual(){
     statusEl.textContent = 'Añade al menos un local del grupo antes de guardar.';
     return;
   }
-  const mesVal = v('men_mes');
+  const mesVal = menMesValue();
   if(!mesVal){
     statusEl.style.color = 'var(--bad)';
     statusEl.textContent = 'Elige el mes antes de guardar.';
@@ -5340,7 +5369,9 @@ async function cargarInformeMensualParaEditar(id){
     nombresLocales.forEach(addMenLocalPorNombre);
     poblarMenLocalesCheckGrid();
 
-    document.getElementById('men_mes').value = (informe.mes || '').slice(0, 7);
+    const mesPartes = (informe.mes || '').split('-'); // ['2026','08','01']
+    document.getElementById('men_mesSelect').value = mesPartes[1] ? String(Number(mesPartes[1])) : '';
+    document.getElementById('men_anioInput').value = mesPartes[0] || '';
     document.getElementById('men_preparadoPara').value = informe.preparado_para || '';
     document.getElementById('men_lecturaTendencias').value = informe.lectura_tendencias || '';
     document.getElementById('men_lecturaVentaSugerida').value = informe.lectura_venta_sugerida || '';
