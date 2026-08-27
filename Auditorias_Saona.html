@@ -378,6 +378,7 @@
     <div id="sideNavMensual" style="display:none;">
       <a href="#sec-men-datos">Datos generales</a>
       <a href="#sec-men-tendencias">Tendencias e IC</a>
+      <a href="#sec-men-ventasug">Venta sugerida</a>
       <a href="#sec-men-valoraciones">Valoraciones y Gastroranking</a>
       <a href="#sec-men-costes">Coste real vs. teórico</a>
       <a href="#sec-men-estrategia">Estrategia y prioridades</a>
@@ -686,9 +687,24 @@
         <div class="field" style="margin-top:14px;"><label>Lectura de tendencias</label><textarea id="men_lecturaTendencias" style="min-height:90px;" placeholder="Interpretación de las tendencias del mes: impacto de iniciativas comerciales, evolución del IC, protección de margen…"></textarea></div>
       </section>
 
+      <section class="card" id="sec-men-ventasug">
+        <h2>Venta sugerida</h2>
+        <p class="desc">Acumulado del mes, por categoría — 9 categorías (las 8 del Informe Semanal más Alcohol, que solo se ve en el resumen mensual de Power BI). Las 8 primeras se pueden traer solas del último informe semanal guardado ese mes (ya es acumulado del mes ahí, no se suma entre semanas); Alcohol se escribe a mano.</p>
+        <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center;">
+          <button class="small-btn" type="button" id="btnMenTraerVentaSugerida">↻ Traer del informe semanal más reciente del mes</button>
+          <span id="menVentaSugeridaStatus" style="font-size:12px; color:var(--muted);"></span>
+        </div>
+        <div class="table-wrap-scroll" style="overflow-x:auto;">
+        <table class="datatable" id="tblMenVentaSugerida">
+          <thead><tr><th style="text-align:left;">Local</th><th style="text-align:left;">Categoría</th><th>Uds.</th><th>KPI %</th><th>€</th><th style="width:13%;">Venta local (mes) €</th><th>% s/venta</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        </div>
+      </section>
+
       <section class="card" id="sec-men-valoraciones">
-        <h2>Valoraciones · Gastroranking · Pulso Saona</h2>
-        <p class="desc">Reseñas y puntuación de Google Reviews, TheFork Cover y Globo — acumulado del año y del mes. Los textos de cada fuente se pegan tal cual (no se procesan automáticamente); Claude los lee y sintetiza el análisis por aspecto (Cocina, Servicio, Higiene, Ambiente, Precios, Tiempos de espera) y los Temas Emergentes al generar el informe final.</p>
+        <h2>Valoraciones · Gastroranking · Pulso Saona · VEO</h2>
+        <p class="desc">Reseñas y puntuación de Google Reviews, TheFork Cover y Globo — acumulado del año y del mes (dato de Gastroranking). El análisis narrativo por aspecto (Cocina, Servicio, Higiene, Ambiente, Precios, Tiempos de espera) y los Temas Emergentes salen del informe de Saona Reviews, no de Gastroranking — pégalo tal cual en su caja de abajo, Claude lo sintetiza al generar el informe final.</p>
         <p style="margin:0 0 12px; display:flex; gap:10px; flex-wrap:wrap;">
           <a class="small-btn" href="https://gruposaona.gastroranking.pro/global/home/460-N" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Gastroranking</a>
           <a class="small-btn" href="https://reviews.saona.es/login" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Saona Reviews</a>
@@ -719,14 +735,15 @@
         </table>
         </div>
 
-        <h3 style="margin-top:24px;">Gastroranking — análisis por aspecto (texto)</h3>
-        <div id="menGastroGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;"></div>
-
-        <h3 style="margin-top:24px;">Saona Reviews</h3>
+        <h3 style="margin-top:24px;">Saona Reviews — análisis por aspecto (texto)</h3>
         <div id="menSaonaReviewsGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;"></div>
 
         <h3 style="margin-top:24px;">Pulso Saona</h3>
         <div id="menPulsoGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;"></div>
+
+        <h3 style="margin-top:24px;">Nota de auditoría VEO (si hubo alguna este mes)</h3>
+        <p class="desc" style="margin-top:4px;">Opcional — solo si se hizo una Visita Operativa o VEO Externa a este local durante el mes. Resultado/puntuación y lo más relevante, en 2-3 líneas.</p>
+        <div id="menVeoGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;"></div>
       </section>
 
       <section class="card" id="sec-men-costes">
@@ -2245,6 +2262,10 @@ function populateLocalesDatalist(){
 const DIAS_SEMANA = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 const MESES_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const CATEGORIAS_VENTA_SUGERIDA = ['Sugerencia núcleo','Picoteo','Café','Menú degustación','Menú de grupo','Platos con suplemento','Postres','Pan'];
+// Informe Mensual: mismas 8 categorías del Informe Semanal + Alcohol, que
+// solo aparece en el resumen mensual de Power BI (no se captura semana a
+// semana) — ver informe real de Thader, junio 2026.
+const CATEGORIAS_VENTA_SUGERIDA_MENSUAL = [...CATEGORIAS_VENTA_SUGERIDA, 'Alcohol'];
 let semLocalCounter = 0;
 let semLocales = []; // [{ id, nombre }]
 let semFacturaCounter = 0;
@@ -3800,22 +3821,135 @@ function menTextCard(l, idPrefix, placeholder){
   return card;
 }
 
-function renderMenGastroReviews(){
-  syncMenTable('#menGastroGrid', l => [ menTextCard(l, 'menGastro', 'Pega aquí el análisis por aspecto de Gastroranking de {local} (Cocina, Servicio, Higiene, Ambiente, Precios, Tiempos de espera)…') ]);
+function computeTotalMenVentaSugerida(id){
+  let sumEuros = 0, sumUds = 0;
+  CATEGORIAS_VENTA_SUGERIDA_MENSUAL.forEach((_, ci) => {
+    sumEuros += numOrNull(`menvs_${id}_${ci}_euros`) || 0;
+    sumUds += numOrNull(`menvs_${id}_${ci}_uds`) || 0;
+  });
+  const ventaLocalMes = numOrNull(`menvs_${id}_total_ventaLocalMes`);
+  const pct = (ventaLocalMes && sumEuros) ? ((sumEuros / ventaLocalMes) * 100).toFixed(1) : null;
+  const udsEl = document.getElementById(`menvs_${id}_total_uds`);
+  const eurEl = document.getElementById(`menvs_${id}_total_euros`);
+  const pctEl = document.getElementById(`menvs_${id}_total_pct`);
+  if(udsEl) udsEl.value = sumUds || '';
+  if(eurEl) eurEl.value = sumEuros ? sumEuros.toFixed(2) : '';
+  if(pctEl) pctEl.value = pct != null ? pct : '';
 }
+
+function renderMenVentaSugerida(){
+  syncMenTable('#tblMenVentaSugerida tbody', l => {
+    const rows = CATEGORIAS_VENTA_SUGERIDA_MENSUAL.map((cat, ci) => {
+      const row = semLocalRow(l, [
+        semTextCell(l.nombre),
+        semTextCell(cat),
+        semInputCell(`menvs_${l.id}_${ci}_uds`, {inputmode:'numeric'}),
+        semInputCell(`menvs_${l.id}_${ci}_kpi`, {inputmode:'decimal'}),
+        semInputCell(`menvs_${l.id}_${ci}_euros`, {inputmode:'decimal'}),
+        semTextCell('—'),
+        semTextCell('—'),
+      ]);
+      ['uds','kpi','euros'].forEach(campo => {
+        row.querySelector(`#menvs_${l.id}_${ci}_${campo}`).addEventListener('input', () => computeTotalMenVentaSugerida(l.id));
+      });
+      return row;
+    });
+
+    const totalRow = semLocalRow(l, [
+      semTextCell(l.nombre),
+      el('td', {id:`menvs_${l.id}_total_label`, text:'Total', style:'font-weight:700; color:var(--navy);'}),
+      semInputCell(`menvs_${l.id}_total_uds`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
+      semTextCell('—'),
+      semInputCell(`menvs_${l.id}_total_euros`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE + 'font-weight:700;'}),
+      semInputCell(`menvs_${l.id}_total_ventaLocalMes`, {inputmode:'decimal'}),
+      semInputCell(`menvs_${l.id}_total_pct`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
+    ]);
+    totalRow.style.background = '#F4F6F9';
+    totalRow.querySelector(`#menvs_${l.id}_total_ventaLocalMes`).addEventListener('input', () => computeTotalMenVentaSugerida(l.id));
+
+    return [...rows, totalRow];
+  });
+}
+
+/* Trae las 8 categorías (todas menos Alcohol, que no se captura semana a
+   semana) del ÚLTIMO informe semanal guardado dentro del mes elegido —
+   la Venta Sugerida de cada informe semanal YA es acumulado del mes en ese
+   punto (no se suma entre semanas, mismo criterio que
+   renderVentaSugeridaSeleccion() del Histórico). Alcohol y la revisión
+   general quedan a mano. */
+async function traerMenVentaSugerida(){
+  const statusEl = document.getElementById('menVentaSugeridaStatus');
+  if(!menLocales.length){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Añade primero los locales del grupo.'; return; }
+  const mesVal = v('men_mes');
+  if(!mesVal){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Elige el mes antes de traer los datos.'; return; }
+  const session = await refreshSessionIfNeeded();
+  if(!session){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Tu sesión ha caducado. Recarga la página e inicia sesión de nuevo.';
+    showLogin();
+    return;
+  }
+  const [anio, mes] = mesVal.split('-').map(Number);
+  const inicioMes = `${mesVal}-01`;
+  const finMes = mes === 12 ? `${anio + 1}-01-01` : `${anio}-${String(mes + 1).padStart(2, '0')}-01`;
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Buscando…';
+  let encontrados = 0;
+  try{
+    for(const l of menLocales){
+      const informes = await fetch(
+        `${SUPABASE_URL}/rest/v1/informes_semanales?locales=ilike.*${encodeURIComponent(l.nombre)}*&semana_inicio=gte.${inicioMes}&semana_inicio=lt.${finMes}&order=semana_fin.desc&limit=1&select=id`,
+        { headers: restHeaders() }
+      ).then(r => r.json());
+      if(!informes.length) continue;
+      const filas = await fetch(
+        `${SUPABASE_URL}/rest/v1/informe_semanal_venta_sugerida?informe_id=eq.${informes[0].id}&local=eq.${encodeURIComponent(l.nombre)}&select=categoria,uds,kpi_pct,euros,venta_local_mes`,
+        { headers: restHeaders() }
+      ).then(r => r.json());
+      if(!filas.length) continue;
+      const setVal = (id, val) => {
+        const campo = document.getElementById(id);
+        if(campo && val != null){ campo.value = val; campo.dispatchEvent(new Event('input', { bubbles: true })); }
+      };
+      filas.forEach(f => {
+        const ci = CATEGORIAS_VENTA_SUGERIDA_MENSUAL.indexOf(f.categoria);
+        if(ci === -1) return;
+        setVal(`menvs_${l.id}_${ci}_uds`, f.uds);
+        setVal(`menvs_${l.id}_${ci}_kpi`, f.kpi_pct);
+        setVal(`menvs_${l.id}_${ci}_euros`, f.euros);
+      });
+      const conVentaMes = filas.find(f => f.venta_local_mes != null);
+      if(conVentaMes) setVal(`menvs_${l.id}_total_ventaLocalMes`, conVentaMes.venta_local_mes);
+      encontrados++;
+    }
+    statusEl.style.color = encontrados ? 'var(--good)' : 'var(--bad)';
+    statusEl.textContent = encontrados
+      ? `Venta Sugerida traída para ${encontrados} de ${menLocales.length} local(es) — 8 categorías del último informe semanal del mes; falta Alcohol (a mano). Revísalo antes de guardar.`
+      : 'No se encontró ningún informe semanal guardado este mes para estos locales.';
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Error al buscar: ' + err.message;
+  }
+}
+
 function renderMenSaonaReviews(){
-  syncMenTable('#menSaonaReviewsGrid', l => [ menTextCard(l, 'menSaonaRev', 'Pega aquí el informe de reviews.saona.es de {local}…') ]);
+  syncMenTable('#menSaonaReviewsGrid', l => [ menTextCard(l, 'menSaonaRev', 'Pega aquí el informe de reviews.saona.es de {local} (Resumen Ejecutivo, Análisis por Aspecto, Temas Emergentes…)…') ]);
 }
 function renderMenPulsoReviews(){
   syncMenTable('#menPulsoGrid', l => [ menTextCard(l, 'menPulso', 'Pega aquí el dato/informe de Pulso Saona de {local}…') ]);
+}
+function renderMenVeoNota(){
+  syncMenTable('#menVeoGrid', l => [ menTextCard(l, 'menVeo', 'Ej: VEO Externa 7,8/10 (12/08/2026) — sin incidencias graves. Deja en blanco si no hubo visita este mes.') ]);
 }
 
 function renderAllMenSections(){
   renderMenTendencias();
   renderMenValoraciones();
-  renderMenGastroReviews();
   renderMenSaonaReviews();
   renderMenPulsoReviews();
+  renderMenVeoNota();
+  renderMenVentaSugerida();
   renderMenCostes();
 }
 
@@ -4857,10 +4991,22 @@ async function guardarInformeMensual(){
     puntuacion_globo_anio: numOrNull(`menv_${l.id}_puntGloboAnio`),
     resenas_globo_mes: numOrNull(`menv_${l.id}_resenasGloboMes`),
     puntuacion_globo_mes: numOrNull(`menv_${l.id}_puntGloboMes`),
-    gastroranking_texto: v(`menGastro_${l.id}_texto`) || null,
     saona_reviews_texto: v(`menSaonaRev_${l.id}_texto`) || null,
     pulso_texto: v(`menPulso_${l.id}_texto`) || null,
+    nota_veo: v(`menVeo_${l.id}_texto`) || null,
   }));
+
+  const ventaSugerida = [];
+  menLocales.forEach(l => {
+    const ventaLocalMes = numOrNull(`menvs_${l.id}_total_ventaLocalMes`);
+    CATEGORIAS_VENTA_SUGERIDA_MENSUAL.forEach((cat, ci) => {
+      const uds = numOrNull(`menvs_${l.id}_${ci}_uds`);
+      const kpi = numOrNull(`menvs_${l.id}_${ci}_kpi`);
+      const euros = numOrNull(`menvs_${l.id}_${ci}_euros`);
+      if(uds === null && kpi === null && euros === null) return; // categoría vacía, no se manda
+      ventaSugerida.push({ local: l.nombre, categoria: cat, uds, kpi_pct: kpi, euros, venta_local_mes: ventaLocalMes });
+    });
+  });
 
   // Locales sin ningún dato de Yurest este mes no se mandan — no se crea una
   // fila vacía (mismo criterio que venta_sugerida en el Informe Semanal).
@@ -4880,6 +5026,9 @@ async function guardarInformeMensual(){
   costes.forEach(r => {
     if(r.coste_teorico_pct != null && Math.abs(r.coste_teorico_pct) >= 1000) pctFueraDeRango.push(`${r.local} / % coste teórico (${r.coste_teorico_pct}%)`);
     if(r.coste_real_pct != null && Math.abs(r.coste_real_pct) >= 1000) pctFueraDeRango.push(`${r.local} / % coste real (${r.coste_real_pct}%)`);
+  });
+  ventaSugerida.forEach(r => {
+    if(r.kpi_pct != null && Math.abs(r.kpi_pct) >= 1000) pctFueraDeRango.push(`${r.local} / ${r.categoria} (${r.kpi_pct}%)`);
   });
   if(pctFueraDeRango.length){
     statusEl.style.color = 'var(--bad)';
@@ -4915,6 +5064,7 @@ async function guardarInformeMensual(){
     const withInforme = (arr) => arr.map(x => ({ ...x, informe_id: informeId }));
     const tablasTodas = [
       { nombre: 'informe_mensual_tendencias', datos: tendencias },
+      { nombre: 'informe_mensual_venta_sugerida', datos: ventaSugerida },
       { nombre: 'informe_mensual_valoraciones', datos: valoraciones },
       { nombre: 'informe_mensual_costes', datos: costes },
     ];
@@ -4963,7 +5113,7 @@ async function cargarInformeMensualParaEditar(id){
     const session = await refreshSessionIfNeeded();
     if(!session){ showLogin(); return; }
     const headers = restHeaders();
-    const tablasHijas = ['informe_mensual_tendencias', 'informe_mensual_valoraciones', 'informe_mensual_costes'];
+    const tablasHijas = ['informe_mensual_tendencias', 'informe_mensual_venta_sugerida', 'informe_mensual_valoraciones', 'informe_mensual_costes'];
     const [informeRes, ...hijasRes] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/informes_mensuales?id=eq.${id}&select=*`, { headers }),
       ...tablasHijas.map(t => fetch(`${SUPABASE_URL}/rest/v1/${t}?informe_id=eq.${id}`, { headers })),
@@ -4972,7 +5122,7 @@ async function cargarInformeMensualParaEditar(id){
       if(!r.ok) throw new Error('No se pudo cargar el informe (' + r.status + ')');
     }
     const informeRows = await informeRes.json();
-    const [tendencias, valoraciones, costes] = await Promise.all(hijasRes.map(r => r.json()));
+    const [tendencias, ventaSugerida, valoraciones, costes] = await Promise.all(hijasRes.map(r => r.json()));
     const informe = informeRows[0];
     if(!informe){
       statusEl.style.color = 'var(--bad)';
@@ -4987,7 +5137,7 @@ async function cargarInformeMensualParaEditar(id){
     const nombresLocales = [];
     const addNombre = (n) => { if(n && !nombresLocales.includes(n)) nombresLocales.push(n); };
     (informe.locales || '').split('·').map(s => s.trim()).forEach(addNombre);
-    [tendencias, valoraciones, costes].forEach(arr => arr.forEach(r => addNombre(r.local)));
+    [tendencias, ventaSugerida, valoraciones, costes].forEach(arr => arr.forEach(r => addNombre(r.local)));
     menLocales = [];
     menLocalCounter = 0;
     nombresLocales.forEach(addMenLocalPorNombre);
@@ -5024,9 +5174,24 @@ async function cargarInformeMensualParaEditar(id){
       setVal(`menv_${lid}_puntGloboAnio`, r.puntuacion_globo_anio);
       setVal(`menv_${lid}_resenasGloboMes`, r.resenas_globo_mes);
       setVal(`menv_${lid}_puntGloboMes`, r.puntuacion_globo_mes);
-      setVal(`menGastro_${lid}_texto`, r.gastroranking_texto);
       setVal(`menSaonaRev_${lid}_texto`, r.saona_reviews_texto);
       setVal(`menPulso_${lid}_texto`, r.pulso_texto);
+      setVal(`menVeo_${lid}_texto`, r.nota_veo);
+    });
+
+    const vsPorLocal = {};
+    ventaSugerida.forEach(r => { (vsPorLocal[r.local] ||= []).push(r); });
+    Object.entries(vsPorLocal).forEach(([nombre, filas]) => {
+      const lid = localId(nombre); if(!lid) return;
+      const conVentaMes = filas.find(f => f.venta_local_mes != null);
+      if(conVentaMes) setVal(`menvs_${lid}_total_ventaLocalMes`, conVentaMes.venta_local_mes);
+      filas.forEach(f => {
+        const ci = CATEGORIAS_VENTA_SUGERIDA_MENSUAL.indexOf(f.categoria);
+        if(ci === -1) return;
+        setVal(`menvs_${lid}_${ci}_uds`, f.uds);
+        setVal(`menvs_${lid}_${ci}_kpi`, f.kpi_pct);
+        setVal(`menvs_${lid}_${ci}_euros`, f.euros);
+      });
     });
 
     costes.forEach(r => {
@@ -5036,7 +5201,7 @@ async function cargarInformeMensualParaEditar(id){
       setVal(`menc_${lid}_notas`, r.notas);
     });
 
-    menLocales.forEach(l => { computeICMen(l.id); computeDesviacionCostes(l.id); });
+    menLocales.forEach(l => { computeICMen(l.id); computeTotalMenVentaSugerida(l.id); computeDesviacionCostes(l.id); });
 
     document.getElementById('btnSave').textContent = 'Guardar cambios';
     const banner = document.getElementById('editBanner');
@@ -5235,6 +5400,7 @@ document.addEventListener('DOMContentLoaded', () => {
     poblarMenLocalesCheckGrid();
   });
   document.getElementById('btnMenTraerDatos').addEventListener('click', traerDatosMesTendencias);
+  document.getElementById('btnMenTraerVentaSugerida').addEventListener('click', traerMenVentaSugerida);
   document.getElementById('btnAddSemFactura').addEventListener('click', addSemFactura);
   document.getElementById('btnSemAnterior').addEventListener('click', traerSemanaAnterior);
   document.getElementById('btnSemAcumuladoCompras').addEventListener('click', traerAcumuladoMesCompras);
