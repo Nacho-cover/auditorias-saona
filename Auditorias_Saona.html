@@ -378,6 +378,7 @@
     <div id="sideNavMensual" style="display:none;">
       <a href="#sec-men-datos">Datos generales</a>
       <a href="#sec-men-tendencias">Tendencias e IC</a>
+      <a href="#sec-men-valoraciones">Valoraciones y Gastroranking</a>
       <a href="#sec-men-costes">Coste real vs. teórico</a>
       <a href="#sec-men-estrategia">Estrategia y prioridades</a>
     </div>
@@ -683,6 +684,49 @@
         </table>
         </div>
         <div class="field" style="margin-top:14px;"><label>Lectura de tendencias</label><textarea id="men_lecturaTendencias" style="min-height:90px;" placeholder="Interpretación de las tendencias del mes: impacto de iniciativas comerciales, evolución del IC, protección de margen…"></textarea></div>
+      </section>
+
+      <section class="card" id="sec-men-valoraciones">
+        <h2>Valoraciones · Gastroranking · Pulso Saona</h2>
+        <p class="desc">Reseñas y puntuación de Google Reviews, TheFork Cover y Globo — acumulado del año y del mes. Los textos de cada fuente se pegan tal cual (no se procesan automáticamente); Claude los lee y sintetiza el análisis por aspecto (Cocina, Servicio, Higiene, Ambiente, Precios, Tiempos de espera) y los Temas Emergentes al generar el informe final.</p>
+        <p style="margin:0 0 12px; display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="small-btn" href="https://gruposaona.gastroranking.pro/global/home/460-N" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Gastroranking</a>
+          <a class="small-btn" href="https://reviews.saona.es/login" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Saona Reviews</a>
+          <a class="small-btn" href="https://pulso.saona.es/login" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Pulso Saona</a>
+        </p>
+        <div class="table-wrap-scroll" style="overflow-x:auto;">
+        <table class="datatable" id="tblMenValoraciones">
+          <thead>
+            <tr>
+              <th rowspan="2" style="text-align:left; vertical-align:bottom;">Local</th>
+              <th colspan="2" style="text-align:center; border-bottom:1px solid var(--border);">GR — año</th>
+              <th colspan="2" style="text-align:center; border-bottom:1px solid var(--border);">GR — mes</th>
+              <th colspan="2" style="text-align:center; border-bottom:1px solid var(--border);">Cover — año</th>
+              <th colspan="2" style="text-align:center; border-bottom:1px solid var(--border);">Cover — mes</th>
+              <th colspan="2" style="text-align:center; border-bottom:1px solid var(--border);">Globo — año</th>
+              <th colspan="2" style="text-align:center; border-bottom:1px solid var(--border);">Globo — mes</th>
+            </tr>
+            <tr>
+              <th>Reseñas</th><th>Punt.</th>
+              <th>Reseñas</th><th>Punt.</th>
+              <th>Reseñas</th><th>Punt.</th>
+              <th>Reseñas</th><th>Punt.</th>
+              <th>Reseñas</th><th>Punt.</th>
+              <th>Reseñas</th><th>Punt.</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        </div>
+
+        <h3 style="margin-top:24px;">Gastroranking — análisis por aspecto (texto)</h3>
+        <div id="menGastroGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;"></div>
+
+        <h3 style="margin-top:24px;">Saona Reviews</h3>
+        <div id="menSaonaReviewsGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;"></div>
+
+        <h3 style="margin-top:24px;">Pulso Saona</h3>
+        <div id="menPulsoGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;"></div>
       </section>
 
       <section class="card" id="sec-men-costes">
@@ -3718,8 +3762,60 @@ function renderMenCostes(){
   });
 }
 
+function renderMenValoraciones(){
+  syncMenTable('#tblMenValoraciones tbody', l => [ semLocalRow(l, [
+    semTextCell(l.nombre),
+    semInputCell(`menv_${l.id}_resenasGrAnio`, {inputmode:'numeric'}),
+    semInputCell(`menv_${l.id}_puntGrAnio`, {inputmode:'decimal'}),
+    semInputCell(`menv_${l.id}_resenasGrMes`, {inputmode:'numeric'}),
+    semInputCell(`menv_${l.id}_puntGrMes`, {inputmode:'decimal'}),
+    semInputCell(`menv_${l.id}_resenasCoverAnio`, {inputmode:'numeric'}),
+    semInputCell(`menv_${l.id}_puntCoverAnio`, {inputmode:'decimal'}),
+    semInputCell(`menv_${l.id}_resenasCoverMes`, {inputmode:'numeric'}),
+    semInputCell(`menv_${l.id}_puntCoverMes`, {inputmode:'decimal'}),
+    semInputCell(`menv_${l.id}_resenasGloboAnio`, {inputmode:'numeric'}),
+    semInputCell(`menv_${l.id}_puntGloboAnio`, {inputmode:'decimal'}),
+    semInputCell(`menv_${l.id}_resenasGloboMes`, {inputmode:'numeric'}),
+    semInputCell(`menv_${l.id}_puntGloboMes`, {inputmode:'decimal'}),
+  ]) ]);
+}
+
+/* Caja de texto libre por local — mismo patrón que saonaReviewCard() del
+   Informe Semanal, reutilizado para las tres fuentes (Gastroranking, Saona
+   Reviews, Pulso Saona): se pega el texto/dato tal cual, sin procesar, para
+   que Claude lo lea al generar el informe final. */
+function menTextCard(l, idPrefix, placeholder){
+  const card = document.createElement('div');
+  card.dataset.localId = l.id;
+  card.style.cssText = 'border:1px solid var(--border); border-radius:8px; padding:12px; background:#fff;';
+  const head = document.createElement('strong');
+  head.style.cssText = 'display:block; margin-bottom:6px; font-size:13px;';
+  head.textContent = l.nombre;
+  const ta = document.createElement('textarea');
+  ta.id = `${idPrefix}_${l.id}_texto`;
+  ta.placeholder = placeholder.replace('{local}', l.nombre);
+  ta.style.cssText = 'min-height:150px; width:100%;';
+  card.appendChild(head);
+  card.appendChild(ta);
+  return card;
+}
+
+function renderMenGastroReviews(){
+  syncMenTable('#menGastroGrid', l => [ menTextCard(l, 'menGastro', 'Pega aquí el análisis por aspecto de Gastroranking de {local} (Cocina, Servicio, Higiene, Ambiente, Precios, Tiempos de espera)…') ]);
+}
+function renderMenSaonaReviews(){
+  syncMenTable('#menSaonaReviewsGrid', l => [ menTextCard(l, 'menSaonaRev', 'Pega aquí el informe de reviews.saona.es de {local}…') ]);
+}
+function renderMenPulsoReviews(){
+  syncMenTable('#menPulsoGrid', l => [ menTextCard(l, 'menPulso', 'Pega aquí el dato/informe de Pulso Saona de {local}…') ]);
+}
+
 function renderAllMenSections(){
   renderMenTendencias();
+  renderMenValoraciones();
+  renderMenGastroReviews();
+  renderMenSaonaReviews();
+  renderMenPulsoReviews();
   renderMenCostes();
 }
 
@@ -4747,6 +4843,25 @@ async function guardarInformeMensual(){
     variacion_ic_pct: numOrNull(`men_${l.id}_varIc`),
   }));
 
+  const valoraciones = menLocales.map(l => ({
+    local: l.nombre,
+    resenas_gr_anio: numOrNull(`menv_${l.id}_resenasGrAnio`),
+    puntuacion_gr_anio: numOrNull(`menv_${l.id}_puntGrAnio`),
+    resenas_gr_mes: numOrNull(`menv_${l.id}_resenasGrMes`),
+    puntuacion_gr_mes: numOrNull(`menv_${l.id}_puntGrMes`),
+    resenas_cover_anio: numOrNull(`menv_${l.id}_resenasCoverAnio`),
+    puntuacion_cover_anio: numOrNull(`menv_${l.id}_puntCoverAnio`),
+    resenas_cover_mes: numOrNull(`menv_${l.id}_resenasCoverMes`),
+    puntuacion_cover_mes: numOrNull(`menv_${l.id}_puntCoverMes`),
+    resenas_globo_anio: numOrNull(`menv_${l.id}_resenasGloboAnio`),
+    puntuacion_globo_anio: numOrNull(`menv_${l.id}_puntGloboAnio`),
+    resenas_globo_mes: numOrNull(`menv_${l.id}_resenasGloboMes`),
+    puntuacion_globo_mes: numOrNull(`menv_${l.id}_puntGloboMes`),
+    gastroranking_texto: v(`menGastro_${l.id}_texto`) || null,
+    saona_reviews_texto: v(`menSaonaRev_${l.id}_texto`) || null,
+    pulso_texto: v(`menPulso_${l.id}_texto`) || null,
+  }));
+
   // Locales sin ningún dato de Yurest este mes no se mandan — no se crea una
   // fila vacía (mismo criterio que venta_sugerida en el Informe Semanal).
   const costes = menLocales.map(l => ({
@@ -4800,6 +4915,7 @@ async function guardarInformeMensual(){
     const withInforme = (arr) => arr.map(x => ({ ...x, informe_id: informeId }));
     const tablasTodas = [
       { nombre: 'informe_mensual_tendencias', datos: tendencias },
+      { nombre: 'informe_mensual_valoraciones', datos: valoraciones },
       { nombre: 'informe_mensual_costes', datos: costes },
     ];
 
@@ -4847,7 +4963,7 @@ async function cargarInformeMensualParaEditar(id){
     const session = await refreshSessionIfNeeded();
     if(!session){ showLogin(); return; }
     const headers = restHeaders();
-    const tablasHijas = ['informe_mensual_tendencias', 'informe_mensual_costes'];
+    const tablasHijas = ['informe_mensual_tendencias', 'informe_mensual_valoraciones', 'informe_mensual_costes'];
     const [informeRes, ...hijasRes] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/informes_mensuales?id=eq.${id}&select=*`, { headers }),
       ...tablasHijas.map(t => fetch(`${SUPABASE_URL}/rest/v1/${t}?informe_id=eq.${id}`, { headers })),
@@ -4856,7 +4972,7 @@ async function cargarInformeMensualParaEditar(id){
       if(!r.ok) throw new Error('No se pudo cargar el informe (' + r.status + ')');
     }
     const informeRows = await informeRes.json();
-    const [tendencias, costes] = await Promise.all(hijasRes.map(r => r.json()));
+    const [tendencias, valoraciones, costes] = await Promise.all(hijasRes.map(r => r.json()));
     const informe = informeRows[0];
     if(!informe){
       statusEl.style.color = 'var(--bad)';
@@ -4871,7 +4987,7 @@ async function cargarInformeMensualParaEditar(id){
     const nombresLocales = [];
     const addNombre = (n) => { if(n && !nombresLocales.includes(n)) nombresLocales.push(n); };
     (informe.locales || '').split('·').map(s => s.trim()).forEach(addNombre);
-    [tendencias, costes].forEach(arr => arr.forEach(r => addNombre(r.local)));
+    [tendencias, valoraciones, costes].forEach(arr => arr.forEach(r => addNombre(r.local)));
     menLocales = [];
     menLocalCounter = 0;
     nombresLocales.forEach(addMenLocalPorNombre);
@@ -4892,6 +5008,25 @@ async function cargarInformeMensualParaEditar(id){
       setVal(`men_${lid}_clientesAnioAnt`, r.clientes_anio_anterior);
       setVal(`men_${lid}_ventasMes`, r.ventas_mes);
       setVal(`men_${lid}_ventasAnioAnt`, r.ventas_anio_anterior);
+    });
+
+    valoraciones.forEach(r => {
+      const lid = localId(r.local); if(!lid) return;
+      setVal(`menv_${lid}_resenasGrAnio`, r.resenas_gr_anio);
+      setVal(`menv_${lid}_puntGrAnio`, r.puntuacion_gr_anio);
+      setVal(`menv_${lid}_resenasGrMes`, r.resenas_gr_mes);
+      setVal(`menv_${lid}_puntGrMes`, r.puntuacion_gr_mes);
+      setVal(`menv_${lid}_resenasCoverAnio`, r.resenas_cover_anio);
+      setVal(`menv_${lid}_puntCoverAnio`, r.puntuacion_cover_anio);
+      setVal(`menv_${lid}_resenasCoverMes`, r.resenas_cover_mes);
+      setVal(`menv_${lid}_puntCoverMes`, r.puntuacion_cover_mes);
+      setVal(`menv_${lid}_resenasGloboAnio`, r.resenas_globo_anio);
+      setVal(`menv_${lid}_puntGloboAnio`, r.puntuacion_globo_anio);
+      setVal(`menv_${lid}_resenasGloboMes`, r.resenas_globo_mes);
+      setVal(`menv_${lid}_puntGloboMes`, r.puntuacion_globo_mes);
+      setVal(`menGastro_${lid}_texto`, r.gastroranking_texto);
+      setVal(`menSaonaRev_${lid}_texto`, r.saona_reviews_texto);
+      setVal(`menPulso_${lid}_texto`, r.pulso_texto);
     });
 
     costes.forEach(r => {
