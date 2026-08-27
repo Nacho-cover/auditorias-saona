@@ -797,6 +797,9 @@
       <section class="card" id="sec-men-estrategia">
         <h2>Estrategia y prioridades clave de negocio</h2>
         <p class="desc">Líneas estratégicas y prioridades de gestión enfocadas en maximizar la rentabilidad global del restaurante en el siguiente periodo.</p>
+        <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center; margin-bottom:12px;">
+          <button class="small-btn" type="button" id="btnMenAutoEstrategia">✍️ Generar líneas estratégicas y prioridades a partir del informe</button>
+        </div>
         <div class="field" style="margin-bottom:12px;"><label>Líneas estratégicas</label><textarea id="men_lineasEstrategicas" style="min-height:90px;" placeholder="Una por línea…"></textarea></div>
         <div class="field"><label>Prioridades de gestión</label><textarea id="men_prioridades" style="min-height:90px;" placeholder="Una por línea…"></textarea></div>
       </section>
@@ -3981,6 +3984,94 @@ function autoLecturaVentaSugerida(){
   ta.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+/* Igual criterio que autoLecturaTendencias()/autoLecturaVentaSugerida():
+   plantilla determinista que sintetiza en líneas estratégicas y
+   prioridades de gestión lo ya escrito en el resto del informe
+   (Tendencias e IC, Venta Sugerida, Coste Real vs. Teórico, nota VEO,
+   Valoraciones) — no hace falta que Claude esté delante. */
+function lineasEstrategicasLocal(id){
+  const partes = [];
+  const varV = numOrNull(`men_${id}_varVentas`);
+  const varIc = numOrNull(`men_${id}_varIc`);
+  if(varV != null && varIc != null){
+    if(varV < 0 && varIc >= 0){
+      partes.push('Recuperar el volumen de clientes sin perder el Ingreso por Comensal ya conseguido este mes.');
+    }else if(varV >= 0 && varIc >= 0){
+      partes.push('Consolidar el crecimiento de ventas e IC, manteniendo el impulso de venta sugerida.');
+    }else if(varV >= 0 && varIc < 0){
+      partes.push('Proteger el margen: entran más clientes pero el gasto medio por comensal cae — revisar mix de venta y coste de carta.');
+    }else{
+      partes.push('Revertir la caída conjunta de ventas y de Ingreso por Comensal — prioridad de recuperación comercial.');
+    }
+  }
+
+  const cats = CATEGORIAS_VENTA_SUGERIDA_MENSUAL.map((cat, ci) => ({
+    cat, kpi: numOrNull(`menvs_${id}_${ci}_kpi`),
+  })).filter(c => c.kpi != null);
+  if(cats.length >= 2){
+    const top = cats.reduce((a, b) => b.kpi > a.kpi ? b : a);
+    const floja = cats.reduce((a, b) => b.kpi < a.kpi ? b : a);
+    if(top.cat !== floja.cat){
+      partes.push(`Reforzar "${top.cat}" (${top.kpi}% KPI, la que mejor convierte) y activar "${floja.cat}" (${floja.kpi}% KPI, la más floja del mes).`);
+    }
+  }
+
+  const desv = numOrNull(`menc_${id}_desviacion`);
+  if(desv != null && desv > 0){
+    partes.push(`Cerrar la desviación de coste real sobre el teórico detectada en Yurest (+${desv} puntos).`);
+  }
+  return partes.length ? partes.join(' ') : null;
+}
+
+function prioridadesLocal(id){
+  const partes = [];
+  const desv = numOrNull(`menc_${id}_desviacion`);
+  if(desv != null && Math.abs(desv) >= 1){
+    partes.push(desv > 0
+      ? 'Auditar recepción de mercancía y mermas — el coste real supera al teórico.'
+      : 'Confirmar que el coste real por debajo del teórico no oculta un problema de escandallo o de registro en Yurest.');
+  }
+  const notaVeo = v(`menVeo_${id}_texto`);
+  if(notaVeo && notaVeo.trim()){
+    const resumen = notaVeo.trim().length > 140 ? notaVeo.trim().slice(0, 140) + '…' : notaVeo.trim();
+    partes.push(`Seguimiento de la última VEO del local: "${resumen}"`);
+  }
+  const puntGrMes = numOrNull(`menv_${id}_puntGrMes`);
+  if(puntGrMes != null && puntGrMes < 7){
+    partes.push(`Reforzar la experiencia de cliente: puntuación Google Reviews del mes en ${puntGrMes}/10.`);
+  }
+  const puntCoverMes = numOrNull(`menv_${id}_puntCoverMes`);
+  if(puntCoverMes != null && puntCoverMes < 7){
+    partes.push(`Puntuación TheFork Cover del mes en ${puntCoverMes}/10 — revisar con sala.`);
+  }
+  return partes.length ? partes.join(' ') : null;
+}
+
+function autoEstrategiaPrioridades(){
+  const variosLocales = menLocales.length > 1;
+  const lineas = menLocales.map(l => {
+    const texto = lineasEstrategicasLocal(l.id);
+    if(!texto) return null;
+    return variosLocales ? `${l.nombre}: ${texto}` : texto;
+  }).filter(Boolean);
+  const prioridades = menLocales.map(l => {
+    const texto = prioridadesLocal(l.id);
+    if(!texto) return null;
+    return variosLocales ? `${l.nombre}: ${texto}` : texto;
+  }).filter(Boolean);
+
+  const taLineas = document.getElementById('men_lineasEstrategicas');
+  const taPrior = document.getElementById('men_prioridades');
+  taLineas.value = lineas.length
+    ? lineas.join('\n\n')
+    : 'No hay datos suficientes (Tendencias e IC, Venta Sugerida o Coste Real vs. Teórico) para generar líneas estratégicas automáticas — rellena esas secciones primero.';
+  taPrior.value = prioridades.length
+    ? prioridades.join('\n\n')
+    : 'No hay datos suficientes (Coste Real vs. Teórico, nota VEO o Valoraciones) para generar prioridades automáticas — rellena esas secciones primero.';
+  taLineas.dispatchEvent(new Event('input', { bubbles: true }));
+  taPrior.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 function computeDesviacionCostes(id){
   const teorico = numOrNull(`menc_${id}_teorico`);
   const real = numOrNull(`menc_${id}_real`);
@@ -5648,6 +5739,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnMenTraerDatos').addEventListener('click', traerDatosMesTendencias);
   document.getElementById('btnMenAutoLectura').addEventListener('click', autoLecturaTendencias);
   document.getElementById('btnMenAutoLecturaVs').addEventListener('click', autoLecturaVentaSugerida);
+  document.getElementById('btnMenAutoEstrategia').addEventListener('click', autoEstrategiaPrioridades);
   document.getElementById('btnMenTraerVentaSugerida').addEventListener('click', traerMenVentaSugerida);
   document.getElementById('menVsExcelFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'menVsExcelPreviews', leerVentaSugeridaExcelMensual));
   document.getElementById('btnAddSemFactura').addEventListener('click', addSemFactura);
