@@ -806,6 +806,9 @@
           <thead><tr><th style="text-align:left;">Local</th><th>% Coste teórico</th><th>% Coste real</th><th>Desviación</th><th style="min-width:200px;">Notas</th></tr></thead>
           <tbody></tbody>
         </table>
+        <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center; margin-top:10px;">
+          <button class="small-btn" type="button" id="btnMenDescargarCsvCostes">⬇️ Descargar CSV</button>
+        </div>
       </section>
 
       <section class="card" id="sec-men-estrategia">
@@ -4272,6 +4275,40 @@ function autoEstrategiaPrioridades(){
   taPrior.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+/* Descarga en CSV lo escrito en la tabla de Coste Real vs. Teórico — para
+   compartir el dato con quien lo pida sin tener que entrar en la app.
+   Delimitador ';' (mismo criterio que tokenizarCSV() de esta misma app,
+   pensado para abrirse bien en Excel en español); BOM UTF-8 para que Excel
+   no rompa las tildes. */
+function descargarCsvCostes(){
+  if(!menLocales.length){
+    alert('Añade primero los locales del grupo.');
+    return;
+  }
+  const escapar = (campo) => `"${String(campo == null ? '' : campo).replace(/"/g, '""')}"`;
+  const filas = [['Local', '% Coste teórico', '% Coste real', 'Desviación', 'Notas']];
+  menLocales.forEach(l => {
+    filas.push([
+      l.nombre,
+      v(`menc_${l.id}_teorico`),
+      v(`menc_${l.id}_real`),
+      v(`menc_${l.id}_desviacion`),
+      v(`menc_${l.id}_notas`),
+    ]);
+  });
+  const csv = filas.map(fila => fila.map(escapar).join(';')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const mesVal = menMesValue() || 'sin-mes';
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Coste_Real_vs_Teorico_${mesVal}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function computeDesviacionCostes(id){
   const teorico = numOrNull(`menc_${id}_teorico`);
   const real = numOrNull(`menc_${id}_real`);
@@ -5957,6 +5994,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnMenAutoLectura').addEventListener('click', autoLecturaTendencias);
   document.getElementById('btnMenAutoLecturaVs').addEventListener('click', autoLecturaVentaSugerida);
   document.getElementById('btnMenAutoEstrategia').addEventListener('click', autoEstrategiaPrioridades);
+  document.getElementById('btnMenDescargarCsvCostes').addEventListener('click', descargarCsvCostes);
   document.getElementById('btnMenTraerVentaSugerida').addEventListener('click', traerMenVentaSugerida);
   document.getElementById('menVsExcelFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'menVsExcelPreviews', leerVentaSugeridaExcelMensual));
   document.getElementById('btnAddSemFactura').addEventListener('click', addSemFactura);
