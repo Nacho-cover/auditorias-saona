@@ -611,7 +611,7 @@
 
       <section class="card" id="sec-sem-ocupacion">
         <h2>Ocupación diaria por local y turno</h2>
-        <p class="desc">Un bloque por local y día. La fecha se calcula sola a partir de la semana elegida arriba, y el % de ocupación se calcula solo (comensales ÷ aforo).</p>
+        <p class="desc">Un bloque por local y día. La fecha se calcula sola a partir de la semana elegida arriba, el % de ocupación se calcula solo (comensales ÷ aforo), y debajo de cada turno se compara con el mismo día de la última semana guardada — avisa si la ocupación cae mucho.</p>
         <p style="margin:0 0 12px;"><a class="small-btn" href="https://www.covermanager.com/index.php" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Cover (Ocupación)</a></p>
         <div id="semOcupacionCsvBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:10px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📄 Informe de Cover "Número de Personas por Turno y Día"</strong>
@@ -2200,6 +2200,7 @@ function restaurarBorrador(){
     aplicarCampos(datos.campos);
     updateSemanaPreview();
     refrescarFechasOcupacion();
+    cargarOcupacionSemanaAnterior();
     semLocales.forEach(l => {
       computeIC(l.id); computePctCompras(l.id); computePctComprasSemana(l.id); computePctWalkins(l.id);
       for(let di = 0; di < 7; di++){ computeOcupacionPct(`semo_${l.id}_${di}`, 'mediodia'); computeOcupacionPct(`semo_${l.id}_${di}`, 'cena'); }
@@ -2329,6 +2330,7 @@ let editandoInformeId = null; // id del informe semanal que se está editando (n
 let editandoAuditId = null; // id de la auditoría VEO (visita_operativa/veo_externa) que se está editando (null = nueva)
 let semFranjas = []; // [{ local, dia_semana, franja, reservas }] — comportamiento de reservas por franja de 15 min
 let semFranjasAnteriores = {}; // misma forma, de la semana anterior guardada (para las alertas)
+let semOcupacionAnterior = {}; // { 'local|dia': {pct_mediodia, comensales_mediodia, pct_cena, comensales_cena} } — ocupación de la semana anterior guardada, para comparar
 let semMermasDetalle = {}; // { [localId]: [{ producto, unidad, cantidad, coste }] } — desglose de mermas por producto (Yurest)
 
 // Mes del Informe Mensual como desplegable + año (no <input type="month">:
@@ -2825,6 +2827,83 @@ function computeOcupacionPct(prefix, turno){
   const aforo = numOrNull(`${prefix}_${turno}_aforo`);
   const pctEl = document.getElementById(`${prefix}_${turno}_pct`);
   if(pctEl) pctEl.value = (aforo && comensales != null) ? ((comensales / aforo) * 100).toFixed(0) + '%' : '—';
+  pintarOcupacionCmp(prefix, turno);
+}
+
+// Umbral de alerta para la comparativa de Ocupación vs. semana anterior — misma
+// idea y mismo % que UMBRAL_ALERTA_FRANJA en "Comportamiento de las reservas".
+const UMBRAL_ALERTA_OCUPACION = 0.25;
+
+// Pinta, dentro de cada bloque de turno, el % de ocupación de la misma franja
+// (local + día de la semana + turno) de la última semana guardada anterior a
+// la actual — se compara por DÍA DE LA SEMANA (Lunes, Martes...), no por fecha
+// exacta, igual que hace "Comportamiento de las reservas". prefixBase es
+// `semo_<localId>_<diaIndex>` (sin turno); turno es 'mediodia' o 'cena'.
+function pintarOcupacionCmp(prefixBase, turno){
+  const m = /^semo_(\d+)_(\d+)$/.exec(prefixBase);
+  if(!m) return;
+  const local = semLocales.find(x => x.id === Number(m[1]));
+  const info = fechaOcupacionInfo(Number(m[2]));
+  const cmpEl = document.getElementById(`${prefixBase}_${turno}_cmp`);
+  if(!cmpEl || !local || !info) return;
+
+  const datosAnt = semOcupacionAnterior[`${local.nombre}|${info.dia}`];
+  const pctAnt = datosAnt ? datosAnt[`pct_${turno}`] : null;
+  if(pctAnt == null){ cmpEl.textContent = ''; return; }
+  const comensAnt = datosAnt[`comensales_${turno}`];
+
+  const pctActualStr = v(`${prefixBase}_${turno}_pct`);
+  const pctActual = (pctActualStr && pctActualStr !== '—') ? Number(pctActualStr.replace('%', '')) : null;
+
+  let texto = `Sem. ant.: ${Math.round(pctAnt)}% (${comensAnt != null ? comensAnt : '—'} comens.)`;
+  cmpEl.style.color = 'var(--muted)'; cmpEl.style.fontWeight = 'normal';
+  if(pctActual != null && pctAnt > 0){
+    const caida = (pctAnt - pctActual) / pctAnt;
+    if(caida >= UMBRAL_ALERTA_OCUPACION){
+      texto = `⚠ ${texto} — cae ${Math.round(caida * 100)}%`;
+      cmpEl.style.color = 'var(--bad)'; cmpEl.style.fontWeight = '600';
+    }
+  }
+  cmpEl.textContent = texto;
+}
+
+// Repinta la comparativa de todos los bloques ya renderizados (tras cargar
+// los datos de la semana anterior, o al añadir/quitar locales).
+function renderOcupacionComparativa(){
+  semLocales.forEach(l => {
+    DIAS_SEMANA.forEach((_, di) => {
+      ['mediodia','cena'].forEach(turno => pintarOcupacionCmp(`semo_${l.id}_${di}`, turno));
+    });
+  });
+}
+
+// Trae, para cada local, la Ocupación del último informe semanal GUARDADO
+// anterior a la fecha de inicio actual — mismo patrón que
+// cargarFranjasSemanaAnterior(). Solo lectura; si algo falla, se queda sin
+// comparativa en vez de bloquear el resto del formulario.
+async function cargarOcupacionSemanaAnterior(){
+  semOcupacionAnterior = {};
+  const inicioActual = v('sem_semanaInicio');
+  if(!inicioActual || !semLocales.length){ renderOcupacionComparativa(); return; }
+  const session = await refreshSessionIfNeeded();
+  if(!session){ renderOcupacionComparativa(); return; }
+  try{
+    for(const l of semLocales){
+      const informes = await fetch(
+        `${SUPABASE_URL}/rest/v1/informes_semanales?locales=ilike.*${encodeURIComponent(l.nombre)}*&semana_fin=lt.${inicioActual}&order=semana_fin.desc&limit=1&select=id`,
+        { headers: restHeaders() }
+      ).then(r => r.json());
+      if(!informes.length) continue;
+      const filas = await fetch(
+        `${SUPABASE_URL}/rest/v1/informe_semanal_ocupacion?informe_id=eq.${informes[0].id}&local=eq.${encodeURIComponent(l.nombre)}&select=dia,pct_mediodia,comensales_mediodia,pct_cena,comensales_cena`,
+        { headers: restHeaders() }
+      ).then(r => r.json());
+      filas.forEach(f => { semOcupacionAnterior[`${l.nombre}|${f.dia}`] = f; });
+    }
+  }catch(err){
+    console.error(err);
+  }
+  renderOcupacionComparativa();
 }
 
 function occTurnoBlock(prefix, titulo){
@@ -2852,6 +2931,12 @@ function occTurnoBlock(prefix, titulo){
     grid.appendChild(wrap);
   });
   box.appendChild(grid);
+
+  const cmp = document.createElement('div');
+  cmp.id = `${prefix}_cmp`;
+  cmp.style.cssText = 'margin-top:6px; font-size:11px; color:var(--muted);';
+  box.appendChild(cmp);
+
   return box;
 }
 
@@ -3933,6 +4018,7 @@ function renderAllSemSections(){
   renderSemReservas();
   renderSemValoraciones();
   renderSemOcupacion();
+  cargarOcupacionSemanaAnterior();
   renderSemSaonaReviews();
 }
 
@@ -5361,6 +5447,7 @@ async function cargarInformeSemanalParaEditar(id){
     semFranjas = franjas.map(f => ({ local: f.local, dia_semana: f.dia_semana, franja: f.franja, reservas: f.reservas }));
     poblarSemFranjasLocalSelect();
     cargarFranjasSemanaAnterior().then(renderFranjas);
+    cargarOcupacionSemanaAnterior();
 
     semMermasDetalle = {};
     mermasDetalle.forEach(r => {
@@ -5875,7 +5962,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnSemAnterior').addEventListener('click', traerSemanaAnterior);
   document.getElementById('btnSemAcumuladoCompras').addEventListener('click', traerAcumuladoMesCompras);
   document.getElementById('btnSemAcumuladoVentas').addEventListener('click', traerAcumuladoMesVentas);
-  document.getElementById('sem_semanaInicio').addEventListener('change', () => { updateSemanaPreview(); refrescarFechasOcupacion(); });
+  document.getElementById('sem_semanaInicio').addEventListener('change', () => { updateSemanaPreview(); refrescarFechasOcupacion(); cargarOcupacionSemanaAnterior(); });
   document.getElementById('sem_semanaFin').addEventListener('change', () => { updateSemanaPreview(); refrescarFechasOcupacion(); });
   document.getElementById('semOcupacionCsvFile').addEventListener('change', (e) => {
     const file = e.target.files[0];
