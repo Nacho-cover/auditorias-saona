@@ -609,9 +609,9 @@
 
         <h3 style="margin-top:24px;">Comportamiento de las reservas (por franja de 15 min)</h3>
         <p class="desc">
-          Cuántas reservas entran (incluidos walk-ins) en cada franja de 15 minutos, por día de la semana —
+          Cuántos comensales entran (incluidos walk-ins) en cada franja de 15 minutos, por día de la semana —
           se calcula solo al aplicar el informe de Cover arriba en "Reservas, walk-ins y no-shows"
-          (cuenta las que llegaron a entrar: se excluyen canceladas y no-shows). Compara con la semana
+          (cuenta los que llegaron a entrar: se excluyen canceladas y no-shows). Compara con la semana
           anterior guardada y avisa si una franja cae mucho.
         </p>
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
@@ -3011,10 +3011,11 @@ function aplicarTextoCsvReservas(texto){
   // (se excluyen cancelados/no-show). No-shows = comensales con estado "No show",
   // sea cual sea el origen. Mismo criterio de "comensales, no reservas" que usa ya
   // "Clientes" en Ventas (por eso Walk-ins/Clientes tiene sentido como %).
-  // Comportamiento de reservas por franja de 15 min: cuenta las que sí llegaron a
-  // entrar (se excluyen canceladas/no-show, igual que en walk-ins) agrupadas por
-  // local + día de la semana (relativo al inicio de semana elegido) + franja.
-  const franjasAcumuladas = {}; // { 'localId|diaIndex|franja': count }
+  // Comportamiento de reservas por franja de 15 min: suma los comensales (no el
+  // número de reservas/mesas) de quienes sí llegaron a entrar (se excluyen
+  // canceladas/no-show, igual que en walk-ins) agrupados por local + día de la
+  // semana (relativo al inicio de semana elegido) + franja.
+  const franjasAcumuladas = {}; // { 'localId|diaIndex|franja': comensales }
 
   const resumenPorLocal = {};
   filas.forEach(f => {
@@ -3050,7 +3051,7 @@ function aplicarTextoCsvReservas(texto){
       const franja = bucketFranja(f['Hora']);
       if(diaIndex != null && franja){
         const clave = `${local.id}|${diaIndex}|${franja}`;
-        franjasAcumuladas[clave] = (franjasAcumuladas[clave] || 0) + 1;
+        franjasAcumuladas[clave] = (franjasAcumuladas[clave] || 0) + personas;
       }
     }
   });
@@ -3191,7 +3192,7 @@ function renderFranjas(){
   alertasBox.innerHTML = alertas.length
     ? `<p class="status-message" data-kind="error" style="margin-bottom:8px;">⚠ ${alertas.length} franja(s) de "${localSel}" con caída de ${Math.round(UMBRAL_ALERTA_FRANJA*100)}% o más respecto a la semana anterior:</p>
        <ul style="margin:0 0 10px; padding-left:20px; font-size:13px;">
-         ${alertas.map(a => `<li>${a.dia} ${a.franja} — ${a.actual} reservas (antes ${a.anterior}, -${a.pct}%)</li>`).join('')}
+         ${alertas.map(a => `<li>${a.dia} ${a.franja} — ${a.actual} comensales (antes ${a.anterior}, -${a.pct}%)</li>`).join('')}
        </ul>`
     : '';
 }
