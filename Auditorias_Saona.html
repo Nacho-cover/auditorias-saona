@@ -560,6 +560,19 @@
           <tbody></tbody>
         </table>
         </div>
+
+        <div id="semMermasDetalleBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:16px 0 10px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+          <strong style="font-size:13px; white-space:nowrap;">📄 Detalle de mermas por producto (Yurest)</strong>
+          <label style="font-size:13px;">Local: <select id="semMermasLocal"></select></label>
+          <input type="file" id="semMermasFile" accept=".csv" style="flex:1 1 220px; font-size:12px;">
+          <span id="semMermasStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En Yurest, exporta el "Resumen de mermas" (columnas Producto, Unidad, Cantidad, Precio actual producto, Coste merma, Peso estimado) del local y el periodo que corresponda, elige antes el local aquí arriba y súbelo — el archivo no trae el local ni la fecha, así que hay que decírselo. No toca el € de Mermas de la tabla de arriba (eso se sigue escribiendo a mano); solo guarda el detalle para poder decir qué producto se merma más. Es lectura automática: revisa siempre los datos antes de guardar.</span>
+        </div>
+        <div class="table-wrap-scroll" style="overflow-x:auto;">
+        <table class="datatable" id="tblSemMermasTop">
+          <thead><tr><th style="text-align:left;">Local</th><th>Producto más mermado (por coste)</th><th>Producto más mermado (por unidades)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        </div>
       </section>
 
       <section class="card" id="sec-sem-facturas">
@@ -2316,6 +2329,7 @@ let editandoInformeId = null; // id del informe semanal que se está editando (n
 let editandoAuditId = null; // id de la auditoría VEO (visita_operativa/veo_externa) que se está editando (null = nueva)
 let semFranjas = []; // [{ local, dia_semana, franja, reservas }] — comportamiento de reservas por franja de 15 min
 let semFranjasAnteriores = {}; // misma forma, de la semana anterior guardada (para las alertas)
+let semMermasDetalle = {}; // { [localId]: [{ producto, unidad, cantidad, coste }] } — desglose de mermas por producto (Yurest)
 
 // Mes del Informe Mensual como desplegable + año (no <input type="month">:
 // no lo soportan bien todos los navegadores, p.ej. Safari lo deja en blanco
@@ -2641,6 +2655,102 @@ function renderSemCompras(){
       row.querySelector(`#semc_${l.id}_${campo}`).addEventListener('input', () => computePctCompras(l.id));
     });
     return [row];
+  });
+}
+
+// --- Detalle de mermas por producto (Yurest) -----------------------------------
+// El informe de Yurest "Resumen de mermas" no trae ni local ni fecha (viene
+// filtrado de antemano por lo que se tuviera seleccionado en Yurest al
+// exportar, igual que pasó con el CSV de reservas de Cover) — por eso hay que
+// elegir el local a mano antes de subirlo, con un selector igual que el de
+// "Comportamiento de las reservas". Guarda el desglose completo por producto
+// (no solo el € total) para poder calcular qué producto se merma más; no
+// toca el € de Mermas de la tabla de arriba, que se sigue escribiendo a mano.
+function poblarSemMermasLocalSelect(){
+  const sel = document.getElementById('semMermasLocal');
+  const actual = sel.value;
+  sel.innerHTML = semLocales.map(l => `<option value="${l.nombre}">${l.nombre}</option>`).join('');
+  if(semLocales.some(l => l.nombre === actual)) sel.value = actual;
+}
+
+// El export de Yurest separa cada campo con coma y lo entrecomilla (a
+// diferencia de los CSV de Cover, que usan punto y coma) — de ahí el
+// delimitador explícito.
+function parseMermasCSV(texto){
+  const filas = tokenizarCSV(texto, ',');
+  if(filas.length < 2) return [];
+  return filas.slice(1)
+    .filter(f => (f[0] || '').trim())
+    .map(f => ({
+      producto: (f[0] || '').trim(),
+      unidad: (f[1] || '').trim(),
+      cantidad: Number(f[2]),
+      coste: Number(f[4]),
+    }))
+    .filter(p => Number.isFinite(p.cantidad) && Number.isFinite(p.coste));
+}
+
+async function leerCsvMermas(file){
+  const statusEl = document.getElementById('semMermasStatus');
+  const nombreLocal = document.getElementById('semMermasLocal').value;
+  if(!nombreLocal){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Añade primero al menos un local del grupo arriba.';
+    return;
+  }
+  const local = semLocales.find(l => l.nombre === nombreLocal);
+  if(!local) return;
+
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Leyendo el archivo…';
+  try{
+    const texto = (await file.text()).replace(/^﻿/, '');
+    const productos = parseMermasCSV(texto);
+    if(!productos.length){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = 'No se ha podido leer ningún producto del archivo — comprueba que es el informe de mermas correcto.';
+      return;
+    }
+    semMermasDetalle[local.id] = productos;
+    statusEl.style.color = 'var(--good)';
+    statusEl.textContent = `${file.name}: ${productos.length} productos guardados para ${local.nombre}. Es lectura automática: revisa los datos antes de guardar.`;
+    renderMermasTop();
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'No se ha podido leer el archivo: ' + err.message;
+  }
+}
+
+function topMermas(productos){
+  if(!productos || !productos.length) return null;
+  const porCoste = productos.reduce((a, b) => (b.coste > a.coste ? b : a));
+  const porCantidad = productos.reduce((a, b) => (b.cantidad > a.cantidad ? b : a));
+  return { porCoste, porCantidad };
+}
+
+function formatMermaNum(n){
+  return Number(n).toLocaleString('es-ES', { maximumFractionDigits: 2 });
+}
+
+function renderMermasTop(){
+  const tbody = document.querySelector('#tblSemMermasTop tbody');
+  tbody.innerHTML = '';
+  semLocales.forEach(l => {
+    const top = topMermas(semMermasDetalle[l.id]);
+    const tr = document.createElement('tr');
+    const tdLocal = el('td', { text: l.nombre, style: 'font-weight:600;' });
+    const tdCoste = document.createElement('td');
+    const tdUds = document.createElement('td');
+    if(top){
+      tdCoste.textContent = `${top.porCoste.producto} (${formatMermaNum(top.porCoste.coste)}€)`;
+      tdUds.textContent = `${top.porCantidad.producto} (${formatMermaNum(top.porCantidad.cantidad)} ${top.porCantidad.unidad})`;
+    }else{
+      tdCoste.textContent = '—'; tdCoste.style.color = 'var(--muted)';
+      tdUds.textContent = '—'; tdUds.style.color = 'var(--muted)';
+    }
+    tr.append(tdLocal, tdCoste, tdUds);
+    tbody.appendChild(tr);
   });
 }
 
@@ -3818,6 +3928,8 @@ function renderAllSemSections(){
   renderSemVentas();
   renderSemVentaSugerida();
   renderSemCompras();
+  poblarSemMermasLocalSelect();
+  renderMermasTop();
   renderSemReservas();
   renderSemValoraciones();
   renderSemOcupacion();
@@ -4928,6 +5040,13 @@ async function guardarInformeSemanal(){
     local: f.local, dia_semana: f.dia_semana, franja: f.franja, reservas: f.reservas,
   }));
 
+  const mermasDetalle = [];
+  semLocales.forEach(l => {
+    (semMermasDetalle[l.id] || []).forEach(p => {
+      mermasDetalle.push({ local: l.nombre, producto: p.producto, unidad: p.unidad, cantidad: p.cantidad, coste_merma: p.coste });
+    });
+  });
+
   const valoraciones = semLocales.map(l => ({
     local: l.nombre,
     resenas_gr: numOrNull(`semva_${l.id}_resenasGr`),
@@ -5053,6 +5172,7 @@ async function guardarInformeSemanal(){
       { nombre: 'informe_semanal_ocupacion', datos: ocupacion },
       { nombre: 'informe_semanal_valoraciones', datos: valoraciones },
       { nombre: 'informe_semanal_franjas', datos: franjas },
+      { nombre: 'informe_semanal_mermas_detalle', datos: mermasDetalle },
     ];
 
     if(editandoInformeId){
@@ -5110,7 +5230,7 @@ async function cargarInformeSemanalParaEditar(id){
     const session = await refreshSessionIfNeeded();
     if(!session){ showLogin(); return; }
     const headers = restHeaders();
-    const tablasHijas = ['informe_semanal_ventas','informe_semanal_venta_sugerida','informe_semanal_compras','informe_semanal_facturas','informe_semanal_reservas','informe_semanal_ocupacion','informe_semanal_valoraciones','informe_semanal_franjas'];
+    const tablasHijas = ['informe_semanal_ventas','informe_semanal_venta_sugerida','informe_semanal_compras','informe_semanal_facturas','informe_semanal_reservas','informe_semanal_ocupacion','informe_semanal_valoraciones','informe_semanal_franjas','informe_semanal_mermas_detalle'];
     const [informeRes, ...hijasRes] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/informes_semanales?id=eq.${id}&select=*`, { headers }),
       ...tablasHijas.map(t => fetch(`${SUPABASE_URL}/rest/v1/${t}?informe_id=eq.${id}`, { headers })),
@@ -5119,7 +5239,7 @@ async function cargarInformeSemanalParaEditar(id){
       if(!r.ok) throw new Error('No se pudo cargar el informe (' + r.status + ')');
     }
     const informeRows = await informeRes.json();
-    const [ventas, ventaSugerida, compras, facturas, reservas, ocupacion, valoraciones, franjas] = await Promise.all(hijasRes.map(r => r.json()));
+    const [ventas, ventaSugerida, compras, facturas, reservas, ocupacion, valoraciones, franjas, mermasDetalle] = await Promise.all(hijasRes.map(r => r.json()));
     const informe = informeRows[0];
     if(!informe){
       statusEl.style.color = 'var(--bad)';
@@ -5241,6 +5361,14 @@ async function cargarInformeSemanalParaEditar(id){
     semFranjas = franjas.map(f => ({ local: f.local, dia_semana: f.dia_semana, franja: f.franja, reservas: f.reservas }));
     poblarSemFranjasLocalSelect();
     cargarFranjasSemanaAnterior().then(renderFranjas);
+
+    semMermasDetalle = {};
+    mermasDetalle.forEach(r => {
+      const lid = localId(r.local); if(!lid) return;
+      (semMermasDetalle[lid] ||= []).push({ producto: r.producto, unidad: r.unidad, cantidad: Number(r.cantidad), coste: Number(r.coste_merma) });
+    });
+    poblarSemMermasLocalSelect();
+    renderMermasTop();
 
     document.getElementById('btnSave').textContent = 'Guardar cambios';
     const banner = document.getElementById('editBanner');
@@ -5761,6 +5889,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('semCsvListBtn').addEventListener('click', listarInformesCorreo);
   document.getElementById('semFranjasLocal').addEventListener('change', renderFranjas);
+  document.getElementById('semMermasFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(file) leerCsvMermas(file);
+    e.target.value = '';
+  });
   document.getElementById('semVsExcelFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'semVsExcelPreviews', leerVentaSugeridaExcel));
   document.getElementById('semFacCsvFile').addEventListener('change', (e) => {
     Array.from(e.target.files).forEach(leerFacturasPendientesCSV);
