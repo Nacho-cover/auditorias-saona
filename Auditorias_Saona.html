@@ -564,8 +564,8 @@
         <div id="semMermasDetalleBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:16px 0 10px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📄 Detalle de mermas por producto (Yurest)</strong>
           <label style="font-size:13px;">Local: <select id="semMermasLocal"></select></label>
-          <input type="file" id="semMermasFile" accept=".csv" style="flex:1 1 220px; font-size:12px;">
-          <span id="semMermasStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En Yurest, exporta el "Resumen de mermas" (columnas Producto, Unidad, Cantidad, Precio actual producto, Coste merma, Peso estimado) del local y el periodo que corresponda, elige antes el local aquí arriba y súbelo — el archivo no trae el local ni la fecha, así que hay que decírselo. No toca el € de Mermas de la tabla de arriba (eso se sigue escribiendo a mano); solo guarda el detalle para poder decir qué producto se merma más. Es lectura automática: revisa siempre los datos antes de guardar.</span>
+          <input type="file" id="semMermasFile" accept=".csv,.xlsx,.xls" style="flex:1 1 220px; font-size:12px;">
+          <span id="semMermasStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En Yurest, exporta el "Resumen de mermas" (CSV o Excel, columnas Producto, Unidad, Cantidad, Precio actual producto, Coste merma, Peso estimado) del local y el periodo que corresponda, elige antes el local aquí arriba y súbelo — el archivo no trae el local ni la fecha, así que hay que decírselo. No toca el € de Mermas de la tabla de arriba (eso se sigue escribiendo a mano); solo guarda el detalle para poder decir qué producto se merma más. Es lectura automática: revisa siempre los datos antes de guardar.</span>
         </div>
         <div class="table-wrap-scroll" style="overflow-x:auto;">
         <table class="datatable" id="tblSemMermasTop">
@@ -2679,24 +2679,27 @@ function poblarSemMermasLocalSelect(){
   if(semLocales.some(l => l.nombre === actual)) sel.value = actual;
 }
 
-// El export de Yurest separa cada campo con coma y lo entrecomilla (a
-// diferencia de los CSV de Cover, que usan punto y coma) — de ahí el
-// delimitador explícito.
-function parseMermasCSV(texto){
-  const filas = tokenizarCSV(texto, ',');
-  if(filas.length < 2) return [];
-  return filas.slice(1)
-    .filter(f => (f[0] || '').trim())
+// filas: array de arrays (una fila por producto), venga de un CSV
+// (tokenizarCSV) o de un Excel (XLSX.utils.sheet_to_json con header:1) — el
+// formato de columnas es el mismo, solo cambia cómo se llega a él. El export
+// de Yurest en Excel lleva una fila de título antes de la cabecera real
+// ("Resumen de mermas entre..."); el de CSV no. Por eso se busca la cabecera
+// por su primera columna ("Producto") en vez de asumir que es la fila 0.
+function parseMermasFilas(filas){
+  const idxCabecera = filas.findIndex(f => quitarAcentos(String((f && f[0]) || '')).trim() === 'producto');
+  if(idxCabecera === -1) return [];
+  return filas.slice(idxCabecera + 1)
+    .filter(f => f && String(f[0] || '').trim())
     .map(f => ({
-      producto: (f[0] || '').trim(),
-      unidad: (f[1] || '').trim(),
+      producto: String(f[0] || '').trim(),
+      unidad: String(f[1] || '').trim(),
       cantidad: Number(f[2]),
       coste: Number(f[4]),
     }))
     .filter(p => Number.isFinite(p.cantidad) && Number.isFinite(p.coste));
 }
 
-async function leerCsvMermas(file){
+async function leerArchivoMermas(file){
   const statusEl = document.getElementById('semMermasStatus');
   const nombreLocal = document.getElementById('semMermasLocal').value;
   if(!nombreLocal){
@@ -2710,8 +2713,20 @@ async function leerCsvMermas(file){
   statusEl.style.color = 'var(--muted)';
   statusEl.textContent = 'Leyendo el archivo…';
   try{
-    const texto = (await file.text()).replace(/^﻿/, '');
-    const productos = parseMermasCSV(texto);
+    const esExcel = /\.xlsx?$/i.test(file.name);
+    let filas;
+    if(esExcel){
+      statusEl.textContent = 'Cargando el lector de Excel…';
+      await ensureXlsxLoaded();
+      const buffer = await file.arrayBuffer();
+      const libro = XLSX.read(buffer, { type: 'array' });
+      const hoja = libro.Sheets[libro.SheetNames[0]];
+      filas = XLSX.utils.sheet_to_json(hoja, { header: 1, defval: null });
+    }else{
+      const texto = (await file.text()).replace(/^﻿/, '');
+      filas = tokenizarCSV(texto, ',');
+    }
+    const productos = parseMermasFilas(filas);
     if(!productos.length){
       statusEl.style.color = 'var(--bad)';
       statusEl.textContent = 'No se ha podido leer ningún producto del archivo — comprueba que es el informe de mermas correcto.';
@@ -6030,7 +6045,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('semFranjasLocal').addEventListener('change', renderFranjas);
   document.getElementById('semMermasFile').addEventListener('change', (e) => {
     const file = e.target.files[0];
-    if(file) leerCsvMermas(file);
+    if(file) leerArchivoMermas(file);
     e.target.value = '';
   });
   document.getElementById('semVsExcelFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'semVsExcelPreviews', leerVentaSugeridaExcel));
