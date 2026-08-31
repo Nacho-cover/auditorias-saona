@@ -580,9 +580,9 @@
         <p class="desc">Añade o elimina filas según haga falta. Deja la tabla vacía si no hay pendientes.</p>
         <p style="margin:0 0 12px;"><a class="small-btn" href="https://cliente.yurest.com/login" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Yurest (Facturas pendientes)</a></p>
         <div id="semFacCsvBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
-          <strong style="font-size:13px; white-space:nowrap;">📄 Subir CSV de Yurest (Resumen de pedidos)</strong>
-          <input type="file" id="semFacCsvFile" accept=".csv" multiple style="flex:1 1 220px; font-size:12px;">
-          <span id="semFacCsvStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En Yurest, exporta el "Resumen de pedidos" (con columnas #, Fecha, Local, Proveedor, Empleado, Subtotal, Total) y súbelo aquí — añade sola una fila por cada pedido de los locales del grupo. Es lectura automática: revisa siempre los datos.</span>
+          <strong style="font-size:13px; white-space:nowrap;">📄 Subir CSV/Excel de Yurest (Resumen de pedidos)</strong>
+          <input type="file" id="semFacCsvFile" accept=".csv,.xlsx,.xls" multiple style="flex:1 1 220px; font-size:12px;">
+          <span id="semFacCsvStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En Yurest, exporta el "Resumen de pedidos" (CSV o Excel, con columnas #, Fecha, Local, Proveedor, Empleado, Subtotal, Total) y súbelo aquí — puedes subir el de un local o el de todo el grupo a la vez, añade sola una fila por cada pedido de los locales del grupo. Es lectura automática: revisa siempre los datos.</span>
         </div>
         <div class="add-btn-row"><button class="small-btn" type="button" id="btnAddSemFactura">+ Añadir factura</button></div>
         <table class="datatable" id="tblSemFacturas">
@@ -4024,6 +4024,28 @@ function aplicarFacturasCSV(filas){
   return añadidas;
 }
 
+// El Excel de Yurest para "Resumen de pedidos" lleva una fila de título antes
+// de la cabecera real (el nombre del local, o "Resumen de pedidos de Grupo
+// Saona: generado en...") — igual que el de mermas. Se busca la cabecera por
+// su primera columna ("#") en vez de asumir que es la fila 0, y se
+// reconstruyen objetos por nombre de columna (mismo formato que parseCSV)
+// para poder reutilizar aplicarFacturasCSV() sin tocarlo.
+function filasExcelAObjetos(filas){
+  const idxCabecera = filas.findIndex(f => String((f && f[0]) || '').trim() === '#');
+  if(idxCabecera === -1) return [];
+  const cabeceras = filas[idxCabecera];
+  return filas.slice(idxCabecera + 1)
+    .filter(f => f && String(f[0] || '').trim())
+    .map(f => {
+      const obj = {};
+      // Todo a texto (igual que un CSV): Excel devuelve números reales para
+      // columnas como "#", y el resto del código (aplicarFacturasCSV) da por
+      // hecho que todo viene como string y llama .trim() sobre ello.
+      cabeceras.forEach((h, i) => { obj[h] = (f[i] !== undefined && f[i] !== null) ? String(f[i]) : ''; });
+      return obj;
+    });
+}
+
 async function leerFacturasPendientesCSV(file){
   const statusEl = document.getElementById('semFacCsvStatus');
   if(!semLocales.length){
@@ -4032,14 +4054,27 @@ async function leerFacturasPendientesCSV(file){
     return;
   }
   try{
-    let texto = await file.text();
-    texto = texto.replace(/^﻿/, '');
-    // El CSV de Yurest usa comas como separador (con campos entre comillas),
-    // a diferencia del de Cover que usa punto y coma.
-    const filas = parseCSV(texto, ',');
+    const esExcel = /\.xlsx?$/i.test(file.name);
+    let filas;
+    if(esExcel){
+      statusEl.style.color = 'var(--muted)';
+      statusEl.textContent = 'Cargando el lector de Excel…';
+      await ensureXlsxLoaded();
+      const buffer = await file.arrayBuffer();
+      const libro = XLSX.read(buffer, { type: 'array' });
+      const hoja = libro.Sheets[libro.SheetNames[0]];
+      const filasCrudas = XLSX.utils.sheet_to_json(hoja, { header: 1, defval: null });
+      filas = filasExcelAObjetos(filasCrudas);
+    }else{
+      let texto = await file.text();
+      texto = texto.replace(/^﻿/, '');
+      // El CSV de Yurest usa comas como separador (con campos entre comillas),
+      // a diferencia del de Cover que usa punto y coma.
+      filas = parseCSV(texto, ',');
+    }
     if(!filas.length){
       statusEl.style.color = 'var(--bad)';
-      statusEl.textContent = `${file.name}: no se ha podido leer ninguna fila — comprueba que es el CSV de "Resumen de pedidos" de Yurest.`;
+      statusEl.textContent = `${file.name}: no se ha podido leer ninguna fila — comprueba que es el CSV/Excel de "Resumen de pedidos" de Yurest.`;
       return;
     }
     const añadidas = aplicarFacturasCSV(filas);
