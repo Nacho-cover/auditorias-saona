@@ -5141,6 +5141,10 @@ async function saveAuditoria(){
         method: 'POST', headers: restHeaders(), body: JSON.stringify({ id: auditId, ...payload }),
       });
       if(!res.ok) throw new Error(await res.text() || res.statusText);
+      // Mismo bug real que en guardarInformeSemanal(): sin esto, un segundo
+      // "Guardar" en la misma sesión generaba OTRO crypto.randomUUID() y
+      // creaba una auditoría duplicada en vez de actualizar la recién creada.
+      editandoAuditId = auditId;
     }
 
     const withAudit = (arr) => arr.map(x => ({ ...x, audit_id: auditId }));
@@ -5409,6 +5413,13 @@ async function guardarInformeSemanal(){
       const rows = JSON.parse(await res.text() || '[]');
       informeId = rows[0] ? rows[0].id : null;
       if(!informeId) throw new Error('Supabase no devolvió el id del informe guardado — no se pudieron guardar los datos por local.');
+      // BUG REAL detectado en producción: sin esto, si se sigue en el mismo
+      // formulario y se vuelve a pulsar "Guardar" sin recargar la página,
+      // editandoInformeId seguía a null y el siguiente guardado volvía a
+      // hacer POST — creando un informe duplicado nuevo cada vez, en vez de
+      // actualizar el que se acababa de crear (confirmado: 8 informes
+      // duplicados de la misma semana en ~2h, mismo grupo de 15 locales).
+      editandoInformeId = informeId;
     }
 
     const withInforme = (arr) => arr.map(x => ({ ...x, informe_id: informeId }));
@@ -5777,6 +5788,9 @@ async function guardarInformeMensual(){
       const rows = JSON.parse(await res.text() || '[]');
       informeId = rows[0] ? rows[0].id : null;
       if(!informeId) throw new Error('Supabase no devolvió el id del informe guardado — no se pudieron guardar los datos por local.');
+      // Mismo bug real que en guardarInformeSemanal(): fijar editandoInformeMensualId
+      // para que un segundo "Guardar" en la misma sesión actualice en vez de duplicar.
+      editandoInformeMensualId = informeId;
     }
 
     const withInforme = (arr) => arr.map(x => ({ ...x, informe_id: informeId }));
