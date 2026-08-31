@@ -284,7 +284,7 @@ function fmtVariacion(actual, anterior){
 
 function renderTablaAuditorias(rows){
   document.getElementById('tablaHistoricoHead').innerHTML =
-    '<tr><th>Tipo</th><th>Local</th><th>Fecha visita</th><th>Area Manager</th><th>Puntuación</th><th>Variación</th><th>Guardada el</th><th></th></tr>';
+    '<tr><th>Tipo</th><th>Local</th><th>Fecha visita</th><th>Area Manager</th><th>Puntuación</th><th>Variación</th><th>Guardada el</th><th></th><th></th></tr>';
   const tbody = document.querySelector('#tablaHistorico tbody');
   tbody.innerHTML = '';
   rows.forEach(row => {
@@ -298,14 +298,16 @@ function renderTablaAuditorias(rows){
       <td>${fmtVariacion(row.puntuacion_total, row.puntuacion_anterior_total)}</td>
       <td>${row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : '—'}</td>
       <td><a href="./Auditorias_Saona.html?editar=${row.id}" class="btn secondary" style="padding:4px 10px; font-size:12px; text-decoration:none; display:inline-block;">✎ Editar</a></td>
+      <td><button type="button" class="btn secondary btn-borrar" style="padding:4px 10px; font-size:12px; color:var(--bad);">🗑 Eliminar</button></td>
     `;
+    tr.querySelector('.btn-borrar').addEventListener('click', () => borrarRegistro('audits', row.id, 'esta auditoría'));
     tbody.appendChild(tr);
   });
 }
 
 function renderTablaSemanal(rows){
   document.getElementById('tablaHistoricoHead').innerHTML =
-    '<tr><th></th><th>Locales</th><th>Semana</th><th>Acumulado del mes</th><th>Guardado por</th><th>Guardado el</th><th></th></tr>';
+    '<tr><th></th><th>Locales</th><th>Semana</th><th>Acumulado del mes</th><th>Guardado por</th><th>Guardado el</th><th></th><th></th></tr>';
   const tbody = document.querySelector('#tablaHistorico tbody');
   tbody.innerHTML = '';
   rows.forEach(row => {
@@ -318,18 +320,20 @@ function renderTablaSemanal(rows){
       <td>${row.creado_por ?? '—'}</td>
       <td>${row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : '—'}</td>
       <td><a href="./Auditorias_Saona.html?editarSemanal=${row.id}" class="btn secondary" style="padding:4px 10px; font-size:12px; text-decoration:none; display:inline-block;">✎ Editar</a></td>
+      <td><button type="button" class="btn secondary btn-borrar" style="padding:4px 10px; font-size:12px; color:var(--bad);">🗑 Eliminar</button></td>
     `;
     tr.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
       if(e.target.checked) semSeleccion.add(row.id); else semSeleccion.delete(row.id);
       actualizarBarraSeleccion();
     });
+    tr.querySelector('.btn-borrar').addEventListener('click', () => borrarRegistro('informes_semanales', row.id, 'este informe semanal'));
     tbody.appendChild(tr);
   });
 }
 
 function renderTablaInformeMensual(rows){
   document.getElementById('tablaHistoricoHead').innerHTML =
-    '<tr><th>Locales</th><th>Mes</th><th>Preparado para</th><th>Guardado por</th><th>Guardado el</th><th></th></tr>';
+    '<tr><th>Locales</th><th>Mes</th><th>Preparado para</th><th>Guardado por</th><th>Guardado el</th><th></th><th></th></tr>';
   const tbody = document.querySelector('#tablaHistorico tbody');
   tbody.innerHTML = '';
   rows.forEach(row => {
@@ -343,7 +347,9 @@ function renderTablaInformeMensual(rows){
       <td>${row.creado_por ?? '—'}</td>
       <td>${row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : '—'}</td>
       <td><a href="./Auditorias_Saona.html?editarMensual=${row.id}" class="btn secondary" style="padding:4px 10px; font-size:12px; text-decoration:none; display:inline-block;">✎ Editar</a></td>
+      <td><button type="button" class="btn secondary btn-borrar" style="padding:4px 10px; font-size:12px; color:var(--bad);">🗑 Eliminar</button></td>
     `;
+    tr.querySelector('.btn-borrar').addEventListener('click', () => borrarRegistro('informes_mensuales', row.id, 'este informe mensual'));
     tbody.appendChild(tr);
   });
 }
@@ -391,6 +397,36 @@ function renderTabla(rows){
   else if(modo === 'mensual') renderTablaMensual(rows);
   else renderTablaAuditorias(rows);
   actualizarBarraSeleccion();
+}
+
+// Borra un registro entero (auditoría, informe semanal o informe mensual) de
+// forma permanente. Las tablas hijas (incidencias, ventas, reservas, franjas,
+// mermas_detalle, etc.) están todas creadas con "on delete cascade" hacia la
+// tabla padre, así que basta con borrar la fila padre — no hace falta borrar
+// cada tabla hija a mano como sí hace guardarInformeSemanal() al EDITAR.
+async function borrarRegistro(tabla, id, etiqueta){
+  if(!confirm(`¿Seguro que quieres eliminar ${etiqueta} de forma permanente? Esta acción no se puede deshacer.`)) return;
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = 'Eliminando…';
+  statusEl.dataset.kind = 'info';
+  try{
+    const session = await refreshSessionIfNeeded();
+    if(!session){ showLogin(); return; }
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken()}` },
+    });
+    if(!res.ok) throw new Error(await res.text() || res.statusText);
+    allRows = allRows.filter(r => r.id !== id);
+    semSeleccion.delete(id);
+    aplicarFiltros();
+    statusEl.textContent = `Eliminado. ${etiqueta[0].toUpperCase()}${etiqueta.slice(1)} ya no aparece en el histórico.`;
+    statusEl.dataset.kind = 'ok';
+  }catch(err){
+    console.error(err);
+    statusEl.textContent = 'No se ha podido eliminar: ' + err.message;
+    statusEl.dataset.kind = 'error';
+  }
 }
 
 function localesSeleccionados(){
