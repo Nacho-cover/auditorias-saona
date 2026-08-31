@@ -4649,8 +4649,26 @@ function removeSemFactura(id){
   semFacturaIds = semFacturaIds.filter(x => x !== id);
   renderSemFacturas();
 }
+// BUG REAL corregido aquí: esta función reconstruye la tabla entera desde
+// cero (tbody.innerHTML = ''), y se llama una vez POR CADA fila al aplicar
+// un CSV de facturas (aplicarFacturasCSV) — así que cada factura nueva
+// recreaba también los <input> de las facturas ya añadidas, vacíos,
+// borrando lo que ya se había rellenado (a mano o de un CSV anterior).
+// Se guardan los valores actuales antes de reconstruir y se restauran
+// después, para que añadir o quitar una factura no toque el resto.
 function renderSemFacturas(){
   const tbody = document.querySelector('#tblSemFacturas tbody');
+  const CAMPOS_FACTURA = ['numero','fecha','local','proveedor','usuario','base','total'];
+  const valoresPrevios = {};
+  semFacturaIds.forEach(id => {
+    const fila = {};
+    CAMPOS_FACTURA.forEach(campo => {
+      const campoEl = document.getElementById(`semf_${id}_${campo}`);
+      if(campoEl) fila[campo] = campoEl.value;
+    });
+    valoresPrevios[id] = fila;
+  });
+
   tbody.innerHTML = '';
   semFacturaIds.forEach(id => {
     const tdRm = el('td');
@@ -4668,6 +4686,13 @@ function renderSemFacturas(){
       semInputCell(`semf_${id}_total`, {inputmode:'decimal'}),
       tdRm,
     ]));
+  });
+
+  Object.entries(valoresPrevios).forEach(([id, fila]) => {
+    CAMPOS_FACTURA.forEach(campo => {
+      const campoEl = document.getElementById(`semf_${id}_${campo}`);
+      if(campoEl && fila[campo]) campoEl.value = fila[campo];
+    });
   });
 }
 
