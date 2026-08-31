@@ -5110,10 +5110,19 @@ async function saveAuditoria(){
 
   try{
     if(editandoAuditId){
+      // Mismo fallo real que en guardarInformeSemanal(): si la auditoría ya
+      // no existe (borrada mientras se editaba en otra pestaña), el PATCH no
+      // da error, solo 0 filas afectadas — hay que comprobarlo explícitamente
+      // para no seguir e intentar guardar incidencias/productos/plan contra
+      // un audit_id fantasma.
       const res = await fetch(`${SUPABASE_URL}/rest/v1/audits?id=eq.${auditId}`, {
-        method: 'PATCH', headers: restHeaders(), body: JSON.stringify(payload),
+        method: 'PATCH', headers: { ...restHeaders(), 'Prefer': 'return=representation' }, body: JSON.stringify(payload),
       });
       if(!res.ok) throw new Error(await res.text() || res.statusText);
+      const filasActualizadas = JSON.parse(await res.text() || '[]');
+      if(!filasActualizadas.length){
+        throw new Error('Esta auditoría ya no existe en la base de datos (puede que alguien la haya borrado mientras la tenías abierta para editar). No se ha guardado nada — recarga el histórico, comprueba si sigue ahí y, si no, vuelve a introducir los datos como una auditoría nueva.');
+      }
       // Al editar, se sustituyen las filas hijas por las del formulario actual
       // (borrar + volver a insertar) — mismo criterio que guardarInformeSemanal().
       await Promise.all(['incidencias','productos_no_homologados','plan_accion'].map(t =>
@@ -5372,12 +5381,24 @@ async function guardarInformeSemanal(){
   try{
     let informeId = editandoInformeId;
     if(informeId){
+      // BUG REAL detectado en producción: si el informe que se está editando
+      // ya no existe (p.ej. alguien lo borró desde el histórico mientras
+      // seguía abierto en otra pestaña), este PATCH no da ningún error —
+      // Supabase responde "OK" con 0 filas afectadas — así que se seguía
+      // intentando insertar las tablas hijas contra un informe_id que no
+      // existe, y el usuario solo veía un muro de errores de clave foránea
+      // sin entender por qué. Se pide "Prefer: return=representation" para
+      // poder distinguir "0 filas actualizadas" de un guardado real.
       const res = await fetch(`${SUPABASE_URL}/rest/v1/informes_semanales?id=eq.${informeId}`, {
         method: 'PATCH',
-        headers: restHeaders(),
+        headers: { ...restHeaders(), 'Prefer': 'return=representation' },
         body: JSON.stringify(payload),
       });
       if(!res.ok) throw new Error(await res.text() || res.statusText);
+      const filasActualizadas = JSON.parse(await res.text() || '[]');
+      if(!filasActualizadas.length){
+        throw new Error('Este informe ya no existe en la base de datos (puede que alguien lo haya borrado mientras lo tenías abierto para editar). No se ha guardado nada — recarga el histórico, comprueba si sigue ahí y, si no, vuelve a introducir los datos como un informe nuevo.');
+      }
     }else{
       const res = await fetch(`${SUPABASE_URL}/rest/v1/informes_semanales`, {
         method: 'POST',
@@ -5734,12 +5755,18 @@ async function guardarInformeMensual(){
   try{
     let informeId = editandoInformeMensualId;
     if(informeId){
+      // Mismo fallo real que en guardarInformeSemanal(): comprobar que el
+      // PATCH afectó a alguna fila antes de seguir con las tablas hijas.
       const res = await fetch(`${SUPABASE_URL}/rest/v1/informes_mensuales?id=eq.${informeId}`, {
         method: 'PATCH',
-        headers: restHeaders(),
+        headers: { ...restHeaders(), 'Prefer': 'return=representation' },
         body: JSON.stringify(payload),
       });
       if(!res.ok) throw new Error(await res.text() || res.statusText);
+      const filasActualizadas = JSON.parse(await res.text() || '[]');
+      if(!filasActualizadas.length){
+        throw new Error('Este informe mensual ya no existe en la base de datos (puede que alguien lo haya borrado mientras lo tenías abierto para editar). No se ha guardado nada — recarga el histórico, comprueba si sigue ahí y, si no, vuelve a introducir los datos como un informe nuevo.');
+      }
     }else{
       const res = await fetch(`${SUPABASE_URL}/rest/v1/informes_mensuales`, {
         method: 'POST',
