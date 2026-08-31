@@ -3054,10 +3054,16 @@ async function reconocerImagen(file, statusEl, lang){
 // (mapea a objeto por cabecera y perdería datos) — se usa tokenizarCSV() y se
 // localiza cada local por posición de columna.
 function fechaDDMMaISO(str){
-  // Cover exporta con barras (17/08/2026); admite también guiones por si
-  // algún informe viene así — antes solo aceptaba guiones y con barras
-  // (el formato real) no reconocía NINGUNA fecha, fallando siempre.
-  const m = /^(\d{2})[/-](\d{2})[/-](\d{4})$/.exec((str || '').trim());
+  // Cover normalmente exporta DD/MM/YYYY (17/08/2026, admite también
+  // guiones); pero al menos un informe real (el "Tracking de Reservas" a
+  // nivel de toda la compañía, no solo estos locales) lo exporta ya en ISO
+  // YYYY-MM-DD (2026-08-17) — antes esa variante no se reconocía, fallando
+  // TODAS las filas silenciosamente ("no se ha encontrado ningún local").
+  // Se distinguen por el primer grupo: 4 dígitos = ya es ISO, 2 = DD/MM/YYYY.
+  str = (str || '').trim();
+  let m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str);
+  if(m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = /^(\d{2})[/-](\d{2})[/-](\d{4})$/.exec(str);
   return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
 }
 
