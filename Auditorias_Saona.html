@@ -5970,10 +5970,23 @@ document.addEventListener('DOMContentLoaded', () => {
   recalc();
   document.getElementById('btnAutoResumen').addEventListener('click', autoResumen);
   document.getElementById('btnGenerate').addEventListener('click', generatePdf);
-  document.getElementById('btnSave').addEventListener('click', () => {
-    if(currentTipo === 'informe_semanal') guardarInformeSemanal();
-    else if(currentTipo === 'informe_mensual') guardarInformeMensual();
-    else saveAuditoria();
+  document.getElementById('btnSave').addEventListener('click', async () => {
+    // Bloquea el botón mientras se guarda: sin esto, un doble clic (o volver a
+    // pulsar porque la conexión va lenta y parece que no ha reaccionado, algo
+    // habitual en un restaurante) lanza dos guardados a la vez. Cada uno borra
+    // las filas hijas y las vuelve a insertar — si se solapan, el resultado es
+    // un borrado y varias inserciones duplicadas (bug real detectado en
+    // producción: hasta 8 copias de la misma fila de Ventas de una semana).
+    const btn = document.getElementById('btnSave');
+    if(btn.disabled) return;
+    btn.disabled = true;
+    try{
+      if(currentTipo === 'informe_semanal') await guardarInformeSemanal();
+      else if(currentTipo === 'informe_mensual') await guardarInformeMensual();
+      else await saveAuditoria();
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   poblarSemLocalesCheckGrid();
