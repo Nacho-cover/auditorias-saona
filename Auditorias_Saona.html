@@ -3720,22 +3720,30 @@ function aplicarVentaSugeridaExcel(filas){
   const setVal = (id, val) => { const campo = document.getElementById(id); if(campo && val != null) campo.value = val; };
   let aplicados = 0;
   const localesEncontrados = [];
+  // Local reconocido por el nombre (columna A) pero sin ninguna cifra real que
+  // leer — pasa si se exporta de Power BI la lista/filtro de locales en vez
+  // de la tabla de Venta Sugerida (mismo local, cero columnas de datos). Sin
+  // esta distinción el mensaje decía "rellenado" en verde con la tabla vacía
+  // — mismo fallo ya corregido una vez en el lector OCR de esta sección.
+  const localesSinDatos = [];
   filas.forEach(fila => {
     const nombreNorm = quitarAcentos(fila.localTexto);
     const local = semLocales.find(l => nombreNorm.includes(quitarAcentos(l.nombre)));
     if(!local) return;
-    localesEncontrados.push(local.nombre);
+    let huboDato = false;
     fila.categorias.forEach(c => {
       const ci = CATEGORIAS_VENTA_SUGERIDA.indexOf(c.categoria);
       if(ci === -1) return;
+      if(c.uds != null || c.kpi != null || c.euros != null) huboDato = true;
       setVal(`semvs_${local.id}_${ci}_uds`, c.uds);
       setVal(`semvs_${local.id}_${ci}_kpi`, c.kpi);
       setVal(`semvs_${local.id}_${ci}_euros`, c.euros);
     });
     computeTotalVentaSugerida(local.id);
-    aplicados++;
+    if(huboDato){ localesEncontrados.push(local.nombre); aplicados++; }
+    else localesSinDatos.push(local.nombre);
   });
-  return { aplicados, localesEncontrados };
+  return { aplicados, localesEncontrados, localesSinDatos };
 }
 
 // Igual que aplicarVentaSugeridaExcel()/leerVentaSugeridaExcel() pero para el
@@ -3745,22 +3753,25 @@ function aplicarVentaSugeridaExcelMensual(filas){
   const setVal = (id, val) => { const campo = document.getElementById(id); if(campo && val != null) campo.value = val; };
   let aplicados = 0;
   const localesEncontrados = [];
+  const localesSinDatos = []; // mismo criterio que aplicarVentaSugeridaExcel()
   filas.forEach(fila => {
     const nombreNorm = quitarAcentos(fila.localTexto);
     const local = menLocales.find(l => nombreNorm.includes(quitarAcentos(l.nombre)));
     if(!local) return;
-    localesEncontrados.push(local.nombre);
+    let huboDato = false;
     fila.categorias.forEach(c => {
       const ci = CATEGORIAS_VENTA_SUGERIDA_MENSUAL.indexOf(c.categoria);
       if(ci === -1) return;
+      if(c.uds != null || c.kpi != null || c.euros != null) huboDato = true;
       setVal(`menvs_${local.id}_${ci}_uds`, c.uds);
       setVal(`menvs_${local.id}_${ci}_kpi`, c.kpi);
       setVal(`menvs_${local.id}_${ci}_euros`, c.euros);
     });
     computeTotalMenVentaSugerida(local.id);
-    aplicados++;
+    if(huboDato){ localesEncontrados.push(local.nombre); aplicados++; }
+    else localesSinDatos.push(local.nombre);
   });
-  return { aplicados, localesEncontrados };
+  return { aplicados, localesEncontrados, localesSinDatos };
 }
 
 async function leerVentaSugeridaExcelMensual(file){
@@ -3784,14 +3795,20 @@ async function leerVentaSugeridaExcelMensual(file){
       statusEl.textContent = `${file.name}: no se ha podido leer ninguna fila — comprueba que es el Excel exportado de Power BI (con cabecera).`;
       return;
     }
-    const { aplicados, localesEncontrados } = aplicarVentaSugeridaExcelMensual(datos);
-    if(!aplicados){
+    const { aplicados, localesEncontrados, localesSinDatos } = aplicarVentaSugeridaExcelMensual(datos);
+    if(!aplicados && !localesSinDatos.length){
       statusEl.style.color = 'var(--bad)';
       statusEl.textContent = `${file.name}: no coincide ningún local de la hoja con los del grupo — revisa el nombre.`;
       return;
     }
-    statusEl.style.color = 'var(--good)';
-    statusEl.textContent = `${file.name}: rellenado ${localesEncontrados.join(', ')}. Es lectura automática: revisa siempre los números (incluido Alcohol) antes de guardar.`;
+    if(!aplicados){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `${file.name}: se reconocieron los locales (${localesSinDatos.join(', ')}) pero no había ninguna cifra que leer — comprueba que has exportado la TABLA de Venta Sugerida (con categorías/KPI/€), no la lista/filtro de locales.`;
+      return;
+    }
+    statusEl.style.color = localesSinDatos.length ? 'var(--warn)' : 'var(--good)';
+    statusEl.textContent = `${file.name}: rellenado ${localesEncontrados.join(', ')}. Es lectura automática: revisa siempre los números (incluido Alcohol) antes de guardar.`
+      + (localesSinDatos.length ? ` Sin datos: ${localesSinDatos.join(', ')}.` : '');
   }catch(err){
     console.error(err);
     statusEl.style.color = 'var(--bad)';
@@ -3832,14 +3849,20 @@ async function leerVentaSugeridaExcel(file){
       statusEl.textContent = `${file.name}: no se ha podido leer ninguna fila — comprueba que es el Excel exportado de Power BI (con cabecera).`;
       return;
     }
-    const { aplicados, localesEncontrados } = aplicarVentaSugeridaExcel(datos);
-    if(!aplicados){
+    const { aplicados, localesEncontrados, localesSinDatos } = aplicarVentaSugeridaExcel(datos);
+    if(!aplicados && !localesSinDatos.length){
       statusEl.style.color = 'var(--bad)';
       statusEl.textContent = `${file.name}: no coincide ningún local de la hoja con los del grupo — revisa el nombre.`;
       return;
     }
-    statusEl.style.color = 'var(--good)';
-    statusEl.textContent = `${file.name}: rellenado ${localesEncontrados.join(', ')}. Es lectura automática: revisa siempre los números antes de guardar.`;
+    if(!aplicados){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `${file.name}: se reconocieron los locales (${localesSinDatos.join(', ')}) pero no había ninguna cifra que leer — comprueba que has exportado la TABLA de Venta Sugerida (con categorías/KPI/€), no la lista/filtro de locales.`;
+      return;
+    }
+    statusEl.style.color = localesSinDatos.length ? 'var(--warn)' : 'var(--good)';
+    statusEl.textContent = `${file.name}: rellenado ${localesEncontrados.join(', ')}. Es lectura automática: revisa siempre los números antes de guardar.`
+      + (localesSinDatos.length ? ` Sin datos: ${localesSinDatos.join(', ')}.` : '');
   }catch(err){
     console.error(err);
     statusEl.style.color = 'var(--bad)';
