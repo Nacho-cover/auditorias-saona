@@ -4192,10 +4192,12 @@ function lecturaTendenciaLocal(id){
 
   let frase = `Ventas ${ventasSuben ? 'suben' : 'bajan'} un ${Math.abs(varV).toFixed(1)}% interanual (${fmtEurTendencia(ventasMes)} frente a ${fmtEurTendencia(ventasAnt)}) y los clientes ${clientesSuben ? 'suben' : 'bajan'} un ${Math.abs(clientesVarPct).toFixed(1)}% (${clientesMes} frente a ${clientesAnt}), mientras que el Ingreso por Comensal ${icSube ? 'mejora' : 'empeora'} de ${icAnt}€ a ${ic}€ (${fmtPctTendencia(varIc)})`;
 
-  if(!clientesSuben && icSube){
-    frase += '. El alza del IC amortigua parcialmente la caída de tráfico, sin llegar a compensarla del todo.';
-  }else if(clientesSuben && icSube){
+  if(ventasSuben && clientesSuben){
     frase += '. Buen mes: crecen tanto las visitas como el gasto medio.';
+  }else if(ventasSuben && !clientesSuben){
+    frase += '. Las ventas crecen pese a la caída de clientes, gracias a la mejora del Ingreso por Comensal — la venta sugerida más que compensa la menor afluencia.';
+  }else if(!ventasSuben && !clientesSuben && icSube){
+    frase += '. El alza del IC amortigua parcialmente la caída de tráfico, sin llegar a compensarla del todo.';
   }else if(clientesSuben && !icSube){
     frase += '. Entran más clientes, pero cada uno deja de media menos que el año pasado — revisar venta sugerida y coste de la carta.';
   }else{
