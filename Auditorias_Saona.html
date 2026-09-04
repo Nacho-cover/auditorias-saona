@@ -525,7 +525,7 @@
         <div id="semVsExcelBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📊 Subir Excel de Power BI</strong>
           <input type="file" id="semVsExcelFile" accept=".xlsx,.xls,.csv" multiple style="flex:1 1 220px; font-size:12px;">
-          <span id="semVsExcelStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En la tabla de Power BI: los tres puntos "···" → Exportar datos → Excel. Sube aquí ese archivo (uno por local, puedes elegir varios a la vez) — se leen y rellenan solos. Es lectura automática: revisa siempre los números antes de guardar.</span>
+          <span id="semVsExcelStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En la tabla de Power BI: los tres puntos "···" → Exportar datos → Excel. Sube aquí ese archivo (uno por local, puedes elegir varios a la vez) — se leen y rellenan solos. Es lectura automática: revisa siempre los números antes de guardar. Si el selector de archivos se queda colgado, arrastra el archivo directamente sobre este recuadro.</span>
           <div id="semVsExcelPreviews" style="display:flex; flex-wrap:wrap; gap:8px; width:100%;"></div>
         </div>
         <div class="table-wrap-scroll" style="overflow-x:auto;">
@@ -732,7 +732,7 @@
         <div id="menVsExcelBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📊 Subir Excel de Power BI (mensual)</strong>
           <input type="file" id="menVsExcelFile" accept=".xlsx,.xls,.csv" multiple style="flex:1 1 220px; font-size:12px;">
-          <span id="menVsExcelStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En la tabla mensual de Power BI: los tres puntos "···" → Exportar datos → Excel. Sube aquí ese archivo (uno por local, puedes elegir varios a la vez) — se leen y rellenan solas las 9 categorías. Es lectura automática: revisa siempre los números antes de guardar.</span>
+          <span id="menVsExcelStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En la tabla mensual de Power BI: los tres puntos "···" → Exportar datos → Excel. Sube aquí ese archivo (uno por local, puedes elegir varios a la vez) — se leen y rellenan solas las 9 categorías. Es lectura automática: revisa siempre los números antes de guardar. Si el selector de archivos se queda colgado, arrastra el archivo directamente sobre este recuadro.</span>
           <div id="menVsExcelPreviews" style="display:flex; flex-wrap:wrap; gap:8px; width:100%;"></div>
         </div>
         <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center;">
@@ -3635,6 +3635,24 @@ function mostrarCapturasAdjuntas(e, containerId){
   });
 }
 
+/* Arrastrar-y-soltar como alternativa al selector nativo de archivos — en
+   algunos equipos (Firefox + carpeta de OneDrive con muchos archivos) el
+   diálogo nativo "Abrir archivo" se cuelga generando miniaturas, sin que
+   la app pueda hacer nada al respecto (ocurre antes de que el navegador
+   avise a esta página). Arrastrar el archivo desde una ventana de
+   Explorador ya abierta evita ese diálogo por completo. */
+function habilitarDragDrop(boxEl, onFiles){
+  if(!boxEl) return;
+  boxEl.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); boxEl.style.outline = '2px dashed var(--navy)'; });
+  boxEl.addEventListener('dragleave', () => { boxEl.style.outline = ''; });
+  boxEl.addEventListener('drop', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    boxEl.style.outline = '';
+    const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
+    if(files.length) onFiles(files);
+  });
+}
+
 async function adjuntarYProcesarCapturas(e, containerId, leerFn){
   const files = Array.from(e.target.files);
   mostrarCapturasAdjuntas(e, containerId);
@@ -4499,7 +4517,7 @@ function renderMenTendencias(){
 
 function pdfCosteCell(l){
   const td = el('td');
-  const wrap = el('div', { style: 'display:flex; flex-direction:column; gap:4px;' });
+  const wrap = el('div', { style: 'display:flex; flex-direction:column; gap:4px; padding:4px; border-radius:4px;' });
   const input = el('input', { type: 'file', accept: 'application/pdf', id: `menc_${l.id}_pdfFile`, style: 'font-size:11px; max-width:150px;' });
   const status = el('span', { id: `menc_${l.id}_pdfStatus`, style: 'font-size:11px; color:var(--muted);' });
   input.addEventListener('change', (e) => {
@@ -4510,6 +4528,7 @@ function pdfCosteCell(l){
   wrap.appendChild(input);
   wrap.appendChild(status);
   td.appendChild(wrap);
+  habilitarDragDrop(wrap, (files) => { if(files[0]) subirPdfCoste(l, files[0]); });
   return td;
 }
 
@@ -6262,6 +6281,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnMenDescargarCsvCostes').addEventListener('click', descargarCsvCostes);
   document.getElementById('btnMenTraerVentaSugerida').addEventListener('click', traerMenVentaSugerida);
   document.getElementById('menVsExcelFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'menVsExcelPreviews', leerVentaSugeridaExcelMensual));
+  habilitarDragDrop(document.getElementById('menVsExcelBox'), (files) => adjuntarYProcesarCapturas({ target: { files } }, 'menVsExcelPreviews', leerVentaSugeridaExcelMensual));
   document.getElementById('btnAddSemFactura').addEventListener('click', addSemFactura);
   document.getElementById('btnSemAnterior').addEventListener('click', traerSemanaAnterior);
   document.getElementById('btnSemAcumuladoCompras').addEventListener('click', traerAcumuladoMesCompras);
@@ -6286,6 +6306,7 @@ document.addEventListener('DOMContentLoaded', () => {
     e.target.value = '';
   });
   document.getElementById('semVsExcelFile').addEventListener('change', (e) => adjuntarYProcesarCapturas(e, 'semVsExcelPreviews', leerVentaSugeridaExcel));
+  habilitarDragDrop(document.getElementById('semVsExcelBox'), (files) => adjuntarYProcesarCapturas({ target: { files } }, 'semVsExcelPreviews', leerVentaSugeridaExcel));
   document.getElementById('semFacCsvFile').addEventListener('change', (e) => {
     Array.from(e.target.files).forEach(leerFacturasPendientesCSV);
     e.target.value = '';
