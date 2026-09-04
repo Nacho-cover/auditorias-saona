@@ -802,10 +802,12 @@
         <h2>Coste Real vs. Teórico (Yurest)</h2>
         <p class="desc">Solo para locales con inventario/escandallo en Yurest. Compara el % de coste según el escandallo teórico con el % de coste real de compras — dato de Yurest, se copia a mano. Deja en blanco los locales sin este dato este mes.</p>
         <p style="margin:0 0 12px;"><a class="small-btn" href="https://cliente.yurest.com/login" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Yurest</a></p>
+        <div class="table-wrap-scroll" style="overflow-x:auto;">
         <table class="datatable" id="tblMenCostes">
-          <thead><tr><th style="text-align:left;">Local</th><th>% Coste teórico</th><th>% Coste real</th><th>Desviación</th><th style="min-width:200px;">Notas</th></tr></thead>
+          <thead><tr><th style="text-align:left;">Local</th><th>% Coste teórico</th><th>% Coste real</th><th>Desviación</th><th style="min-width:200px;">Notas</th><th style="min-width:160px;">PDF Yurest</th></tr></thead>
           <tbody></tbody>
         </table>
+        </div>
         <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center; margin-top:10px;">
           <button class="small-btn" type="button" id="btnMenDescargarCsvCostes">⬇️ Descargar CSV</button>
         </div>
@@ -4397,6 +4399,74 @@ function computeDesviacionCostes(id){
   if(desvEl) desvEl.value = (teorico != null && real != null) ? (real - teorico).toFixed(1) : '';
 }
 
+/* PDF de Yurest (Coste Real vs. Teórico) por local — independiente entre
+   locales del grupo, igual criterio que "Informe de Saona Reviews": se
+   guarda el archivo tal cual, sin intentar leer los números del PDF
+   automáticamente (nada fiable para extraer datos de un PDF exportado sin
+   estructura fija). Bucket privado "coste-yurest-pdf" en Supabase Storage,
+   ver schema_coste_yurest_pdf_bucket.sql. */
+let menCostePdfs = {}; // { [localId]: { ruta, nombre } }
+
+function actualizarPdfCosteStatus(l){
+  const statusEl = document.getElementById(`menc_${l.id}_pdfStatus`);
+  if(!statusEl) return;
+  statusEl.innerHTML = '';
+  const info = menCostePdfs[l.id];
+  if(!info) return;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = `🔗 Ver ${info.nombre}`;
+  btn.style.cssText = 'font-size:11px; background:none; border:none; color:var(--navy); text-decoration:underline; cursor:pointer; padding:0; text-align:left;';
+  btn.addEventListener('click', () => verPdfCoste(l));
+  statusEl.appendChild(btn);
+}
+
+async function subirPdfCoste(l, file){
+  const statusEl = document.getElementById(`menc_${l.id}_pdfStatus`);
+  const session = await refreshSessionIfNeeded();
+  if(!session){
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Tu sesión ha caducado. Recarga la página e inicia sesión de nuevo.';
+    showLogin();
+    return;
+  }
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Subiendo…';
+  try{
+    const ruta = `${encodeURIComponent(l.nombre)}/${Date.now()}-${encodeURIComponent(file.name || 'documento.pdf')}`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/coste-yurest-pdf/${ruta}`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken()}`, 'Content-Type': file.type || 'application/pdf' },
+      body: file,
+    });
+    if(!res.ok) throw new Error(await res.text() || res.statusText);
+    menCostePdfs[l.id] = { ruta, nombre: file.name || 'documento.pdf' };
+    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = '';
+    actualizarPdfCosteStatus(l);
+  }catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--bad)';
+    statusEl.textContent = 'Error al subir: ' + err.message;
+  }
+}
+
+async function verPdfCoste(l){
+  const info = menCostePdfs[l.id];
+  if(!info) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/coste-yurest-pdf/${info.ruta}`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken()}` },
+    });
+    if(!res.ok) throw new Error('No se pudo abrir el PDF (' + res.status + ')');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  }catch(err){
+    alert('No se pudo abrir el PDF: ' + err.message);
+  }
+}
+
 function renderMenTendencias(){
   syncMenTable('#tblMenTendencias tbody', l => {
     const row = semLocalRow(l, [
@@ -4417,6 +4487,22 @@ function renderMenTendencias(){
   });
 }
 
+function pdfCosteCell(l){
+  const td = el('td');
+  const wrap = el('div', { style: 'display:flex; flex-direction:column; gap:4px;' });
+  const input = el('input', { type: 'file', accept: 'application/pdf', id: `menc_${l.id}_pdfFile`, style: 'font-size:11px; max-width:150px;' });
+  const status = el('span', { id: `menc_${l.id}_pdfStatus`, style: 'font-size:11px; color:var(--muted);' });
+  input.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(file) subirPdfCoste(l, file);
+    e.target.value = '';
+  });
+  wrap.appendChild(input);
+  wrap.appendChild(status);
+  td.appendChild(wrap);
+  return td;
+}
+
 function renderMenCostes(){
   syncMenTable('#tblMenCostes tbody', l => {
     const row = semLocalRow(l, [
@@ -4425,10 +4511,12 @@ function renderMenCostes(){
       semInputCell(`menc_${l.id}_real`, {inputmode:'decimal'}),
       semInputCell(`menc_${l.id}_desviacion`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
       semTextareaCell(`menc_${l.id}_notas`, {placeholder:'Opcional'}),
+      pdfCosteCell(l),
     ]);
     ['teorico','real'].forEach(campo => {
       row.querySelector(`#menc_${l.id}_${campo}`).addEventListener('input', () => computeDesviacionCostes(l.id));
     });
+    actualizarPdfCosteStatus(l);
     return [row];
   });
 }
@@ -5741,7 +5829,9 @@ async function guardarInformeMensual(){
     coste_real_pct: numOrNull(`menc_${l.id}_real`),
     desviacion_pct: numOrNull(`menc_${l.id}_desviacion`),
     notas: v(`menc_${l.id}_notas`) || null,
-  })).filter(r => r.coste_teorico_pct != null || r.coste_real_pct != null || r.notas);
+    pdf_ruta: menCostePdfs[l.id] ? menCostePdfs[l.id].ruta : null,
+    pdf_nombre: menCostePdfs[l.id] ? menCostePdfs[l.id].nombre : null,
+  })).filter(r => r.coste_teorico_pct != null || r.coste_real_pct != null || r.notas || r.pdf_ruta);
 
   // Mismo criterio que el KPI % de venta sugerida en guardarInformeSemanal:
   // un porcentaje disparado suele ser una coma decimal perdida al copiar
@@ -5874,6 +5964,7 @@ async function cargarInformeMensualParaEditar(id){
     [tendencias, ventaSugerida, valoraciones, costes].forEach(arr => arr.forEach(r => addNombre(r.local)));
     menLocales = [];
     menLocalCounter = 0;
+    menCostePdfs = {};
     nombresLocales.forEach(addMenLocalPorNombre);
     poblarMenLocalesCheckGrid();
 
@@ -5936,6 +6027,10 @@ async function cargarInformeMensualParaEditar(id){
       setVal(`menc_${lid}_teorico`, r.coste_teorico_pct);
       setVal(`menc_${lid}_real`, r.coste_real_pct);
       setVal(`menc_${lid}_notas`, r.notas);
+      if(r.pdf_ruta){
+        menCostePdfs[lid] = { ruta: r.pdf_ruta, nombre: r.pdf_nombre || 'documento.pdf' };
+        actualizarPdfCosteStatus({ id: lid });
+      }
     });
 
     menLocales.forEach(l => { computeICMen(l.id); computeTotalMenVentaSugerida(l.id); computeDesviacionCostes(l.id); });
