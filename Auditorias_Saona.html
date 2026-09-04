@@ -4421,6 +4421,16 @@ function actualizarPdfCosteStatus(l){
   statusEl.appendChild(btn);
 }
 
+/* Supabase Storage rechaza "keys" con espacios, tildes o varios puntos
+   seguidos (error "InvalidKey") — el nombre real del archivo puede tenerlos
+   (ej. "Informe coste teórico... 2026.pdf"), así que se sanea SOLO para la
+   ruta de almacenamiento; el nombre original se conserva aparte
+   (menCostePdfs[id].nombre) para mostrarlo tal cual en el enlace "Ver". */
+function slugArchivo(nombre){
+  const base = quitarAcentos(nombre || 'documento.pdf');
+  return base.replace(/[^a-zA-Z0-9._-]+/g, '_').replace(/_+/g, '_');
+}
+
 async function subirPdfCoste(l, file){
   const statusEl = document.getElementById(`menc_${l.id}_pdfStatus`);
   const session = await refreshSessionIfNeeded();
@@ -4433,7 +4443,7 @@ async function subirPdfCoste(l, file){
   statusEl.style.color = 'var(--muted)';
   statusEl.textContent = 'Subiendo…';
   try{
-    const ruta = `${encodeURIComponent(l.nombre)}/${Date.now()}-${encodeURIComponent(file.name || 'documento.pdf')}`;
+    const ruta = `${slugArchivo(l.nombre)}/${Date.now()}-${slugArchivo(file.name || 'documento.pdf')}`;
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/coste-yurest-pdf/${ruta}`, {
       method: 'POST',
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken()}`, 'Content-Type': file.type || 'application/pdf' },
