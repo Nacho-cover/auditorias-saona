@@ -522,10 +522,11 @@
         <h2>Venta sugerida</h2>
         <p class="desc">Por categoría y local, acumulado del mes (igual que Compras y Mermas). En la fila "Total" escribe la venta total del local este mes para que el % salga bien.</p>
         <p style="margin:0 0 12px;"><a class="small-btn" href="https://app.powerbi.com/home?experience=power-bi" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Power BI (Venta sugerida)</a></p>
-        <div id="semVsExcelBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+        <div id="semVsExcelBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:2px dashed var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📊 Subir Excel de Power BI</strong>
           <input type="file" id="semVsExcelFile" accept=".xlsx,.xls,.csv" multiple style="flex:1 1 220px; font-size:12px;">
-          <span id="semVsExcelStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En la tabla de Power BI: los tres puntos "···" → Exportar datos → Excel. Sube aquí ese archivo (uno por local, puedes elegir varios a la vez) — se leen y rellenan solos. Es lectura automática: revisa siempre los números antes de guardar. Si el selector de archivos se queda colgado, arrastra el archivo directamente sobre este recuadro.</span>
+          <span style="font-size:12px; color:var(--navy); font-weight:700; white-space:nowrap;">📥 o arrastra el archivo aquí</span>
+          <span id="semVsExcelStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En la tabla de Power BI: los tres puntos "···" → Exportar datos → Excel. Sube aquí ese archivo (uno por local, puedes elegir varios a la vez) — se leen y rellenan solos. Es lectura automática: revisa siempre los números antes de guardar.</span>
           <div id="semVsExcelPreviews" style="display:flex; flex-wrap:wrap; gap:8px; width:100%;"></div>
         </div>
         <div class="table-wrap-scroll" style="overflow-x:auto;">
@@ -729,10 +730,11 @@
         <h2>Venta sugerida</h2>
         <p class="desc">Acumulado del mes, por categoría — 9 categorías (las 8 del Informe Semanal más Alcohol, que solo se ve en el resumen mensual de Power BI).</p>
         <p style="margin:0 0 12px;"><a class="small-btn" href="https://app.powerbi.com/home?experience=power-bi" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Power BI (Venta sugerida)</a></p>
-        <div id="menVsExcelBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">
+        <div id="menVsExcelBox" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; padding:10px 12px; background:var(--bg); border:2px dashed var(--border); border-radius:8px;">
           <strong style="font-size:13px; white-space:nowrap;">📊 Subir Excel de Power BI (mensual)</strong>
           <input type="file" id="menVsExcelFile" accept=".xlsx,.xls,.csv" multiple style="flex:1 1 220px; font-size:12px;">
-          <span id="menVsExcelStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En la tabla mensual de Power BI: los tres puntos "···" → Exportar datos → Excel. Sube aquí ese archivo (uno por local, puedes elegir varios a la vez) — se leen y rellenan solas las 9 categorías. Es lectura automática: revisa siempre los números antes de guardar. Si el selector de archivos se queda colgado, arrastra el archivo directamente sobre este recuadro.</span>
+          <span style="font-size:12px; color:var(--navy); font-weight:700; white-space:nowrap;">📥 o arrastra el archivo aquí</span>
+          <span id="menVsExcelStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En la tabla mensual de Power BI: los tres puntos "···" → Exportar datos → Excel. Sube aquí ese archivo (uno por local, puedes elegir varios a la vez) — se leen y rellenan solas las 9 categorías. Es lectura automática: revisa siempre los números antes de guardar.</span>
           <div id="menVsExcelPreviews" style="display:flex; flex-wrap:wrap; gap:8px; width:100%;"></div>
         </div>
         <div class="add-btn-row" style="justify-content:flex-start; gap:10px; align-items:center;">
@@ -3643,11 +3645,20 @@ function mostrarCapturasAdjuntas(e, containerId){
    Explorador ya abierta evita ese diálogo por completo. */
 function habilitarDragDrop(boxEl, onFiles){
   if(!boxEl) return;
-  boxEl.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); boxEl.style.outline = '2px dashed var(--navy)'; });
-  boxEl.addEventListener('dragleave', () => { boxEl.style.outline = ''; });
+  const fondoOriginal = boxEl.style.background;
+  boxEl.addEventListener('dragover', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    boxEl.style.outline = '3px dashed var(--navy)';
+    boxEl.style.background = '#E8F0FE';
+  });
+  boxEl.addEventListener('dragleave', () => {
+    boxEl.style.outline = '';
+    boxEl.style.background = fondoOriginal;
+  });
   boxEl.addEventListener('drop', (e) => {
     e.preventDefault(); e.stopPropagation();
     boxEl.style.outline = '';
+    boxEl.style.background = fondoOriginal;
     const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
     if(files.length) onFiles(files);
   });
@@ -4517,8 +4528,9 @@ function renderMenTendencias(){
 
 function pdfCosteCell(l){
   const td = el('td');
-  const wrap = el('div', { style: 'display:flex; flex-direction:column; gap:4px; padding:4px; border-radius:4px;' });
+  const wrap = el('div', { style: 'display:flex; flex-direction:column; gap:4px; padding:5px; border-radius:4px; border:1.5px dashed var(--border);' });
   const input = el('input', { type: 'file', accept: 'application/pdf', id: `menc_${l.id}_pdfFile`, style: 'font-size:11px; max-width:150px;' });
+  const hint = el('span', { text: '📥 o arrastra aquí', style: 'font-size:10px; color:var(--navy); font-weight:700;' });
   const status = el('span', { id: `menc_${l.id}_pdfStatus`, style: 'font-size:11px; color:var(--muted);' });
   input.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -4526,6 +4538,7 @@ function pdfCosteCell(l){
     e.target.value = '';
   });
   wrap.appendChild(input);
+  wrap.appendChild(hint);
   wrap.appendChild(status);
   td.appendChild(wrap);
   habilitarDragDrop(wrap, (files) => { if(files[0]) subirPdfCoste(l, files[0]); });
