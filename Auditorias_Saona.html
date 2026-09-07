@@ -450,7 +450,9 @@
 
     <section class="card" id="sec-incidencias">
       <h2>3. Incidencias detectadas</h2>
-      <p class="desc">Hasta 6 incidencias detectadas durante la visita.</p>
+      <p class="desc">Hasta 6 incidencias detectadas durante la visita. Puedes rellenarlas tú mismo o generar un borrador automático a partir de los ítems marcados "No" en el checklist de la sección 2 — luego solo falta indicar gravedad y responsable de cada una.</p>
+      <div class="row-actions"><button class="btn secondary" type="button" id="btnAutoIncidencias">Generar a partir del checklist</button></div>
+      <div class="desc" id="incAutoStatus" style="margin:6px 0 12px;"></div>
       <table class="datatable" id="tblIncidencias">
         <thead><tr><th style="width:5%;">Nº</th><th style="width:16%;">Bloque</th><th>Descripción</th><th style="width:11%;">Gravedad</th><th style="width:14%;">Responsable</th><th style="width:12%;">Fecha límite</th></tr></thead>
         <tbody></tbody>
@@ -468,7 +470,9 @@
 
     <section class="card" id="sec-plan">
       <h2>5. Plan de acción / Próximos pasos</h2>
-      <p class="desc">Hasta 5 acciones correctivas derivadas de la visita.</p>
+      <p class="desc">Hasta 5 acciones correctivas derivadas de la visita. Puedes escribirlas tú mismo o generar un borrador automático a partir de las Incidencias (sección 3, prioridad = su gravedad) y los Productos no homologados aún pendientes o en revisión (sección 4) — luego solo falta indicar responsable y fecha donde no vengan ya de la incidencia.</p>
+      <div class="row-actions"><button class="btn secondary" type="button" id="btnAutoPlan">Generar a partir de Incidencias / Prod. no homologados</button></div>
+      <div class="desc" id="planAutoStatus" style="margin:6px 0 12px;"></div>
       <table class="datatable" id="tblPlan">
         <thead><tr><th>Acción</th><th style="width:16%;">Responsable</th><th style="width:14%;">Fecha</th><th style="width:12%;">Prioridad</th></tr></thead>
         <tbody></tbody>
@@ -477,6 +481,9 @@
 
     <section class="card" id="sec-conclusion">
       <h2>6. Conclusión</h2>
+      <p class="desc">Puedes escribirla tú mismo o generar un borrador automático a partir de la puntuación, las Incidencias, los Productos no homologados y el Plan de acción ya rellenados más arriba.</p>
+      <div class="row-actions"><button class="btn secondary" type="button" id="btnAutoConclusion">Generar borrador automático</button></div>
+      <div class="desc" id="conclusionAutoStatus" style="margin:6px 0 12px;"></div>
       <div class="field"><label>Valoración final</label><textarea id="f_conclusion" placeholder="Valoración final de la visita/auditoría y seguimiento previsto para la próxima" style="min-height:90px;"></textarea></div>
     </section>
     </div>
@@ -1812,6 +1819,163 @@ function autoResumen(){
   document.getElementById('r_nohom').value = nohomItems.length
     ? `Se detectaron ${nohomItems.length} producto(s) no homologado(s): ${nohomItems.join(', ')}.`
     : 'No se detectaron productos no homologados en esta visita.';
+}
+
+/* ---------------------------------------------------------------
+   4b. Borrador automático de Incidencias detectadas, a partir de los
+   ítems marcados "No" en el checklist (sección 2) — mismo criterio
+   que autoResumen(): rellena un borrador editable, no sustituye el
+   juicio del auditor (gravedad y responsable quedan siempre vacíos).
+   --------------------------------------------------------------- */
+function autoIncidencias(){
+  recalc();
+  const detectadas = [];
+  BLOQUES.forEach(bloque => {
+    bloque.subs.forEach(s => {
+      subAnswers(bloque.prefix, s).noItems.forEach(i => {
+        detectadas.push({ bloque: bloque.nombre, texto: `${s.nombre} — ${subItemText(s, i)}` });
+      });
+    });
+  });
+
+  const status = document.getElementById('incAutoStatus');
+  if(!detectadas.length){
+    status.textContent = 'No hay ningún ítem marcado como "No" en el checklist (sección 2) — nada que rellenar todavía.';
+    return;
+  }
+
+  const yaHayContenido = Array.from({length: N_INC}, (_, k) => v(`inc${k + 1}_desc`).trim()).some(Boolean);
+  if(yaHayContenido && !confirm('Esto sustituirá el contenido actual de la tabla de Incidencias por las detectadas automáticamente en el checklist. ¿Continuar?')) return;
+
+  for(let i = 1; i <= N_INC; i++){
+    const d = detectadas[i - 1];
+    document.getElementById(`inc${i}_bloque`).value = d ? d.bloque : '';
+    document.getElementById(`inc${i}_desc`).value = d ? d.texto : '';
+    document.getElementById(`inc${i}_grav`).value = '';
+    document.getElementById(`inc${i}_resp`).value = '';
+    document.getElementById(`inc${i}_fecha`).value = '';
+  }
+
+  status.textContent = detectadas.length > N_INC
+    ? `Se han rellenado las primeras ${N_INC} incidencias de las ${detectadas.length} detectadas — el resto sigue visible en las observaciones de cada subbloque (sección 2). Falta indicar gravedad y responsable en cada una.`
+    : `Se han rellenado ${detectadas.length} incidencia(s) a partir de los ítems marcados "No". Falta indicar gravedad y responsable en cada una.`;
+}
+
+/* ---------------------------------------------------------------
+   4c. Borrador automático del Plan de acción, a partir de las
+   Incidencias ya rellenas (sección 3, prioridad = su gravedad) y de
+   los Productos no homologados que sigan "Pendiente" o "En revisión"
+   (sección 4 — "Retirado"/"Resuelto" ya no necesitan acción). Mismo
+   criterio que autoIncidencias(): borrador editable, prioriza las
+   incidencias de mayor gravedad si no caben las 5 filas.
+   --------------------------------------------------------------- */
+function autoPlan(){
+  const desdeIncidencias = [];
+  for(let i = 1; i <= N_INC; i++){
+    const desc = v(`inc${i}_desc`).trim();
+    if(!desc) continue;
+    const bloque = v(`inc${i}_bloque`);
+    desdeIncidencias.push({
+      accion: `Corregir: ${bloque ? bloque + ' — ' : ''}${desc}`,
+      resp: v(`inc${i}_resp`),
+      fecha: v(`inc${i}_fecha`),
+      prioridad: v(`inc${i}_grav`),
+      orden: { Alta: 0, Media: 1, Baja: 2 }[v(`inc${i}_grav`)] ?? 3,
+    });
+  }
+  desdeIncidencias.sort((a, b) => a.orden - b.orden);
+
+  const desdeNoHom = [];
+  for(let i = 1; i <= N_PNHD; i++){
+    const producto = v(`pnhd${i}_producto`).trim();
+    if(!producto) continue;
+    const estado = v(`pnhd${i}_estado`);
+    if(estado === 'Retirado' || estado === 'Resuelto') continue;
+    const area = v(`pnhd${i}_area`);
+    desdeNoHom.push({
+      accion: `Resolver producto no homologado: ${producto}${area ? ' (' + area + ')' : ''}`,
+      resp: '', fecha: '', prioridad: '',
+    });
+  }
+
+  const detectadas = [...desdeIncidencias, ...desdeNoHom];
+  const status = document.getElementById('planAutoStatus');
+  if(!detectadas.length){
+    status.textContent = 'No hay incidencias ni productos no homologados pendientes de los que generar acciones todavía — rellena antes las secciones 3 y/o 4.';
+    return;
+  }
+
+  const yaHayContenido = Array.from({length: N_PLAN}, (_, k) => v(`plan${k + 1}_accion`).trim()).some(Boolean);
+  if(yaHayContenido && !confirm('Esto sustituirá el contenido actual del Plan de acción por el generado a partir de Incidencias y Productos no homologados. ¿Continuar?')) return;
+
+  for(let i = 1; i <= N_PLAN; i++){
+    const d = detectadas[i - 1];
+    document.getElementById(`plan${i}_accion`).value = d ? d.accion : '';
+    document.getElementById(`plan${i}_resp`).value = d ? d.resp : '';
+    document.getElementById(`plan${i}_fecha`).value = d ? d.fecha : '';
+    document.getElementById(`plan${i}_prioridad`).value = d ? d.prioridad : '';
+  }
+
+  status.textContent = detectadas.length > N_PLAN
+    ? `Se han rellenado las primeras ${N_PLAN} acciones (priorizando por gravedad) de las ${detectadas.length} generables — añade el resto a mano si hace falta. Completa responsable y fecha donde falten.`
+    : `Se han rellenado ${detectadas.length} acción(es) a partir de Incidencias y Productos no homologados. Completa responsable y fecha donde falten.`;
+}
+
+/* ---------------------------------------------------------------
+   4d. Borrador automático de la Conclusión / Valoración final, a
+   partir de la puntuación total, las Incidencias, los Productos no
+   homologados y el Plan de acción ya rellenados. Mismo criterio que
+   el resto de "borrador automático": texto editable, no sustituye
+   la valoración del auditor.
+   --------------------------------------------------------------- */
+function autoConclusion(){
+  recalc();
+  const partes = [];
+
+  if(window._totalVis !== null){
+    let txt = `La visita obtuvo una puntuación total ponderada de ${window._totalVis.toFixed(1)} / 10`;
+    txt += (window._totalAnt !== null)
+      ? ` frente a ${window._totalAnt.toFixed(1)} / 10 en la visita anterior (variación ${fmtDelta(window._totalVis - window._totalAnt)}).`
+      : '.';
+    partes.push(txt);
+  }
+
+  let incCount = 0, incAlta = 0, incMedia = 0, incBaja = 0;
+  for(let i = 1; i <= N_INC; i++){
+    if(!v(`inc${i}_desc`).trim()) continue;
+    incCount++;
+    const g = v(`inc${i}_grav`);
+    if(g === 'Alta') incAlta++; else if(g === 'Media') incMedia++; else if(g === 'Baja') incBaja++;
+  }
+  partes.push(incCount
+    ? `Se detectaron ${incCount} incidencia(s) (${incAlta} de gravedad alta, ${incMedia} media, ${incBaja} baja).`
+    : 'No se detectaron incidencias relevantes durante la visita.');
+
+  let pnhdPend = 0, pnhdTotal = 0;
+  for(let i = 1; i <= N_PNHD; i++){
+    if(!v(`pnhd${i}_producto`).trim()) continue;
+    pnhdTotal++;
+    const e = v(`pnhd${i}_estado`);
+    if(e !== 'Retirado' && e !== 'Resuelto') pnhdPend++;
+  }
+  if(pnhdTotal){
+    partes.push(pnhdPend
+      ? `${pnhdPend} de los ${pnhdTotal} producto(s) no homologado(s) detectado(s) siguen pendientes de resolver.`
+      : `Los ${pnhdTotal} producto(s) no homologado(s) detectado(s) ya están resueltos o retirados.`);
+  }
+
+  let planCount = 0;
+  for(let i = 1; i <= N_PLAN; i++){
+    if(v(`plan${i}_accion`).trim()) planCount++;
+  }
+  partes.push(planCount
+    ? `Se ha definido un plan de acción con ${planCount} acción(es) correctiva(s) — ver seguimiento en la próxima visita.`
+    : 'Queda pendiente definir un plan de acción con las acciones correctivas de esta visita.');
+
+  const ta = document.getElementById('f_conclusion');
+  if(ta.value.trim() && !confirm('Esto sustituirá el texto actual de la Valoración final. ¿Continuar?')) return;
+  ta.value = partes.join(' ');
+  document.getElementById('conclusionAutoStatus').textContent = 'Borrador generado — revísalo y ajusta el tono o añade matices antes de guardar.';
 }
 
 function v(id){ const e = document.getElementById(id); return e ? e.value : ''; }
@@ -6253,6 +6417,9 @@ document.addEventListener('DOMContentLoaded', () => {
   renderPlan();
   recalc();
   document.getElementById('btnAutoResumen').addEventListener('click', autoResumen);
+  document.getElementById('btnAutoIncidencias').addEventListener('click', autoIncidencias);
+  document.getElementById('btnAutoPlan').addEventListener('click', autoPlan);
+  document.getElementById('btnAutoConclusion').addEventListener('click', autoConclusion);
   document.getElementById('btnGenerate').addEventListener('click', generatePdf);
   document.getElementById('btnSave').addEventListener('click', async () => {
     // Bloquea el botón mientras se guarda: sin esto, un doble clic (o volver a
