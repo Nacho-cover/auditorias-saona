@@ -179,6 +179,7 @@
   .item-photos{flex:1 1 100%; margin-top:4px;}
   .item-photos input[type=file]{font-size:12px;}
   .thumb-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;}
+  .item-comment{width:100%; margin-top:8px; min-height:44px; font-size:13px; padding:6px 8px; border:1px solid var(--border); border-radius:6px; font-family:inherit; resize:vertical;}
   .thumb{position:relative; width:64px; height:64px; border-radius:6px; overflow:hidden; border:1px solid var(--border);}
   .thumb img{width:100%; height:100%; object-fit:cover; display:block;}
   .thumb .rm{
@@ -444,7 +445,7 @@
 
     <section class="card" id="sec-bloques">
       <h2>2. Resultados por bloque</h2>
-      <p class="desc">Marca cada ítem del checklist como Sí (100%) o No (0%). La puntuación de cada subbloque y bloque se calcula automáticamente como el % de ítems conformes. En los ítems marcados como "No" puedes adjuntar fotos como evidencia — se incluirán en el informe PDF.</p>
+      <p class="desc">Marca cada ítem del checklist como Sí (100%) o No (0%). La puntuación de cada subbloque y bloque se calcula automáticamente como el % de ítems conformes. En los ítems marcados como "No" puedes adjuntar fotos y escribir un comentario como evidencia — se incluirán en el informe PDF.</p>
       <div id="bloquesContainer"></div>
     </section>
 
@@ -834,7 +835,7 @@
     </div>
 
     <div class="generate-bar">
-      <div class="info">Se abrirá el diálogo de impresión del navegador — elige "Guardar como PDF" para descargarlo. Incluye las fotos de los ítems no conformes.<br><a href="./Historico_Auditorias_Saona.html" target="_blank">Ver histórico de auditorías →</a></div>
+      <div class="info">Se abrirá el diálogo de impresión del navegador — elige "Guardar como PDF" para descargarlo. Incluye las fotos y comentarios de los ítems no conformes.<br><a href="./Historico_Auditorias_Saona.html" target="_blank">Ver histórico de auditorías →</a></div>
       <div style="text-align:right;">
         <button class="btn" type="button" id="btnSave" style="background:var(--muted);margin-right:8px;">Guardar auditoría</button>
         <button class="btn" type="button" id="btnGenerate">Generar informe PDF</button>
@@ -1555,6 +1556,8 @@ function renderBloques(){
         const thumbRow = el('div', {class:'thumb-row', id:`thumbs_${key}`});
         photosBox.appendChild(fileInput);
         photosBox.appendChild(thumbRow);
+        const commentInput = el('textarea', {id:`comment_${key}`, class:'item-comment', placeholder:'Comentario sobre este ítem (opcional)'});
+        photosBox.appendChild(commentInput);
         row.appendChild(photosBox);
 
         itemsList.appendChild(row);
@@ -2126,20 +2129,26 @@ async function buildFotosPdfHtml(){
         const row = document.getElementById(`itemrow_${key}`);
         if(!row || row.dataset.answer !== 'No') continue;
         const files = itemPhotos[key] || [];
-        if(!files.length) continue;
-        groups.push({ label: `${bloque.nombre} · ${s.nombre} · ${subItemShort(s, i)} — No conforme`, files });
+        const comentario = v(`comment_${key}`).trim();
+        if(!files.length && !comentario) continue;
+        groups.push({ label: `${bloque.nombre} · ${s.nombre} · ${subItemShort(s, i)} — No conforme`, files, comentario });
       }
     });
   });
-  if(!groups.length) return '<p class="pdf-muted"><em>No se han adjuntado fotografías en esta visita.</em></p>';
+  if(!groups.length) return '<p class="pdf-muted"><em>No se han adjuntado fotografías ni comentarios en esta visita.</em></p>';
   let html = '';
   for(const g of groups){
-    html += `<div class="pdf-photogroup"><div class="pdf-photolabel">${escapeHtmlPdf(g.label)}</div><div class="pdf-photos">`;
-    for(const file of g.files){
-      const dataUrl = await fileToJpegDataUrl(file);
-      html += `<img src="${dataUrl}" class="pdf-photo">`;
+    html += `<div class="pdf-photogroup"><div class="pdf-photolabel">${escapeHtmlPdf(g.label)}</div>`;
+    if(g.comentario) html += `<div class="pdf-sub-obs">${escapeHtmlPdf(g.comentario)}</div>`;
+    if(g.files.length){
+      html += `<div class="pdf-photos">`;
+      for(const file of g.files){
+        const dataUrl = await fileToJpegDataUrl(file);
+        html += `<img src="${dataUrl}" class="pdf-photo">`;
+      }
+      html += `</div>`;
     }
-    html += `</div></div>`;
+    html += `</div>`;
   }
   return html;
 }
@@ -2256,7 +2265,7 @@ async function generatePdf(){
   <h2>6. Conclusión</h2>
   <p>${escapeHtmlPdf(map.CONCLUSION) || '—'}</p>
 
-  <h2>Fotografías de ítems no conformes</h2>
+  <h2>Fotografías y comentarios de ítems no conformes</h2>
   ${fotosHtml}
 `;
 
@@ -5359,6 +5368,8 @@ async function saveAuditoria(){
           if(!r) continue;
           const entry = { i, r };
           if(rutasFotosPorItem[key]) entry.fotos = rutasFotosPorItem[key];
+          const comentario = v(`comment_${key}`).trim();
+          if(comentario) entry.comentario = comentario;
           out.push(entry);
         }
         return out;
@@ -6333,8 +6344,8 @@ async function cargarAuditoriaParaEditar(id){
         if(obsEl) obsEl.value = subGuardado.observaciones || '';
         (subGuardado.respuestas || []).forEach(item => {
           setItemAnswer(bloqueDef.prefix, s.n, item.i, item.r);
+          const key = itemKey(bloqueDef.prefix, s.n, item.i);
           if(item.fotos && item.fotos.length){
-            const key = itemKey(bloqueDef.prefix, s.n, item.i);
             descargasFotos.push(
               Promise.all(item.fotos.map(ruta => descargarFotoAuditoria(ruta).catch(() => null)))
                 .then(files => {
@@ -6342,6 +6353,10 @@ async function cargarAuditoriaParaEditar(id){
                   renderThumbs(key);
                 })
             );
+          }
+          if(item.comentario){
+            const commentEl = document.getElementById(`comment_${key}`);
+            if(commentEl) commentEl.value = item.comentario;
           }
         });
       });
