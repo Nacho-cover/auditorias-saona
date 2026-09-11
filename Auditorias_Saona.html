@@ -2162,6 +2162,13 @@ async function generatePdf(){
   statusEl.style.color = 'var(--muted)';
   statusEl.textContent = 'Generando informe…';
   try{
+    // Si el Resumen ejecutivo se ha quedado completamente vacío (el usuario
+    // nunca pulsó "Generar borrador automático" en esa sección), se rellena
+    // solo antes de generar el PDF para que el informe no salga con guiones
+    // — sin tocar nada si ya hay aunque sea un campo escrito a mano.
+    const resumenVacio = !v('r_global').trim() && !v('r_bloques').trim() && !v('r_incidencias').trim() && !v('r_nohom').trim();
+    if(resumenVacio) autoResumen();
+
     const map = buildTokenMap();
     const bs = window._blockScores || {};
 
@@ -5282,7 +5289,11 @@ async function subirFotoAuditoria(auditId, key, idx, file){
   const ruta = `${auditId}/${key}/${idx}-${encodeURIComponent(file.name || 'foto.jpg')}`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/audit-fotos/${ruta}`, {
     method: 'POST',
-    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken()}`, 'Content-Type': file.type || 'application/octet-stream' },
+    // x-upsert: true — al editar una auditoría ya guardada y volver a subir
+    // las mismas fotos, la ruta (auditId/key/idx-nombre) coincide con la ya
+    // existente; sin esto, Supabase Storage devuelve 409 "The resource
+    // already exists" y la foto se pierde silenciosamente en cada reguardado.
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken()}`, 'Content-Type': file.type || 'application/octet-stream', 'x-upsert': 'true' },
     body: file,
   });
   if(!res.ok) throw new Error(await res.text() || res.statusText);
@@ -5326,6 +5337,7 @@ async function saveAuditoria(){
   // — se avisa al final, igual que el resto de guardados parciales de la app.
   const rutasFotosPorItem = {}; // key -> [ruta, ruta, ...]
   const fotosFallidas = [];
+  let fotosFallidasMotivo = '';
   const subidas = [];
   BLOQUES.forEach(bloque => {
     bloque.subs.forEach(s => {
@@ -5338,7 +5350,16 @@ async function saveAuditoria(){
           subidas.push(
             subirFotoAuditoria(auditId, key, idx, file)
               .then(ruta => { (rutasFotosPorItem[key] = rutasFotosPorItem[key] || []).push(ruta); })
-              .catch(() => { fotosFallidas.push(key); })
+              .catch(err => {
+                // Antes se descartaba el motivo real y solo se contaba el
+                // fallo — así, un problema real (p.ej. bucket inexistente,
+                // permisos) quedaba invisible tanto para el usuario como
+                // para diagnosticarlo después. Ahora se registra en consola
+                // y se guarda el primer mensaje real para mostrarlo.
+                console.error('Fallo al subir foto de auditoría', key, err);
+                fotosFallidas.push(key);
+                if(!fotosFallidasMotivo) fotosFallidasMotivo = (err && err.message) || 'motivo desconocido';
+              })
           );
         });
       }
@@ -5471,7 +5492,7 @@ async function saveAuditoria(){
 
     const avisos = [];
     if(fallidas.length) avisos.push(`fallaron estas secciones: ${fallidas.join(', ')}`);
-    if(fotosFallidas.length) avisos.push(`no se pudieron subir ${fotosFallidas.length} foto(s) (el resto de la auditoría sí se guardó)`);
+    if(fotosFallidas.length) avisos.push(`no se pudieron subir ${fotosFallidas.length} foto(s): ${fotosFallidasMotivo} (el resto de la auditoría sí se guardó)`);
 
     if(avisos.length){
       statusEl.style.color = 'var(--bad)';
