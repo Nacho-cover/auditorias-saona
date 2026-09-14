@@ -3333,12 +3333,26 @@ async function leerCsvOcupacion(file){
 }
 
 // --- Autorelleno de Walk-ins/No-shows desde el informe de Cover (CSV) ---------
-// Cada local de LOCALES puede tener un nombre distinto en el informe de Cover (p. ej.
-// "Donostia" en la app es "Saona San Sebastián" en Cover) — este mapa dice qué trozo de
-// texto buscar (sin importar mayúsculas/acentos) dentro de la columna "Restaurante".
+// Cada local de LOCALES puede tener un nombre distinto en informes externos (Cover,
+// Power BI/Venta Sugerida...) — p. ej. "Donostia" en la app es "Saona San Sebastián" /
+// "FRQ San Sebastian" fuera de ella. Este mapa dice qué trozo de texto buscar (sin
+// importar mayúsculas/acentos) además del propio nombre del local. Compartido entre
+// el lector de Cover (Reservas/Walk-ins) y el lector de Venta Sugerida (Excel de
+// Power BI) — ver nombreLocalCoincide().
 const LOCAL_A_NOMBRE_COVER = {
   'Donostia': 'san sebastian',
 };
+
+// Compara el texto de una fila de un informe externo (p. ej. "FRQ San Sebastian",
+// "FRQ Saona Thader") contra un local del grupo, probando primero el nombre propio
+// del local y luego su alias en LOCAL_A_NOMBRE_COVER si tiene uno — sin esto, locales
+// cuyo nombre externo no contiene su nombre en la app (Donostia/San Sebastián es el
+// caso real detectado) se quedaban sin rellenar en Venta Sugerida sin ningún aviso.
+function nombreLocalCoincide(nombreNorm, local){
+  if(nombreNorm.includes(quitarAcentos(local.nombre))) return true;
+  const alias = LOCAL_A_NOMBRE_COVER[local.nombre];
+  return !!alias && nombreNorm.includes(quitarAcentos(alias));
+}
 
 function quitarAcentos(str){
   return str.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -3916,7 +3930,13 @@ function parseVentaSugeridaExcel(filas){
   for(let i = 1; i < filas.length; i++){
     const cols = filas[i] || [];
     const nombreCol = String(cols[0] || '').trim();
-    if(!nombreCol || /^total$/i.test(quitarAcentos(nombreCol))) continue;
+    // Además de la fila vacía y la fila "Total", Power BI añade al final una
+    // nota "Filtros aplicados: ..." (multilínea) que repite el nombre de
+    // todos los locales dentro del propio texto — sin descartarla aquí,
+    // nombreLocalCoincide() la casaba con el primer local de la lista,
+    // creando un "local encontrado sin datos" fantasma. Una fila real de
+    // local nunca lleva salto de línea.
+    if(!nombreCol || /^total$/i.test(quitarAcentos(nombreCol)) || nombreCol.includes('\n')) continue;
     const categorias = Object.entries(columnas).map(([categoria, idx]) => ({
       categoria,
       uds: redondear(numero(cols[idx]), 0),
@@ -3940,7 +3960,7 @@ function aplicarVentaSugeridaExcel(filas){
   const localesSinDatos = [];
   filas.forEach(fila => {
     const nombreNorm = quitarAcentos(fila.localTexto);
-    const local = semLocales.find(l => nombreNorm.includes(quitarAcentos(l.nombre)));
+    const local = semLocales.find(l => nombreLocalCoincide(nombreNorm, l));
     if(!local) return;
     let huboDato = false;
     fila.categorias.forEach(c => {
@@ -3968,7 +3988,7 @@ function aplicarVentaSugeridaExcelMensual(filas){
   const localesSinDatos = []; // mismo criterio que aplicarVentaSugeridaExcel()
   filas.forEach(fila => {
     const nombreNorm = quitarAcentos(fila.localTexto);
-    const local = menLocales.find(l => nombreNorm.includes(quitarAcentos(l.nombre)));
+    const local = menLocales.find(l => nombreLocalCoincide(nombreNorm, l));
     if(!local) return;
     let huboDato = false;
     fila.categorias.forEach(c => {
