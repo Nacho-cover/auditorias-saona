@@ -2769,6 +2769,7 @@ function renderSemVentas(){
       row.querySelector(`#semv_${l.id}_${campo}`).addEventListener('input', () => { computeIC(l.id); computePctCompras(l.id); computePctComprasSemana(l.id); });
     });
     row.querySelector(`#semv_${l.id}_clientes`).addEventListener('input', () => syncReservasClientes(l.id));
+    row.querySelector(`#semv_${l.id}_ventas`).addEventListener('change', () => autoCalcularAcumuladoVentasLocal(l));
     row.querySelector(`#semv_${l.id}_ventasMes`).addEventListener('input', () => computePctCompras(l.id));
     return [row];
   });
@@ -5236,6 +5237,31 @@ async function traerAcumuladoMesCompras(){
    como base para el % de Compras/mermas del mes (antes dividía por la
    venta de la semana, ver computePctCompras).
    --------------------------------------------------------------- */
+/* Calcula y escribe el acumulado del mes de Ventas de UN local (suma de
+   semanas anteriores ya guardadas este mes + lo que haya ahora mismo en
+   "Ventas semana" de ese local). Factorizado aparte de
+   traerAcumuladoMesVentas() para poder reutilizarlo también en el
+   recálculo automático de abajo (autoCalcularAcumuladoVentasLocal). */
+async function calcularAcumuladoVentasLocal(l, inicioActual, primerDiaMes){
+  const informes = await fetch(
+    `${SUPABASE_URL}/rest/v1/informes_semanales?locales=ilike.*${encodeURIComponent(l.nombre)}*&semana_inicio=gte.${primerDiaMes}&semana_fin=lt.${inicioActual}&select=id`,
+    { headers: restHeaders() }
+  ).then(r => r.json());
+  let sumaVentas = 0;
+  if(informes.length){
+    const idsParam = informes.map(i => i.id).join(',');
+    const filas = await fetch(
+      `${SUPABASE_URL}/rest/v1/informe_semanal_ventas?informe_id=in.(${idsParam})&local=eq.${encodeURIComponent(l.nombre)}&select=ventas_semana`,
+      { headers: restHeaders() }
+    ).then(r => r.json());
+    filas.forEach(f => { sumaVentas += Number(f.ventas_semana) || 0; });
+  }
+  sumaVentas += numOrNull(`semv_${l.id}_ventas`) || 0;
+  const campo = document.getElementById(`semv_${l.id}_ventasMes`);
+  if(campo){ campo.value = sumaVentas ? Number(sumaVentas.toFixed(2)) : ''; campo.dispatchEvent(new Event('input', { bubbles: true })); }
+  return sumaVentas;
+}
+
 async function traerAcumuladoMesVentas(){
   const statusEl = document.getElementById('semAcumuladoVentasStatus');
   if(!semLocales.length){ statusEl.style.color = 'var(--bad)'; statusEl.textContent = 'Añade primero los locales del grupo.'; return; }
@@ -5254,22 +5280,7 @@ async function traerAcumuladoMesVentas(){
   let calculados = 0;
   try{
     for(const l of semLocales){
-      const informes = await fetch(
-        `${SUPABASE_URL}/rest/v1/informes_semanales?locales=ilike.*${encodeURIComponent(l.nombre)}*&semana_inicio=gte.${primerDiaMes}&semana_fin=lt.${inicioActual}&select=id`,
-        { headers: restHeaders() }
-      ).then(r => r.json());
-      let sumaVentas = 0;
-      if(informes.length){
-        const idsParam = informes.map(i => i.id).join(',');
-        const filas = await fetch(
-          `${SUPABASE_URL}/rest/v1/informe_semanal_ventas?informe_id=in.(${idsParam})&local=eq.${encodeURIComponent(l.nombre)}&select=ventas_semana`,
-          { headers: restHeaders() }
-        ).then(r => r.json());
-        filas.forEach(f => { sumaVentas += Number(f.ventas_semana) || 0; });
-      }
-      sumaVentas += numOrNull(`semv_${l.id}_ventas`) || 0;
-      const campo = document.getElementById(`semv_${l.id}_ventasMes`);
-      if(campo){ campo.value = sumaVentas ? Number(sumaVentas.toFixed(2)) : ''; campo.dispatchEvent(new Event('input', { bubbles: true })); }
+      await calcularAcumuladoVentasLocal(l, inicioActual, primerDiaMes);
       calculados++;
     }
     statusEl.style.color = 'var(--good)';
@@ -5278,6 +5289,35 @@ async function traerAcumuladoMesVentas(){
     console.error(err);
     statusEl.style.color = 'var(--bad)';
     statusEl.textContent = 'Error al calcular: ' + err.message;
+  }
+}
+
+/* Recálculo automático del acumulado de Ventas de UN local, disparado al
+   salir del campo "Ventas semana" (evento "change", no en cada tecla) —
+   así no hace falta acordarse de pulsar el botón "Calcular ventas
+   acumulado del mes" cada vez que se rellena la venta de la semana.
+   Silencioso si todavía no hay fecha de inicio de semana o la sesión no
+   está lista — no interrumpe con un error por rellenar los campos en otro
+   orden; el botón manual sigue disponible como respaldo. */
+async function autoCalcularAcumuladoVentasLocal(l){
+  const inicioActual = v('sem_semanaInicio');
+  if(!inicioActual) return;
+  const session = await refreshSessionIfNeeded();
+  if(!session) return;
+  const primerDiaMes = inicioActual.slice(0, 8) + '01';
+  const statusEl = document.getElementById('semAcumuladoVentasStatus');
+  try{
+    await calcularAcumuladoVentasLocal(l, inicioActual, primerDiaMes);
+    if(statusEl){
+      statusEl.style.color = 'var(--good)';
+      statusEl.textContent = `Acumulado del mes de ${l.nombre} actualizado automáticamente.`;
+    }
+  }catch(err){
+    console.error(err);
+    if(statusEl){
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = `No se pudo actualizar el acumulado de ${l.nombre} automáticamente: ${err.message}. Usa el botón "Calcular ventas acumulado del mes" cuando puedas.`;
+    }
   }
 }
 
