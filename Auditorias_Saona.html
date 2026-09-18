@@ -645,7 +645,7 @@
       </section>
 
       <section class="card" id="sec-sem-valoraciones">
-        <h2>Valoración de clientes (Google Reviews / TheFork Cover)</h2>
+        <h2>Valoración de clientes (Google Reviews / TheFork Cover / Google Maps / Glovo)</h2>
         <p class="desc">En "Puntos críticos" apunta en 2-3 líneas lo que digan las reseñas de esta semana sobre la experiencia del cliente (quejas repetidas, algo que haya destacado) — no hace falta copiar reseñas enteras, solo el resumen.</p>
         <p style="margin:0 0 12px; display:flex; gap:10px; flex-wrap:wrap;">
           <a class="small-btn" href="https://gruposaona.gastroranking.pro/global/home/460-N" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Gastroranking (reseñas GR)</a>
@@ -657,10 +657,12 @@
           <span id="semValOcrStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">Selecciona una captura por cada local que estés analizando (puedes elegir varias a la vez) — de reviews.saona.es. Se leen y rellenan solas, una a una. Es lectura automática: revisa siempre el texto.</span>
           <div id="semValOcrPreviews" style="display:flex; flex-wrap:wrap; gap:8px; width:100%;"></div>
         </div>
+        <div class="table-wrap-scroll" style="overflow-x:auto;">
         <table class="datatable" id="tblSemValoraciones">
-          <thead><tr><th style="text-align:left;">Local</th><th>Reseñas GR</th><th>Puntuación GR</th><th>Tendencia GR</th><th>Reseñas Cover</th><th>Puntuación Cover</th><th>Tendencia Cover</th><th style="min-width:180px;">Puntos críticos</th></tr></thead>
+          <thead><tr><th style="text-align:left;">Local</th><th>Reseñas GR</th><th>Puntuación GR</th><th>Tendencia GR</th><th>Reseñas Cover</th><th>Puntuación Cover</th><th>Tendencia Cover</th><th>Reseñas Google Maps</th><th>Puntuación Google Maps</th><th>Tendencia Google Maps</th><th>Reseñas Glovo</th><th>Puntuación Glovo</th><th>Tendencia Glovo</th><th style="min-width:180px;">Puntos críticos</th></tr></thead>
           <tbody></tbody>
         </table>
+        </div>
       </section>
 
       <section class="card" id="sec-sem-saonareviews">
@@ -2984,6 +2986,12 @@ function renderSemValoraciones(){
     semInputCell(`semva_${l.id}_resenasCover`, {inputmode:'numeric'}),
     semInputCell(`semva_${l.id}_puntCover`, {inputmode:'decimal'}),
     semSelectCell(`semva_${l.id}_tendCover`, ['up','down']),
+    semInputCell(`semva_${l.id}_resenasGMaps`, {inputmode:'numeric'}),
+    semInputCell(`semva_${l.id}_puntGMaps`, {inputmode:'decimal'}),
+    semSelectCell(`semva_${l.id}_tendGMaps`, ['up','down']),
+    semInputCell(`semva_${l.id}_resenasGlovo`, {inputmode:'numeric'}),
+    semInputCell(`semva_${l.id}_puntGlovo`, {inputmode:'decimal'}),
+    semSelectCell(`semva_${l.id}_tendGlovo`, ['up','down']),
     semTextareaCell(`semva_${l.id}_puntosCriticos`, {placeholder:'Ej: quejas por tiempo de espera en comidas de sábado'}),
   ]) ]);
 }
@@ -5684,6 +5692,12 @@ async function guardarInformeSemanal(){
     resenas_cover: numOrNull(`semva_${l.id}_resenasCover`),
     puntuacion_cover: numOrNull(`semva_${l.id}_puntCover`),
     tendencia_cover: v(`semva_${l.id}_tendCover`) || null,
+    resenas_google: numOrNull(`semva_${l.id}_resenasGMaps`),
+    puntuacion_google: numOrNull(`semva_${l.id}_puntGMaps`),
+    tendencia_google: v(`semva_${l.id}_tendGMaps`) || null,
+    resenas_glovo: numOrNull(`semva_${l.id}_resenasGlovo`),
+    puntuacion_glovo: numOrNull(`semva_${l.id}_puntGlovo`),
+    tendencia_glovo: v(`semva_${l.id}_tendGlovo`) || null,
     puntos_criticos: v(`semva_${l.id}_puntosCriticos`) || null,
     saona_reviews_texto: v(`semSaonaRev_${l.id}_texto`) || null,
   }));
@@ -5760,6 +5774,8 @@ async function guardarInformeSemanal(){
   chequearRango(ocupacion, 'pct_cena', 'Ocupación cena %', 999.995);
   chequearRango(valoraciones, 'puntuacion_gr', 'Puntuación Google Reviews', 99.95);
   chequearRango(valoraciones, 'puntuacion_cover', 'Puntuación Cover', 99.95);
+  chequearRango(valoraciones, 'puntuacion_google', 'Puntuación Google Maps', 99.95);
+  chequearRango(valoraciones, 'puntuacion_glovo', 'Puntuación Glovo', 99.95);
   if(fueraDeRango.length){
     statusEl.style.color = 'var(--bad)';
     statusEl.textContent = 'No se puede guardar: valor fuera de rango en ' +
@@ -5949,6 +5965,12 @@ async function cargarInformeSemanalParaEditar(id){
       setVal(`semva_${lid}_resenasCover`, r.resenas_cover);
       setVal(`semva_${lid}_puntCover`, r.puntuacion_cover);
       setVal(`semva_${lid}_tendCover`, r.tendencia_cover);
+      setVal(`semva_${lid}_resenasGMaps`, r.resenas_google);
+      setVal(`semva_${lid}_puntGMaps`, r.puntuacion_google);
+      setVal(`semva_${lid}_tendGMaps`, r.tendencia_google);
+      setVal(`semva_${lid}_resenasGlovo`, r.resenas_glovo);
+      setVal(`semva_${lid}_puntGlovo`, r.puntuacion_glovo);
+      setVal(`semva_${lid}_tendGlovo`, r.tendencia_glovo);
       setVal(`semva_${lid}_puntosCriticos`, r.puntos_criticos);
       setVal(`semSaonaRev_${lid}_texto`, r.saona_reviews_texto);
     });
