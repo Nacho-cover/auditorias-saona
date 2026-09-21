@@ -537,9 +537,10 @@
           <span id="semVsExcelStatus" style="font-size:12px; color:var(--muted); flex-basis:100%;">En la tabla de Power BI: los tres puntos "···" → Exportar datos → Excel. Sube aquí ese archivo (uno por local, puedes elegir varios a la vez) — se leen y rellenan solos. Es lectura automática: revisa siempre los números antes de guardar.</span>
           <div id="semVsExcelPreviews" style="display:flex; flex-wrap:wrap; gap:8px; width:100%;"></div>
         </div>
+        <div id="semVentaSugeridaAlertas"></div>
         <div class="table-wrap-scroll" style="overflow-x:auto;">
         <table class="datatable" id="tblSemVentaSugerida">
-          <thead><tr><th style="text-align:left;">Local</th><th style="text-align:left;">Categoría</th><th>Uds.</th><th>KPI %</th><th>€</th><th style="width:13%;">Venta local (mes) €</th><th>% s/venta</th></tr></thead>
+          <thead><tr><th style="text-align:left;">Local</th><th style="text-align:left;">Categoría</th><th>Sem. ant.</th><th>Uds.</th><th>KPI %</th><th>€</th><th style="width:13%;">Venta local (mes) €</th><th>% s/venta</th></tr></thead>
           <tbody></tbody>
         </table>
         </div>
@@ -2391,6 +2392,7 @@ function restaurarBorrador(){
     updateSemanaPreview();
     refrescarFechasOcupacion();
     cargarOcupacionSemanaAnterior();
+    cargarVentaSugeridaSemanaAnterior();
     semLocales.forEach(l => {
       computeIC(l.id); computePctCompras(l.id); computePctComprasSemana(l.id); computePctWalkins(l.id);
       for(let di = 0; di < 7; di++){ computeOcupacionPct(`semo_${l.id}_${di}`, 'mediodia'); computeOcupacionPct(`semo_${l.id}_${di}`, 'cena'); }
@@ -2521,6 +2523,7 @@ let editandoAuditId = null; // id de la auditoría VEO (visita_operativa/veo_ext
 let semFranjas = []; // [{ local, dia_semana, franja, reservas }] — comportamiento de reservas por franja de 15 min
 let semFranjasAnteriores = {}; // misma forma, de la semana anterior guardada (para las alertas)
 let semOcupacionAnterior = {}; // { 'local|dia': {pct_mediodia, comensales_mediodia, pct_cena, comensales_cena} } — ocupación de la semana anterior guardada, para comparar
+let semVentaSugeridaAnterior = {}; // { 'local|categoria': {uds, euros} } — venta sugerida de la semana anterior guardada, para comparar
 let semMermasDetalle = {}; // { [localId]: [{ producto, unidad, cantidad, coste }] } — desglose de mermas por producto (Yurest)
 
 // Mes del Informe Mensual como desplegable + año (no <input type="month">:
@@ -2792,6 +2795,7 @@ function computeTotalVentaSugerida(id){
   if(udsEl) udsEl.value = sumUds || '';
   if(eurEl) eurEl.value = sumEuros ? sumEuros.toFixed(2) : '';
   if(pctEl) pctEl.value = pct != null ? pct : '';
+  pintarVentaSugeridaCmpTotal(id);
 }
 
 function renderSemVentaSugerida(){
@@ -2800,6 +2804,7 @@ function renderSemVentaSugerida(){
       const row = semLocalRow(l, [
         semTextCell(l.nombre),
         semTextCell(cat),
+        el('td', {id:`semvs_${l.id}_${ci}_cmp`, text:'—', style:'font-size:11px; color:var(--muted); white-space:nowrap;'}),
         semInputCell(`semvs_${l.id}_${ci}_uds`, {inputmode:'numeric'}),
         semInputCell(`semvs_${l.id}_${ci}_kpi`, {inputmode:'decimal'}),
         semInputCell(`semvs_${l.id}_${ci}_euros`, {inputmode:'decimal'}),
@@ -2807,7 +2812,10 @@ function renderSemVentaSugerida(){
         semTextCell('—'),
       ]);
       ['uds','kpi','euros'].forEach(campo => {
-        row.querySelector(`#semvs_${l.id}_${ci}_${campo}`).addEventListener('input', () => computeTotalVentaSugerida(l.id));
+        row.querySelector(`#semvs_${l.id}_${ci}_${campo}`).addEventListener('input', () => {
+          computeTotalVentaSugerida(l.id);
+          pintarVentaSugeridaCmp(l.id, ci);
+        });
       });
       return row;
     });
@@ -2815,6 +2823,7 @@ function renderSemVentaSugerida(){
     const totalRow = semLocalRow(l, [
       semTextCell(l.nombre),
       el('td', {id:`semvs_${l.id}_total_label`, text:'Total', style:'font-weight:700; color:var(--navy);'}),
+      el('td', {id:`semvs_${l.id}_total_cmp`, text:'—', style:'font-size:11px; color:var(--muted); white-space:nowrap;'}),
       semInputCell(`semvs_${l.id}_total_uds`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE}),
       semTextCell('—'),
       semInputCell(`semvs_${l.id}_total_euros`, {readonly:'readonly', tabindex:'-1', style:CALC_STYLE + 'font-weight:700;'}),
@@ -2826,6 +2835,118 @@ function renderSemVentaSugerida(){
 
     return [...rows, totalRow];
   });
+  renderVentaSugeridaComparativa();
+}
+
+// --- Comparativa de Venta Sugerida vs. semana anterior --------------------------
+// Mismo criterio que Ocupación/Franjas: se compara por categoría (y local), no por
+// fecha exacta, contra el último informe semanal GUARDADO anterior a la semana
+// actual. Umbral de alerta compartido en espíritu con UMBRAL_ALERTA_FRANJA/
+// UMBRAL_ALERTA_OCUPACION (mismo 25%, pero variable propia por si se quiere ajustar
+// solo para Venta Sugerida más adelante).
+const UMBRAL_ALERTA_VENTA_SUGERIDA = 0.25;
+
+function formatoCmpVentaSugerida(antUds, antEuros, actUds, actEuros){
+  if(antUds == null && antEuros == null) return { texto:'—', alerta:false };
+  const udsTxt = antUds != null ? antUds.toLocaleString('es-ES') : '—';
+  const eurTxt = antEuros != null ? antEuros.toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}) + '€' : '—';
+  let alerta = false;
+  if(antUds != null && antUds > 0 && actUds != null){
+    if((antUds - actUds) / antUds >= UMBRAL_ALERTA_VENTA_SUGERIDA) alerta = true;
+  }
+  if(antEuros != null && antEuros > 0 && actEuros != null){
+    if((antEuros - actEuros) / antEuros >= UMBRAL_ALERTA_VENTA_SUGERIDA) alerta = true;
+  }
+  return { texto: `${udsTxt} uds / ${eurTxt}`, alerta };
+}
+
+function pintarVentaSugeridaCmp(localId, ci){
+  const local = semLocales.find(x => x.id === localId);
+  if(!local) return;
+  const cat = CATEGORIAS_VENTA_SUGERIDA[ci];
+  const cmpEl = document.getElementById(`semvs_${localId}_${ci}_cmp`);
+  if(!cmpEl) return;
+  const ant = semVentaSugeridaAnterior[`${local.nombre}|${cat}`];
+  const actUds = numOrNull(`semvs_${localId}_${ci}_uds`);
+  const actEuros = numOrNull(`semvs_${localId}_${ci}_euros`);
+  const { texto, alerta } = formatoCmpVentaSugerida(ant ? ant.uds : null, ant ? ant.euros : null, actUds, actEuros);
+  cmpEl.textContent = alerta ? `⚠ ${texto}` : texto;
+  cmpEl.style.color = alerta ? 'var(--bad)' : 'var(--muted)';
+  cmpEl.style.fontWeight = alerta ? '700' : 'normal';
+}
+
+function pintarVentaSugeridaCmpTotal(localId){
+  const local = semLocales.find(x => x.id === localId);
+  const cmpEl = document.getElementById(`semvs_${localId}_total_cmp`);
+  if(!local || !cmpEl) return;
+  let antUds = null, antEuros = null;
+  CATEGORIAS_VENTA_SUGERIDA.forEach(cat => {
+    const ant = semVentaSugeridaAnterior[`${local.nombre}|${cat}`];
+    if(ant){
+      if(ant.uds != null) antUds = (antUds || 0) + ant.uds;
+      if(ant.euros != null) antEuros = (antEuros || 0) + ant.euros;
+    }
+  });
+  const actUds = numOrNull(`semvs_${localId}_total_uds`);
+  const actEuros = numOrNull(`semvs_${localId}_total_euros`);
+  const { texto, alerta } = formatoCmpVentaSugerida(antUds, antEuros, actUds, actEuros);
+  cmpEl.textContent = alerta ? `⚠ ${texto}` : texto;
+  cmpEl.style.color = alerta ? 'var(--bad)' : 'var(--muted)';
+  cmpEl.style.fontWeight = alerta ? '700' : '600';
+}
+
+function renderVentaSugeridaComparativa(){
+  const alertas = [];
+  semLocales.forEach(l => {
+    CATEGORIAS_VENTA_SUGERIDA.forEach((cat, ci) => {
+      pintarVentaSugeridaCmp(l.id, ci);
+      const ant = semVentaSugeridaAnterior[`${l.nombre}|${cat}`];
+      if(!ant) return;
+      const actUds = numOrNull(`semvs_${l.id}_${ci}_uds`);
+      const actEuros = numOrNull(`semvs_${l.id}_${ci}_euros`);
+      const { alerta } = formatoCmpVentaSugerida(ant.uds, ant.euros, actUds, actEuros);
+      if(alerta) alertas.push({ local:l.nombre, cat, antUds:ant.uds, antEuros:ant.euros, actUds, actEuros });
+    });
+    pintarVentaSugeridaCmpTotal(l.id);
+  });
+
+  const alertasBox = document.getElementById('semVentaSugeridaAlertas');
+  if(!alertasBox) return;
+  alertasBox.innerHTML = alertas.length
+    ? `<p class="status-message" data-kind="error" style="margin-bottom:8px;">⚠ ${alertas.length} categoría(s) con caída de ${Math.round(UMBRAL_ALERTA_VENTA_SUGERIDA*100)}% o más (uds o €) respecto a la semana anterior:</p>
+       <ul style="margin:0 0 10px; padding-left:20px; font-size:13px;">
+         ${alertas.map(a => `<li>${a.local} — ${a.cat}: ${a.actUds ?? '—'} uds / ${a.actEuros != null ? a.actEuros.toFixed(2)+'€' : '—'} (antes ${a.antUds ?? '—'} uds / ${a.antEuros != null ? a.antEuros.toFixed(2)+'€' : '—'})</li>`).join('')}
+       </ul>`
+    : '';
+}
+
+// Trae, para cada local, la Venta Sugerida (por categoría) del último informe
+// semanal GUARDADO anterior a la fecha de inicio actual — mismo patrón que
+// cargarOcupacionSemanaAnterior()/cargarFranjasSemanaAnterior(). Solo lectura; si
+// algo falla, se queda sin comparativa en vez de bloquear el resto del formulario.
+async function cargarVentaSugeridaSemanaAnterior(){
+  semVentaSugeridaAnterior = {};
+  const inicioActual = v('sem_semanaInicio');
+  if(!inicioActual || !semLocales.length){ renderVentaSugeridaComparativa(); return; }
+  const session = await refreshSessionIfNeeded();
+  if(!session){ renderVentaSugeridaComparativa(); return; }
+  try{
+    for(const l of semLocales){
+      const informes = await fetch(
+        `${SUPABASE_URL}/rest/v1/informes_semanales?locales=ilike.*${encodeURIComponent(l.nombre)}*&semana_fin=lt.${inicioActual}&order=semana_fin.desc&limit=1&select=id`,
+        { headers: restHeaders() }
+      ).then(r => r.json());
+      if(!informes.length) continue;
+      const filas = await fetch(
+        `${SUPABASE_URL}/rest/v1/informe_semanal_venta_sugerida?informe_id=eq.${informes[0].id}&local=eq.${encodeURIComponent(l.nombre)}&select=categoria,uds,euros`,
+        { headers: restHeaders() }
+      ).then(r => r.json());
+      filas.forEach(f => { semVentaSugeridaAnterior[`${l.nombre}|${f.categoria}`] = { uds: f.uds, euros: f.euros }; });
+    }
+  }catch(err){
+    console.error(err);
+  }
+  renderVentaSugeridaComparativa();
 }
 
 function renderSemCompras(){
@@ -3806,6 +3927,7 @@ function aplicarVentaSugeridaOCR(resultados){
     aplicados++;
     if(!huboDatos) sinDatos++;
   });
+  renderVentaSugeridaComparativa();
   return { aplicados, sinDatos };
 }
 
@@ -3983,6 +4105,7 @@ function aplicarVentaSugeridaExcel(filas){
     if(huboDato){ localesEncontrados.push(local.nombre); aplicados++; }
     else localesSinDatos.push(local.nombre);
   });
+  renderVentaSugeridaComparativa();
   return { aplicados, localesEncontrados, localesSinDatos };
 }
 
@@ -4342,6 +4465,7 @@ function renderAllSemSections(){
   renderSemValoraciones();
   renderSemOcupacion();
   cargarOcupacionSemanaAnterior();
+  cargarVentaSugeridaSemanaAnterior();
   renderSemSaonaReviews();
 }
 
@@ -6032,6 +6156,7 @@ async function cargarInformeSemanalParaEditar(id){
     poblarSemFranjasLocalSelect();
     cargarFranjasSemanaAnterior().then(renderFranjas);
     cargarOcupacionSemanaAnterior();
+    cargarVentaSugeridaSemanaAnterior();
 
     semMermasDetalle = {};
     mermasDetalle.forEach(r => {
@@ -6584,7 +6709,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnSemAnterior').addEventListener('click', traerSemanaAnterior);
   document.getElementById('btnSemAcumuladoCompras').addEventListener('click', traerAcumuladoMesCompras);
   document.getElementById('btnSemAcumuladoVentas').addEventListener('click', traerAcumuladoMesVentas);
-  document.getElementById('sem_semanaInicio').addEventListener('change', () => { updateSemanaPreview(); refrescarFechasOcupacion(); cargarOcupacionSemanaAnterior(); });
+  document.getElementById('sem_semanaInicio').addEventListener('change', () => { updateSemanaPreview(); refrescarFechasOcupacion(); cargarOcupacionSemanaAnterior(); cargarVentaSugeridaSemanaAnterior(); });
   document.getElementById('sem_semanaFin').addEventListener('change', () => { updateSemanaPreview(); refrescarFechasOcupacion(); });
   document.getElementById('semOcupacionCsvFile').addEventListener('change', (e) => {
     const file = e.target.files[0];
