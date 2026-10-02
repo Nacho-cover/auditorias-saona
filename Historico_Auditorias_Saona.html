@@ -32,6 +32,7 @@
   tr:hover td{background:var(--bg);}
   .tag{display:inline-block; padding:2px 9px; border-radius:20px; font-size:11.5px; font-weight:600;}
   .tag.visita_operativa{background:#E7F3EC; color:var(--good);}
+  .tag.visita_operativa_propios{background:#E7F3EC; color:var(--good);}
   .tag.veo_externa{background:#FBEFE6; color:var(--accent);}
   .status-message{font-size:13.5px; margin-top:8px;}
   .status-message[data-kind="error"]{color:var(--bad);}
@@ -132,6 +133,7 @@
         <select id="filtroTipo">
           <option value="">Todos</option>
           <option value="visita_operativa">Visita Operativa</option>
+          <option value="visita_operativa_propios">Visita Operativa — Locales propios</option>
           <option value="veo_externa">VEO Externa 2.0</option>
         </select>
       </div>
@@ -249,7 +251,7 @@ function closeChangePw(){ document.getElementById('changePwOverlay').classList.a
    Semanales (tabla informes_semanales). Un mismo fetch/render/filtro
    parametrizado por `modo`, en vez de duplicar la página.
    --------------------------------------------------------------- */
-const TIPO_LABEL = { visita_operativa: 'Visita Operativa', veo_externa: 'VEO Externa 2.0' };
+const TIPO_LABEL = { visita_operativa: 'Visita Operativa', visita_operativa_propios: 'Visita Operativa — Locales propios', veo_externa: 'VEO Externa 2.0' };
 const MESES_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const CATEGORIAS_VENTA_SUGERIDA = ['Sugerencia núcleo','Picoteo','Café','Menú degustación','Menú de grupo','Platos con suplemento','Postres','Pan'];
 let modo = 'auditorias'; // 'auditorias' | 'semanal' | 'informeMensual' | 'mensual'

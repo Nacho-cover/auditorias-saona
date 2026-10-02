@@ -360,7 +360,7 @@
       <a href="#sec-global">Puntuación global</a>
       <a href="#sec-bloques">Resultados por bloque</a>
       <a href="#sec-incidencias">Incidencias</a>
-      <a href="#sec-nohom">Productos no homologados</a>
+      <a href="#sec-nohom" id="navNoHom">Productos no homologados</a>
       <a href="#sec-plan">Plan de acción</a>
       <a href="#sec-conclusion">Conclusión</a>
     </div>
@@ -397,6 +397,7 @@
         <div class="field"><label>Tipo de auditoría</label>
           <select id="f_tipo">
             <option value="visita_operativa">Visita Operativa (VEO interna, VEO-CLO Mixto)</option>
+            <option value="visita_operativa_propios">Visita Operativa — Locales propios</option>
             <option value="veo_externa">VEO Externa 2.0</option>
             <option value="informe_semanal">Informe Semanal de Operaciones</option>
             <option value="informe_mensual">Informe Mensual</option>
@@ -422,7 +423,7 @@
       <div class="field" style="margin-bottom:12px;"><label>Resultado global de la visita</label><textarea id="r_global" placeholder="Puntuación total ponderada obtenida y comparación con la visita anterior"></textarea></div>
       <div class="field" style="margin-bottom:12px;"><label>Bloque con mejor / peor desempeño</label><textarea id="r_bloques"></textarea></div>
       <div class="field" style="margin-bottom:12px;"><label>Incidencias más relevantes y su gravedad</label><textarea id="r_incidencias"></textarea></div>
-      <div class="field" style="margin-bottom:12px;"><label>Productos no homologados detectados</label><textarea id="r_nohom"></textarea></div>
+      <div class="field" id="fieldRNoHom" style="margin-bottom:12px;"><label>Productos no homologados detectados</label><textarea id="r_nohom"></textarea></div>
       <div class="field"><label>Recomendación principal / prioridad para el local</label><textarea id="r_recomendacion" placeholder="Prioridad principal de actuación para este local"></textarea></div>
     </section>
 
@@ -470,7 +471,7 @@
     </section>
 
     <section class="card" id="sec-plan">
-      <h2>5. Plan de acción / Próximos pasos</h2>
+      <h2 id="hPlan">5. Plan de acción / Próximos pasos</h2>
       <p class="desc">Hasta 5 acciones correctivas derivadas de la visita. Puedes escribirlas tú mismo o generar un borrador automático a partir de las Incidencias (sección 3, prioridad = su gravedad) y los Productos no homologados aún pendientes o en revisión (sección 4) — luego solo falta indicar responsable y fecha donde no vengan ya de la incidencia.</p>
       <div class="row-actions"><button class="btn secondary" type="button" id="btnAutoPlan">Generar a partir de Incidencias / Prod. no homologados</button></div>
       <div class="desc" id="planAutoStatus" style="margin:6px 0 12px;"></div>
@@ -481,7 +482,7 @@
     </section>
 
     <section class="card" id="sec-conclusion">
-      <h2>6. Conclusión</h2>
+      <h2 id="hConclusion">6. Conclusión</h2>
       <p class="desc">Puedes escribirla tú mismo o generar un borrador automático a partir de la puntuación, las Incidencias, los Productos no homologados y el Plan de acción ya rellenados más arriba.</p>
       <div class="row-actions"><button class="btn secondary" type="button" id="btnAutoConclusion">Generar borrador automático</button></div>
       <div class="desc" id="conclusionAutoStatus" style="margin:6px 0 12px;"></div>
@@ -1025,6 +1026,7 @@ document.addEventListener('DOMContentLoaded', initAuth);
 
 const TIPOS = {
   visita_operativa: { label: 'Visita Operativa (VEO interna, VEO-CLO Mixto)' },
+  visita_operativa_propios: { label: 'Visita Operativa — Locales propios' },
   veo_externa: { label: 'VEO Externa 2.0' },
   informe_semanal: { label: 'Informe Semanal de Operaciones' },
   informe_mensual: { label: 'Informe Mensual' },
@@ -1459,6 +1461,8 @@ const BLOQUES_VEO_EXTERNA = [
 
 const CHECKLISTS = {
   visita_operativa: { ...TIPOS.visita_operativa, bloques: BLOQUES_VISITA_OPERATIVA },
+  // Locales propios: misma Visita Operativa sin el bloque 4 (Productos No Homologados); pesos 30/60/10.
+  visita_operativa_propios: { ...TIPOS.visita_operativa_propios, sinNoHom: true, bloques: BLOQUES_VISITA_OPERATIVA.filter(b => b.key !== 'B4').map(b => ({ ...b, peso: { B1: 0.3, B2: 0.6, B3: 0.1 }[b.key] })) },
   veo_externa: { ...TIPOS.veo_externa, bloques: BLOQUES_VEO_EXTERNA },
 };
 
@@ -1822,6 +1826,7 @@ function autoResumen(){
     const prod = document.getElementById(`pnhd${i}_producto`).value.trim();
     if(prod) nohomItems.push(prod);
   }
+  if(CHECKLISTS[currentTipo].sinNoHom) return;
   document.getElementById('r_nohom').value = nohomItems.length
     ? `Se detectaron ${nohomItems.length} producto(s) no homologado(s): ${nohomItems.join(', ')}.`
     : 'No se detectaron productos no homologados en esta visita.';
@@ -2169,7 +2174,7 @@ async function generatePdf(){
     // nunca pulsó "Generar borrador automático" en esa sección), se rellena
     // solo antes de generar el PDF para que el informe no salga con guiones
     // — sin tocar nada si ya hay aunque sea un campo escrito a mano.
-    const resumenVacio = !v('r_global').trim() && !v('r_bloques').trim() && !v('r_incidencias').trim() && !v('r_nohom').trim();
+    const resumenVacio = !v('r_global').trim() && !v('r_bloques').trim() && !v('r_incidencias').trim() && (CHECKLISTS[currentTipo].sinNoHom || !v('r_nohom').trim());
     if(resumenVacio) autoResumen();
 
     const map = buildTokenMap();
@@ -2233,6 +2238,7 @@ async function generatePdf(){
     const fotosHtml = await buildFotosPdfHtml();
 
     const tipoLabel = CHECKLISTS[currentTipo].label;
+    const sinNoHom = !!CHECKLISTS[currentTipo].sinNoHom;
     const fecha = new Date().toISOString().slice(0,10);
 
     const reportHtml = `
@@ -2250,7 +2256,7 @@ async function generatePdf(){
   <p><b>Resultado global:</b> ${escapeHtmlPdf(map.RESUMEN_GLOBAL) || '—'}</p>
   <p><b>Bloque mejor/peor:</b> ${escapeHtmlPdf(map.RESUMEN_BLOQUES) || '—'}</p>
   <p><b>Incidencias relevantes:</b> ${escapeHtmlPdf(map.RESUMEN_INCIDENCIAS) || '—'}</p>
-  <p><b>Productos no homologados:</b> ${escapeHtmlPdf(map.RESUMEN_NOHOM) || '—'}</p>
+  ${sinNoHom ? '' : `<p><b>Productos no homologados:</b> ${escapeHtmlPdf(map.RESUMEN_NOHOM) || '—'}</p>`}
   <p><b>Recomendación:</b> ${escapeHtmlPdf(map.RESUMEN_RECOMENDACION) || '—'}</p>
 
   <h2>1. Puntuación global — ${escapeHtmlPdf(tipoLabel)}</h2>
@@ -2266,13 +2272,13 @@ async function generatePdf(){
   <h2>3. Incidencias detectadas</h2>
   ${incHtml}
 
-  <h2>4. Productos no homologados detectados</h2>
-  ${pnhdHtml}
+  ${sinNoHom ? '' : `<h2>4. Productos no homologados detectados</h2>
+  ${pnhdHtml}`}
 
-  <h2>5. Plan de acción / Próximos pasos</h2>
+  <h2>${sinNoHom ? 4 : 5}. Plan de acción / Próximos pasos</h2>
   ${planHtml}
 
-  <h2>6. Conclusión</h2>
+  <h2>${sinNoHom ? 5 : 6}. Conclusión</h2>
   <p>${escapeHtmlPdf(map.CONCLUSION) || '—'}</p>
 
   <h2>Fotografías y comentarios de ítems no conformes</h2>
@@ -2468,6 +2474,19 @@ function onTipoChange(){
 
   BLOQUES = CHECKLISTS[currentTipo].bloques;
 
+  const sinNoHom = !!CHECKLISTS[currentTipo].sinNoHom;
+  document.getElementById('sec-nohom').style.display = sinNoHom ? 'none' : '';
+  document.getElementById('navNoHom').style.display = sinNoHom ? 'none' : '';
+  document.getElementById('fieldRNoHom').style.display = sinNoHom ? 'none' : '';
+  document.getElementById('hPlan').textContent = (sinNoHom ? '4' : '5') + '. Plan de acción / Próximos pasos';
+  document.getElementById('hConclusion').textContent = (sinNoHom ? '5' : '6') + '. Conclusión';
+  if(sinNoHom){
+    document.getElementById('r_nohom').value = '';
+    for(let i = 1; i <= N_PNHD; i++){
+      ['producto','proveedor','area','accion','estado'].forEach(c => { const e = document.getElementById(`pnhd${i}_${c}`); if(e) e.value = ''; });
+    }
+  }
+
   Object.keys(itemPhotos).forEach(k => delete itemPhotos[k]);
   obsDirty.clear();
 
@@ -2482,7 +2501,9 @@ function onTipoChange(){
 
   document.getElementById('tipoHint').textContent = currentTipo === 'veo_externa'
     ? 'La VEO Externa 2.0 oficial se gestiona en Yurest — esta app es una alternativa independiente, no la sustituye. Pesos por bloque provisionales (repartidos a partes iguales), pendientes de confirmar con Dirección de Operaciones.'
-    : 'Visita Operativa interna (VEO-CLO Mixto) — la hace el AM/formador de zona de forma recurrente.';
+    : sinNoHom
+      ? 'Visita Operativa para locales propios — igual que la Visita Operativa estándar pero sin el bloque de Productos No Homologados. Pesos: Operativa 30% · Seguridad Alimentaria 60% · Imagen e Instalaciones 10%.'
+      : 'Visita Operativa interna (VEO-CLO Mixto) — la hace el AM/formador de zona de forma recurrente.';
   mostrarAvisoBorradorSiExiste();
 }
 
