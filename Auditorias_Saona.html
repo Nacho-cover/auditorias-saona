@@ -814,11 +814,11 @@
 
       <section class="card" id="sec-men-costes">
         <h2>Coste Real vs. Teórico (Yurest)</h2>
-        <p class="desc">Solo para locales con inventario/escandallo en Yurest. Compara el % de coste según el escandallo teórico con el % de coste real de compras — dato de Yurest, se copia a mano. Deja en blanco los locales sin este dato este mes.</p>
+        <p class="desc">Solo para locales con inventario/escandallo en Yurest. Compara el importe (€) de coste según el escandallo teórico con el importe (€) de coste real de compras — dato de Yurest, se copia a mano. Deja en blanco los locales sin este dato este mes.</p>
         <p style="margin:0 0 12px;"><a class="small-btn" href="https://cliente.yurest.com/login" target="_blank" rel="noopener" style="text-decoration:none; display:inline-block;">🔗 Abrir Yurest</a></p>
         <div class="table-wrap-scroll" style="overflow-x:auto;">
         <table class="datatable" id="tblMenCostes">
-          <thead><tr><th style="text-align:left;">Local</th><th>% Coste teórico</th><th>% Coste real</th><th>Desviación</th><th style="min-width:200px;">Notas</th><th style="min-width:160px;">PDF Yurest</th></tr></thead>
+          <thead><tr><th style="text-align:left;">Local</th><th>Coste teórico (€)</th><th>Coste real (€)</th><th>Desviación (€)</th><th style="min-width:200px;">Notas</th><th style="min-width:160px;">PDF Yurest</th></tr></thead>
           <tbody></tbody>
         </table>
         </div>
@@ -4688,7 +4688,7 @@ function lineasEstrategicasLocal(id){
 
   const desv = numOrNull(`menc_${id}_desviacion`);
   if(desv != null && desv > 0){
-    partes.push(`Cerrar la desviación de coste real sobre el teórico detectada en Yurest (+${desv} puntos).`);
+    partes.push(`Cerrar la desviación de coste real sobre el teórico detectada en Yurest (+${fmtEurTendencia(desv)}).`);
   }
   return partes.length ? partes.join(' ') : null;
 }
@@ -4696,7 +4696,8 @@ function lineasEstrategicasLocal(id){
 function prioridadesLocal(id){
   const partes = [];
   const desv = numOrNull(`menc_${id}_desviacion`);
-  if(desv != null && Math.abs(desv) >= 1){
+  const teoricoEur = numOrNull(`menc_${id}_teorico`);
+  if(desv != null && (teoricoEur ? Math.abs(desv) / teoricoEur >= 0.01 : Math.abs(desv) >= 1)){
     partes.push(desv > 0
       ? 'Auditar recepción de mercancía y mermas — el coste real supera al teórico.'
       : 'Confirmar que el coste real por debajo del teórico no oculta un problema de escandallo o de registro en Yurest.');
@@ -4753,7 +4754,7 @@ function descargarCsvCostes(){
     return;
   }
   const escapar = (campo) => `"${String(campo == null ? '' : campo).replace(/"/g, '""')}"`;
-  const filas = [['Local', '% Coste teórico', '% Coste real', 'Desviación', 'Notas']];
+  const filas = [['Local', 'Coste teórico (€)', 'Coste real (€)', 'Desviación (€)', 'Notas']];
   menLocales.forEach(l => {
     filas.push([
       l.nombre,
@@ -4780,7 +4781,7 @@ function computeDesviacionCostes(id){
   const teorico = numOrNull(`menc_${id}_teorico`);
   const real = numOrNull(`menc_${id}_real`);
   const desvEl = document.getElementById(`menc_${id}_desviacion`);
-  if(desvEl) desvEl.value = (teorico != null && real != null) ? (real - teorico).toFixed(1) : '';
+  if(desvEl) desvEl.value = (teorico != null && real != null) ? (real - teorico).toFixed(2) : '';
 }
 
 /* PDF de Yurest (Coste Real vs. Teórico) por local — independiente entre
@@ -6292,23 +6293,19 @@ async function guardarInformeMensual(){
   // fila vacía (mismo criterio que venta_sugerida en el Informe Semanal).
   const costes = menLocales.map(l => ({
     local: l.nombre,
-    coste_teorico_pct: numOrNull(`menc_${l.id}_teorico`),
-    coste_real_pct: numOrNull(`menc_${l.id}_real`),
-    desviacion_pct: numOrNull(`menc_${l.id}_desviacion`),
+    coste_teorico_eur: numOrNull(`menc_${l.id}_teorico`),
+    coste_real_eur: numOrNull(`menc_${l.id}_real`),
+    desviacion_eur: numOrNull(`menc_${l.id}_desviacion`),
     notas: v(`menc_${l.id}_notas`) || null,
     pdf_ruta: menCostePdfs[l.id] ? menCostePdfs[l.id].ruta : null,
     pdf_nombre: menCostePdfs[l.id] ? menCostePdfs[l.id].nombre : null,
-  })).filter(r => r.coste_teorico_pct != null || r.coste_real_pct != null || r.notas || r.pdf_ruta);
+  })).filter(r => r.coste_teorico_eur != null || r.coste_real_eur != null || r.notas || r.pdf_ruta);
 
   // Mismo criterio que el KPI % de venta sugerida en guardarInformeSemanal:
   // un porcentaje disparado suele ser una coma decimal perdida al copiar
   // desde Yurest, no un valor real — se bloquea el guardado antes de
   // enviarlo, señalando el local y el campo exactos.
   const pctFueraDeRango = [];
-  costes.forEach(r => {
-    if(r.coste_teorico_pct != null && Math.abs(r.coste_teorico_pct) >= 1000) pctFueraDeRango.push(`${r.local} / % coste teórico (${r.coste_teorico_pct}%)`);
-    if(r.coste_real_pct != null && Math.abs(r.coste_real_pct) >= 1000) pctFueraDeRango.push(`${r.local} / % coste real (${r.coste_real_pct}%)`);
-  });
   ventaSugerida.forEach(r => {
     if(r.kpi_pct != null && Math.abs(r.kpi_pct) >= 1000) pctFueraDeRango.push(`${r.local} / ${r.categoria} (${r.kpi_pct}%)`);
   });
@@ -6316,7 +6313,7 @@ async function guardarInformeMensual(){
     statusEl.style.color = 'var(--bad)';
     statusEl.textContent = 'No se puede guardar: porcentaje fuera de rango en ' +
       pctFueraDeRango.join(', ') +
-      ' — seguramente falta la coma decimal (ej. 2820 en vez de 28,20). Corrígelo en Coste Real vs. Teórico y vuelve a guardar.';
+      ' — seguramente falta la coma decimal (ej. 2820 en vez de 28,20). Corrígelo y vuelve a guardar.';
     return;
   }
 
@@ -6491,8 +6488,8 @@ async function cargarInformeMensualParaEditar(id){
 
     costes.forEach(r => {
       const lid = localId(r.local); if(!lid) return;
-      setVal(`menc_${lid}_teorico`, r.coste_teorico_pct);
-      setVal(`menc_${lid}_real`, r.coste_real_pct);
+      setVal(`menc_${lid}_teorico`, r.coste_teorico_eur);
+      setVal(`menc_${lid}_real`, r.coste_real_eur);
       setVal(`menc_${lid}_notas`, r.notas);
       if(r.pdf_ruta){
         menCostePdfs[lid] = { ruta: r.pdf_ruta, nombre: r.pdf_nombre || 'documento.pdf' };
