@@ -138,6 +138,11 @@
   }
   .block-summary .name{font-weight:700; color:var(--navy); font-size:14px;}
   .block-summary .peso{font-size:12px; color:var(--muted);}
+  .prog{font-size:12px; font-weight:600; color:var(--muted); white-space:nowrap;}
+  .prog.done{color:var(--good);}
+  .block-summary .prog{display:block; margin-top:2px;}
+  details.sub-details summary .sub-right{display:flex; align-items:center; gap:12px;}
+  .score-mini .prog{margin-top:4px; text-align:center;}
   .block-summary .score{font-size:20px; font-weight:800; color:var(--navy);}
   .subbloque-row{
     display:grid; grid-template-columns:2.4fr .8fr 2fr; gap:12px;
@@ -387,6 +392,7 @@
     <div class="score-mini" id="scoreMiniBox">
       <div class="num" id="miniScore">—</div>
       <div class="lbl">Puntuación total</div>
+      <div class="prog" id="miniProg"></div>
     </div>
   </nav>
 
@@ -1528,14 +1534,14 @@ function renderBloques(){
   BLOQUES.forEach(bloque => {
     const wrap = el('div', {style:'margin-bottom:26px;'});
     const summary = el('div', {class:'block-summary', id:'summary-'+bloque.key});
-    summary.innerHTML = `<div><div class="name">${bloque.nombre}</div><div class="peso">Peso: ${(bloque.peso*100).toFixed(0)}%</div></div><div class="score" id="score-${bloque.key}">— / 10</div>`;
+    summary.innerHTML = `<div><div class="name">${bloque.nombre}</div><div class="peso">Peso: ${(bloque.peso*100).toFixed(0)}%</div><span class="prog" id="prog-${bloque.key}"></span></div><div class="score" id="score-${bloque.key}">— / 10</div>`;
     wrap.appendChild(summary);
 
     bloque.subs.forEach(s => {
       const details = el('details', {class:'sub-details', id:`details-${bloque.prefix}${s.n}`});
       if(s.n === 1) details.setAttribute('open', '');
       const summaryEl = el('summary');
-      summaryEl.innerHTML = `<span class="sub-name">${s.nombre}<span class="items">${s.items} ítems</span></span><span class="sub-score" id="subscore-${bloque.prefix}${s.n}">— / 10</span>`;
+      summaryEl.innerHTML = `<span class="sub-name">${s.nombre}<span class="items">${s.items} ítems</span></span><span class="sub-right"><span class="prog" id="subprog-${bloque.prefix}${s.n}"></span><span class="sub-score" id="subscore-${bloque.prefix}${s.n}">— / 10</span></span>`;
       details.appendChild(summaryEl);
 
       const itemsList = el('div', {class:'items-list'});
@@ -1731,12 +1737,21 @@ function blockScore(bloque){
   return totalItems === 0 ? null : sum / totalItems;
 }
 
+function setProg(id, done, total){
+  const e = document.getElementById(id);
+  if(!e) return;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  e.textContent = `${done}/${total} · ${pct}% relleno`;
+  e.classList.toggle('done', total > 0 && done === total);
+}
+
 function updateSubDisplaysAndObs(){
   BLOQUES.forEach(bloque => {
     bloque.subs.forEach(s => {
       const a = subAnswers(bloque.prefix, s);
       const el2 = document.getElementById(`subscore-${bloque.prefix}${s.n}`);
       if(el2){ el2.textContent = fmtScore(a.score); el2.style.color = colorFor(a.score); }
+      setProg(`subprog-${bloque.prefix}${s.n}`, a.answered, s.items);
       const obsId = `sub_${bloque.prefix}${s.n}_obs`;
       if(!obsDirty.has(obsId)){
         const obsEl = document.getElementById(obsId);
@@ -1756,7 +1771,12 @@ function recalc(){
   updateSubDisplaysAndObs();
   let totalVis = 0, totalAnt = 0, anyVis = false, anyAnt = false;
   const blockScores = {};
+  let progDone = 0, progTotal = 0;
   BLOQUES.forEach(bloque => {
+    let bDone = 0, bTotal = 0;
+    bloque.subs.forEach(s => { bDone += subAnswers(bloque.prefix, s).answered; bTotal += s.items; });
+    setProg(`prog-${bloque.key}`, bDone, bTotal);
+    progDone += bDone; progTotal += bTotal;
     const bs = blockScore(bloque);
     blockScores[bloque.key] = bs;
     const scoreEl = document.getElementById(`score-${bloque.key}`);
@@ -1776,6 +1796,7 @@ function recalc(){
   document.getElementById('totalScoreBig').textContent = fmtScore(totalVisFinal);
   document.getElementById('totalDeltaLbl').textContent = 'vs. anterior: ' + ((totalVisFinal !== null && totalAntFinal !== null) ? fmtDelta(totalVisFinal - totalAntFinal) : '—');
   document.getElementById('miniScore').textContent = totalVisFinal !== null ? totalVisFinal.toFixed(1) : '—';
+  setProg('miniProg', progDone, progTotal);
   window._blockScores = blockScores;
   window._totalVis = totalVisFinal;
   window._totalAnt = totalAntFinal;
