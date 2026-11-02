@@ -4122,7 +4122,13 @@ function parseVentaSugeridaExcel(filas){
 }
 
 function aplicarVentaSugeridaExcel(filas){
-  const setVal = (id, val) => { const campo = document.getElementById(id); if(campo && val != null) campo.value = val; };
+  // Mismo fallo que en cargarInformeSemanalParaEditar(): sin disparar 'input', el
+  // total de Venta Sugerida (computeTotalVentaSugerida) no se recalculaba solo tras
+  // importar el Excel — se quedaba en blanco hasta tocar algún campo a mano.
+  const setVal = (id, val) => {
+    const campo = document.getElementById(id);
+    if(campo && val != null){ campo.value = val; campo.dispatchEvent(new Event('input', { bubbles: true })); }
+  };
   let aplicados = 0;
   const localesEncontrados = [];
   // Local reconocido por el nombre (columna A) pero sin ninguna cifra real que
@@ -6099,7 +6105,16 @@ async function cargarInformeSemanalParaEditar(id){
     updateSemanaPreview();
     refrescarFechasOcupacion();
 
-    const setVal = (elId, val) => { const el = document.getElementById(elId); if(el && val != null) el.value = val; };
+    // Antes solo ponía el valor en el campo, sin disparar 'input' — los % y el IC
+    // (compras/mermas s/ventas, walk-ins, venta sugerida, IC) se calculan todos con
+    // listeners 'input' sobre los campos de origen, así que al reabrir un informe
+    // guardado para editarlo esos campos calculados salían en blanco hasta que el
+    // usuario tocaba a mano el campo exacto que los alimentaba. Con el dispatch aquí,
+    // se recalculan solos nada más cargar, igual que si se acabaran de escribir.
+    const setVal = (elId, val) => {
+      const el = document.getElementById(elId);
+      if(el && val != null){ el.value = val; el.dispatchEvent(new Event('input', { bubbles: true })); }
+    };
     const localId = (nombre) => { const l = semLocales.find(x => x.nombre === nombre); return l ? l.id : null; };
 
     ventas.forEach(r => {
