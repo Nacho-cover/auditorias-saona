@@ -4831,6 +4831,20 @@ function actualizarPdfCosteStatus(l){
   btn.style.cssText = 'font-size:11px; background:none; border:none; color:var(--navy); text-decoration:underline; cursor:pointer; padding:0; text-align:left;';
   btn.addEventListener('click', () => verPdfCoste(l));
   statusEl.appendChild(btn);
+  const quitar = document.createElement('button');
+  quitar.type = 'button';
+  quitar.textContent = '✕ Quitar archivo';
+  quitar.style.cssText = 'font-size:11px; background:none; border:none; color:var(--bad); cursor:pointer; padding:0; margin-top:3px; text-align:left; display:block;';
+  quitar.addEventListener('click', () => quitarPdfCoste(l));
+  statusEl.appendChild(quitar);
+}
+
+function quitarPdfCoste(l){
+  const info = menCostePdfs[l.id];
+  if(!info) return;
+  if(!confirm(`¿Quitar "${info.nombre}" de ${l.nombre}? Después pulsa "Guardar" para que el cambio quede registrado.`)) return;
+  delete menCostePdfs[l.id];
+  actualizarPdfCosteStatus(l);
 }
 
 /* Supabase Storage rechaza "keys" con espacios, tildes o varios puntos
